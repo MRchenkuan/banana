@@ -1,0 +1,48 @@
+{
+  "name": "banana-backend",
+  "version": "1.0.0",
+  "description": "Banana AI Chat Backend with Gemini Integration",
+  "main": "server.js",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js",
+    "debug": "node --inspect server.js",
+    "debug:dev": "nodemon --inspect server.js",
+    "debug:break": "node --inspect-brk server.js",
+    "debug:dev:break": "nodemon --inspect-brk server.js",
+    "init-db": "node scripts/initDatabase.js",
+    "check-db": "node scripts/checkDatabase.js",
+    "reset-db": "node scripts/initDatabase.js --reset",
+    "sync-db": "node scripts/syncDatabase.js",
+    "sync-db:force": "node scripts/syncDatabase.js --force",
+    "mysql:start": "../scripts/mysql-start.sh",
+    "mysql:stop": "../scripts/mysql-stop.sh",
+    "mysql:restart": "npm run mysql:stop && npm run mysql:start",
+    "mysql:connect": "../scripts/mysql-connect.sh",
+    "mysql:logs": "../scripts/mysql-logs.sh",
+    "mysql:reset": "../scripts/mysql-reset.sh",
+    "mysql:status": "docker ps | grep banana-mysql || echo 'MySQL 容器未运行'",
+    "db:setup": "npm run mysql:start && sleep 15 && npm run init-db",
+    "db:sync": "npm run mysql:start && sleep 5 && npm run sync-db",
+    "db:sync:force": "npm run mysql:start && sleep 5 && npm run sync-db:force",
+    "db:dev": "npm run mysql:start && npm run dev"
+  },
+  "dependencies": {
+    "@google/genai": "^1.17.0",
+    "aws-sdk": "^2.1692.0",
+    "axios": "^1.5.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "mysql2": "^3.6.0",
+    "sequelize": "^6.32.1",
+    "sharp": "^0.34.3",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

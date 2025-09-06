@@ -1,0 +1,119 @@
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
+const { STREAM_STATUS_VALUES } = require('../constants/streamStatus');
+
+const ChatMessage = sequelize.define('ChatMessage', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  userId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
+  },
+  sessionId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'sessions',
+      key: 'id'
+    }
+  },
+  type: {
+    type: DataTypes.ENUM('text', 'image'),
+    allowNull: false,
+    defaultValue: 'text'
+  },
+  userMessage: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  aiResponse: {
+    type: DataTypes.TEXT,
+    allowNull: false
+  },
+  imageUrl: {
+    type: DataTypes.STRING(500),
+    allowNull: true
+  },
+  tokensUsed: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0,
+    validate: {
+      min: 0
+    }
+  },
+  streamStatus: {
+    type: DataTypes.ENUM(...STREAM_STATUS_VALUES),
+    allowNull: false,
+    defaultValue: 'pending'
+  },
+  partialResponse: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  estimatedTokens: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: 0
+  }
+}, {
+  tableName: 'chat_messages',
+  indexes: [
+    {
+      fields: ['user_id', 'created_at']
+    },
+    {
+      fields: ['session_id', 'created_at']
+    },
+    {
+      fields: ['type']
+    },
+    {
+      fields: ['stream_status']
+    }
+  ],
+  hooks: {
+    // 消息创建后更新session统计
+    afterCreate: async (chatMessage, options) => {
+      try {
+        // 使用sequelize.models来避免循环引用
+        const Session = sequelize.models.Session;
+        if (Session) {
+          await Session.increment('messageCount', {
+            where: { id: chatMessage.sessionId }
+          });
+          await Session.update(
+            { lastMessageAt: new Date() },
+            { where: { id: chatMessage.sessionId } }
+          );
+        }
+      } catch (error) {
+        console.error('更新session统计失败:', error);
+      }
+    },
+    
+    // 消息删除后更新session统计
+    afterDestroy: async (chatMessage, options) => {
+      try {
+        // 使用sequelize.models来避免循环引用
+        const Session = sequelize.models.Session;
+        if (Session) {
+          await Session.decrement('messageCount', {
+            where: { id: chatMessage.sessionId }
+          });
+        }
+      } catch (error) {
+        console.error('更新session统计失败:', error);
+      }
+    }
+  }
+});
+
+module.exports = ChatMessage;

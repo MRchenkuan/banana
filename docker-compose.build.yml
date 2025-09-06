@@ -1,0 +1,16 @@
+# 专门用于构建镜像
+version: '3.8'
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    image: banana-backend:latest
+    
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+    image: banana-frontend:latest

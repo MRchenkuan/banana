@@ -1,0 +1,85 @@
+# 专门用于运行服务（开发环境）
+version: '3.8'
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: banana-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: banana_chat
+      MYSQL_USER: banana_user
+      MYSQL_PASSWORD: banana_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./scripts:/docker-entrypoint-initdb.d
+    networks:
+      - banana-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p123456"]
+      timeout: 20s
+      retries: 10
+      interval: 10s
+      start_period: 40s
+
+  backend:
+    image: banana-backend:latest
+    container_name: banana-backend
+    env_file:
+      - ./backend/.env
+    environment:
+      # 服务器配置
+      - PORT=3001
+      - NODE_ENV=production
+      
+      # JWT 配置
+      - JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+      - JWT_EXPIRES_IN=7d
+      
+      # MySQL 数据库配置（Docker 环境）
+      - DB_HOST=mysql  # 使用服务名
+      - DB_PORT=3306
+      - DB_NAME=banana_chat
+      - DB_USER=banana_user
+      - DB_PASSWORD=banana_pass
+      
+      # Google Gemini API
+      - GEMINI_API_KEY=your-gemini-api-key
+      
+      # 微信支付配置
+      - WECHAT_APP_ID=your-wechat-app-id
+      - WECHAT_MCH_ID=your-merchant-id
+      - WECHAT_API_KEY=your-wechat-api-key
+      - WECHAT_NOTIFY_URL=http://localhost:3001/api/payment/notify
+      
+      # 微信登录配置
+      - WECHAT_APP_SECRET=your_wechat_app_secret
+      - WECHAT_REDIRECT_URI=http://localhost:3000/auth/wechat/callback
+    ports:
+      - "3001:3001"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - banana-network
+
+  frontend:
+    image: banana-frontend:latest
+    container_name: banana-frontend
+    environment:
+      - REACT_APP_API_URL=http://backend:3000
+      - DISABLE_ESLINT_PLUGIN=true
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - banana-network
+
+volumes:
+  mysql_data:
+
+networks:
+  banana-network:
+    driver: bridge
