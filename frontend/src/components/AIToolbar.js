@@ -147,9 +147,11 @@ const AIToolbar = ({ onToolClick, selectedImages = [], setInputValue, inputValue
 
   const handleMouseEnter = (tool, event) => {
     const rect = event.target.getBoundingClientRect();
+    const toolbarRect = event.target.closest('div').getBoundingClientRect();
+    
     setHoverPosition({
       x: rect.left + rect.width / 2,
-      y: rect.top - 10
+      y: toolbarRect.top // 使用 toolbar 的顶部位置
     });
     setHoveredTool(tool);
   };
@@ -220,8 +222,8 @@ const AIToolbar = ({ onToolClick, selectedImages = [], setInputValue, inputValue
         <div
           style={{
             position: 'fixed',
-            left: hoverPosition.x - 100,
-            top: hoverPosition.y - 200,
+            left: hoverPosition.x - 110, // 预览框宽度的一半 (220/2 = 110)
+            top: hoverPosition.y - 240, // 预览框高度 + 一些间距
             zIndex: 1000,
             backgroundColor: '#262626',
             borderRadius: '8px',

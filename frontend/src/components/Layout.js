@@ -34,7 +34,8 @@ const Layout = ({ children }) => {
   const loadSessions = async () => {
     try {
       setSessionsLoading(true);
-      const response = await api.getSessions();
+      // 将 api.getSessions() 改为 api.session.getSessions()
+      const response = await api.session.getSessions();
       setSessions(response.data.sessions); // 修复：正确获取sessions数组
     } catch (error) {
       console.error('加载会话列表失败:', error);

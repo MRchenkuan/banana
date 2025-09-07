@@ -18,15 +18,7 @@ const { Paragraph } = Typography;
 const MessageItem = ({ message, index }) => {
   const isUser = message.role === 'user';
   const isAssistant = message.role === 'assistant';
-  
-  // 添加调试信息
-  console.log('Message:', {
-    id: message.id,
-    role: message.role,
-    content: message.content?.substring(0, 50),
-    isUser,
-    isAssistant
-  });
+
   
   const isThinking = message.isThinking;
   const isError = message.isError;

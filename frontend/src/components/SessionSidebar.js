@@ -23,7 +23,8 @@ const SessionSidebar = ({
   // 创建新会话
   const createNewSession = async () => {
     try {
-      const response = await api.createSession();
+      // 将 api.createSession() 改为 api.session.createSession()
+      const response = await api.session.createSession();
       const newSession = response.data;
       onSessionsUpdate(prev => [newSession, ...prev]);
       onSessionSwitch(newSession.id, []);
@@ -46,7 +47,8 @@ const SessionSidebar = ({
       cancelText: '取消',
       onOk: async () => {
         try {
-          await api.deleteSession(sessionId);
+          // 将 api.deleteSession() 改为 api.session.deleteSession()
+          await api.session.deleteSession(sessionId);
           const updatedSessions = sessions.filter(s => s.id !== sessionId);
           onSessionsUpdate(() => updatedSessions);
           
@@ -139,8 +141,8 @@ const SessionSidebar = ({
                 style={{
                   padding: '12px 16px',
                   cursor: 'pointer',
-                  backgroundColor: currentSessionId === session.id ? '#434343' : 'transparent',
-                  borderLeft: currentSessionId === session.id ? `3px solid ${theme.primary}` : '3px solid transparent',
+                  backgroundColor: String(currentSessionId) === String(session.id) ? '#434343' : 'transparent',
+                  borderLeft: String(currentSessionId) === String(session.id) ? `3px solid ${theme.primary}` : '3px solid transparent',
                   margin: 0,
                   borderRadius: 0,
                   borderBottom: '1px solid #2a2a2a',
@@ -159,7 +161,7 @@ const SessionSidebar = ({
                 <div style={{ width: '100%', display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ 
-                      fontWeight: currentSessionId === session.id ? 'bold' : 'normal',
+                      fontWeight: String(currentSessionId) === String(session.id) ? 'bold' : 'normal',
                       fontSize: '14px',
                       marginBottom: '4px',
                       overflow: 'hidden',

@@ -1,146 +1,80 @@
-import React, { useState, useRef, useEffect } from 'react';
-import {
-  Typography,
-  message
-} from 'antd';
-import { useToken } from '../contexts/TokenContext';
-import api from '../services/api';
-import SessionSidebar from '../components/SessionSidebar';
-import MessageList from '../components/MessageList';
-import MessageInput from '../components/MessageInput';
-import { STREAM_STATUS, STREAM_STATUS_DESCRIPTIONS } from '../constants/streamStatus';
-import AIToolbar from '../components/AIToolbar';
-import { compressImages } from '../utils/imageCompression';
-
-const { Title } = Typography;
+import React, { useState, useEffect } from "react";
+import SessionSidebar from "../components/SessionSidebar";
+import MessageList from "../components/MessageList";
+import MessageInput from "../components/MessageInput";
+import AIToolbar from "../components/AIToolbar";
+import useChat from "../hooks/useChat";
+import useSessions from "../hooks/useSessions";
+import useMessageSender from "../hooks/useMessageSender";
+import useImageHandler from "../hooks/useImageHandler";
 
 const Chat = () => {
-  const [messages, setMessages] = useState([]);
-  const [inputValue, setInputValue] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [selectedImages, setSelectedImages] = useState([]);
-  const [isDragOver, setIsDragOver] = useState(false);
-  const [sessions, setSessions] = useState([]);
-  const [currentSessionId, setCurrentSessionId] = useState(null);
-  const [sessionsLoading, setSessionsLoading] = useState(false);
-  const messagesEndRef = useRef(null);
-  const { updateBalance } = useToken();
+  const [inputValue, setInputValue] = useState("");
 
-  const loadSessionMessages = async (sessionId) => {
-    try {
-      setLoading(true);
-      const response = await api.getSessionMessages(sessionId);
-      
-      // 转换后端消息格式为前端期望的格式
-      const convertedMessages = [];
-      
-      (response.data.messages || []).forEach(msg => {
-        // 添加用户消息
-        if (msg.userMessage) {
-          convertedMessages.push({
-            id: `${msg.id}-user`,
-            type: msg.type === 'image' ? 'image' : 'text',
-            content: msg.userMessage,
-            role: 'user',
-            timestamp: new Date(msg.createdAt),
-            imageUrl: msg.imageUrl || undefined
-          });
-        }
-        
-        // 添加AI回复消息
-        if (msg.aiResponse) {
-          convertedMessages.push({
-            id: `${msg.id}-assistant`,
-            type: 'text',
-            content: msg.aiResponse,
-            role: 'assistant',
-            timestamp: new Date(msg.createdAt),
-            tokensUsed: msg.tokensUsed,
-            isError: msg.isError || false
-          });
-        }
-      });
-      
-      setMessages(convertedMessages);
-      
-      // 加载完消息后立即滚动到底部
-      setTimeout(() => {
-        scrollToBottom(true);
-      }, 100);
-    } catch (error) {
-      console.error('加载会话消息失败:', error);
-      message.error('加载会话消息失败');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // 使用自定义hooks
+  const {
+    messages,
+    setMessages,
+    loading,
+    setLoading,
+    currentSessionId,
+    setCurrentSessionId,
+    messagesEndRef,
+    loadSessionMessages,
+    scrollToBottom,
+    updateBalance,
+  } = useChat();
 
-  // 添加加载会话列表的函数
-  const loadSessions = async () => {
-    try {
-      setSessionsLoading(true);
-      const response = await api.getSessions();
-      setSessions(response.data.sessions || []);
-    } catch (error) {
-      console.error('加载会话列表失败:', error);
-      message.error('加载会话列表失败');
-    } finally {
-      setSessionsLoading(false);
-    }
-  };
+  const { sessions, setSessions, sessionsLoading } = useSessions();
 
-  // 组件挂载时加载会话列表
+  const {
+    selectedImages,
+    setSelectedImages,
+    isDragOver,
+    handleDragOver,
+    handleDragLeave,
+    handleDrop,
+    handleToolbarImageUpload,
+  } = useImageHandler();
+
+  const { handleSendMessage } = useMessageSender({
+    loading,
+    setLoading,
+    currentSessionId,
+    setCurrentSessionId,
+    sessions,
+    setSessions,
+    setMessages,
+    updateBalance,
+  });
+
+  // 滚动效果
   useEffect(() => {
-    loadSessions();
-  }, []);
-
-
-  // 工具点击处理函数
-  const handleToolClick = (toolKey) => {
-    switch (toolKey) {
-      case 'figurine':
-        // message.info('正在生成手办，请稍候...');
-        break;
-      case 'faceSwap':
-        // message.info('正在处理换脸，请稍候...');
-        break;
-      case 'clothingSwap':
-        // message.info('正在处理换衣，请稍候...');
-        break;
-      case 'poseChange':
-        // message.info('正在改变姿势，请稍候...');
-        break;
-      default:
-        break;
-    }
-  };
-
-  const scrollToBottom = (immediate = false) => {
-    if (immediate) {
-      // 立即滚动，不播放动画
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-      }, 50);
-    } else {
-      // 平滑滚动动画
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
-    }
-  };
-
-  useEffect(() => {
-    // 普通消息更新时使用平滑滚动
     scrollToBottom(false);
   }, [messages]);
 
-  // 修改会话切换函数，使用立即滚动
+  // 验证当前会话ID是否在会话列表中存在
+  useEffect(() => {
+    // 只在会话列表加载完成且不为空时才进行验证
+    if (currentSessionId && sessions.length > 0 && !sessionsLoading) {
+      // 确保类型一致性：将两边都转换为字符串进行比较
+      const sessionExists = sessions.some(session => String(session.id) === String(currentSessionId));
+      
+      if (!sessionExists) {
+        // 如果当前会话ID不存在于会话列表中，清除它
+        console.warn('⚠️ 当前会话不存在，清除会话ID:', currentSessionId);
+        setCurrentSessionId(null);
+        setMessages([]);
+      }
+    }
+  }, [sessions, currentSessionId, sessionsLoading]);
+
+  // 会话切换处理
   const handleSessionSwitch = (sessionId, newMessages = null) => {
     if (sessionId !== currentSessionId) {
       setCurrentSessionId(sessionId);
       if (newMessages !== null) {
         setMessages(newMessages);
-        // 会话切换后立即滚动到底部，不播放动画
         setTimeout(() => {
           scrollToBottom(true);
         }, 100);
@@ -150,420 +84,66 @@ const Chat = () => {
     }
   };
 
-  const handleSendMessage = async () => {
-    // 修改验证逻辑
-    if (loading) {
-      return;
-    }
-    
-    // 如果有图片但没有文字描述，提示用户
-    if (selectedImages.length > 0 && !inputValue.trim()) {
-      message.warning('请输入对图片的分析要求或描述');
-      return;
-    }
-    
-    // 如果既没有文字也没有图片，直接返回
-    if (!inputValue.trim() && selectedImages.length === 0) {
-      return;
-    }
-
-    // 如果没有当前会话，先创建一个
-    let sessionId = currentSessionId;
-    if (!sessionId) {
-      try {
-        const response = await api.createSession();
-        sessionId = response.data.id;
-        setCurrentSessionId(sessionId);
-        setSessions(prev => [response.data, ...prev]);
-      } catch (error) {
-        message.error('创建会话失败');
-        return;
-      }
-    }
-  
-    const messageText = inputValue.trim();
-    const images = [...selectedImages];
-    
-    setInputValue('');
-    setSelectedImages([]);
-    setLoading(true);
-  
-    try {
-      if (images.length > 0) {
-        // 图片消息改为流式处理
-        const newMessage = {
-          id: Date.now(),
-          type: 'image',
-          content: messageText,
-          imageUrl: URL.createObjectURL(images[0]),
-          timestamp: new Date(),
-          role: 'user'
-        };
-        
-        setMessages(prev => [...prev, newMessage]);
-        
-        // 创建思考中的临时消息
-        const thinkingMessageId = Date.now() + 1;
-        const thinkingMessage = {
-          id: thinkingMessageId,
-          type: 'thinking',
-          content: '正在分析图片...',
-          timestamp: new Date(),
-          role: 'assistant',
-          isThinking: true
-        };
-        
-        setMessages(prev => [...prev, thinkingMessage]);
-        
-        // 使用流式图片API
-        await api.sendImageMessageStream(
-          messageText,
-          images[0],
-          sessionId,
-          // onChunk - 接收到字符时
-          (chunk, estimatedTokens) => {
-            setMessages(prev => {
-              // 移除思考消息
-              const filteredMessages = prev.filter(msg => msg.id !== thinkingMessageId);
-              
-              // 查找是否已有AI回复消息
-              const aiMessageId = thinkingMessageId + 1;
-              const existingAiMessage = filteredMessages.find(msg => msg.id === aiMessageId);
-              
-              if (existingAiMessage) {
-                // 更新现有AI消息
-                return filteredMessages.map(msg => 
-                  msg.id === aiMessageId
-                    ? { 
-                        ...msg, 
-                        content: msg.content + chunk,
-                        estimatedTokens: estimatedTokens
-                      }
-                    : msg
-                );
-              } else {
-                // 创建新的AI回复消息
-                const aiMessage = {
-                  id: aiMessageId,
-                  type: 'text',
-                  content: chunk,
-                  timestamp: new Date(),
-                  role: 'assistant',
-                  isStreaming: true,
-                  isNewMessage: true,
-                  estimatedTokens: estimatedTokens
-                };
-                return [...filteredMessages, aiMessage];
-              }
-            });
-          },
-          // onComplete - 完成时
-          async (data) => {
-            const aiMessageId = thinkingMessageId + 1;
-            setMessages(prev => {
-              const filteredMessages = prev.filter(msg => msg.id !== thinkingMessageId);
-              return filteredMessages.map(msg => 
-                msg.id === aiMessageId
-                  ? { 
-                      ...msg, 
-                      isStreaming: false,
-                      tokensUsed: data.tokensUsed,  // 修改：从 data.tokensUsed 获取
-                      estimatedTokens: undefined
-                    }
-                  : msg
-              );
-            });
-            updateBalance(data.remainingBalance);  // ✅ 正确使用 remainingBalance
-            
-            // 如果有生成的标题，直接更新当前会话列表中的标题
-            if (data.title) {
-              setSessions(prev => prev.map(session => 
-                session.id === sessionId 
-                  ? { ...session, title: data.title }
-                  : session
-              ));
-            }
-            
-            setLoading(false);
-            if (!data.title) {
-              loadSessions();
-            }
-          },
-          // onError - 错误时
-          (error) => {
-            message.error(error);
-            // 移除思考消息，创建错误提示消息
-            setMessages(prev => {
-              const filteredMessages = prev.filter(msg => msg.id !== thinkingMessageId);
-              
-              const errorMessage = {
-                id: thinkingMessageId + 1,
-                type: 'error',
-                content: error || '图片分析失败，请稍后重试。',
-                timestamp: new Date(),
-                role: 'assistant',
-                isError: true,
-              };
-              return [...filteredMessages, errorMessage];
-            });
-            setLoading(false);
-          }
-        );
-      } else {
-        // 在 handleSendMessage 方法中，大约在第 170-180 行之间
-        // 文本消息使用流式处理
-        const newMessage = {
-          id: Date.now(),
-          type: 'text',
-          content: messageText,
-          timestamp: new Date(),
-          role: 'user'
-        };
-        
-        setMessages(prev => [...prev, newMessage]);
-        
-        // 创建思考中的临时消息
-        const thinkingMessageId = Date.now() + 1;
-        const thinkingMessage = {
-          id: thinkingMessageId,
-          type: 'thinking',
-          content: '正在思考中...',
-          timestamp: new Date(),
-          role: 'assistant',
-          isThinking: true
-        };
-        
-        setMessages(prev => [...prev, thinkingMessage]);
-        
-        
-        // 使用流式API
-        await api.sendTextMessageStream(
-          messageText,
-          sessionId,
-          // onChunk - 接收到字符时
-          (chunk, estimatedTokens) => {
-            setMessages((prev) => {
-              // 移除思考消息
-              const filteredMessages = prev.filter(
-                (msg) => msg.id !== thinkingMessageId
-              );
-
-              // 查找是否已有AI回复消息
-              const aiMessageId = thinkingMessageId + 1;
-              const existingAiMessage = filteredMessages.find(
-                (msg) => msg.id === aiMessageId
-              );
-
-              if (existingAiMessage) {
-                // 更新现有AI消息
-                return filteredMessages.map((msg) =>
-                  msg.id === aiMessageId
-                    ? {
-                        ...msg,
-                        content: msg.content + chunk,
-                        estimatedTokens: estimatedTokens,
-                      }
-                    : msg
-                );
-              } else {
-                // 创建新的AI回复消息
-                const aiMessage = {
-                  id: aiMessageId,
-                  type: "text",
-                  content: chunk,
-                  timestamp: new Date(),
-                  role: "assistant",
-                  isStreaming: true,
-                  isNewMessage: true, // 标识为新消息，触发打字机效果
-                  estimatedTokens: estimatedTokens,
-                };
-                return [...filteredMessages, aiMessage];
-              }
-            });
-          },
-          // onComplete - 完成时
-          async (data) => {
-            const aiMessageId = thinkingMessageId + 1;
-            setMessages((prev) => {
-              const filteredMessages = prev.filter(
-                (msg) => msg.id !== thinkingMessageId
-              );
-              return filteredMessages.map((msg) =>
-                msg.id === aiMessageId
-                  ? {
-                      ...msg,
-                      isStreaming: false,
-                      tokensUsed: data.tokensUsed,
-                      estimatedTokens: undefined,
-                    }
-                  : msg
-              );
-            });
-            updateBalance(data.remainingBalance);
-
-            // 如果有生成的标题，直接更新当前会话列表中的标题
-            if (data.title) {
-              setSessions((prev) =>
-                prev.map((session) =>
-                  session.id === sessionId
-                    ? { ...session, title: data.title }
-                    : session
-                )
-              );
-            }
-
-            // 更新session的消息计数
-            setSessions((prev) =>
-              prev.map((session) =>
-                session.id === sessionId
-                  ? {
-                      ...session,
-                      messageCount: (session.messageCount || 0) + 1,
-                      lastMessageAt: new Date().toISOString(),
-                    }
-                  : session
-              )
-            );
-
-            setLoading(false);
-            // 移除条件判断，确保session列表始终是最新的
-            // if (!data.title) {
-            //   loadSessions();
-            // }
-          },
-          // onError - 错误时
-          (error) => {
-            message.error(error);
-            // 移除思考消息，创建错误提示消息
-            setMessages((prev) => {
-              const filteredMessages = prev.filter(
-                (msg) => msg.id !== thinkingMessageId
-              );
-
-              // 创建错误提示消息
-              const errorMessage = {
-                id: thinkingMessageId + 1,
-                type: "error",
-                content: "可能正在处理大量请求，请稍后重试。",
-                timestamp: new Date(),
-                role: "assistant",
-                isError: true,
-                tokensUsed: 0,
-              };
-
-              return [...filteredMessages, errorMessage];
-            });
-
-            setLoading(false);
-          }
-        );
-      }
-      
-    } catch (error) {
-      console.error('发送消息失败:', error);
-      message.error(error.response?.data?.error || '发送消息失败，请重试');
-      setLoading(false);
-    }
-  };
-
+  // 键盘事件处理
   const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSendMessage();
+      handleSendMessage(
+        inputValue,
+        selectedImages,
+        setInputValue,
+        setSelectedImages
+      );
     }
   };
 
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    setIsDragOver(true);
+  // 工具点击处理
+  const handleToolClick = (toolKey) => {
+    // 工具处理逻辑
   };
 
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    setIsDragOver(false);
+  const onSendMessage = () => {
+    handleSendMessage(
+      inputValue,
+      selectedImages,
+      setInputValue,
+      setSelectedImages
+    );
   };
-
-  const handleDrop = async (e) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    
-    const files = Array.from(e.dataTransfer.files);
-    const imageFiles = files.filter(file => file.type.startsWith('image/'));
-    
-    if (imageFiles.length > 0) {
-      const newImages = imageFiles.slice(0, 4 - selectedImages.length);
-      
-      // 检查是否需要压缩
-      const needCompression = newImages.some(file => file.size > 500 * 1024);
-      
-      if (needCompression) {
-        try {
-          message.loading('正在压缩图片...', 0);
-          const compressedFiles = await compressImages(newImages, 500);
-          setSelectedImages(prev => [...prev, ...compressedFiles]);
-          message.destroy();
-          message.success('图片压缩完成');
-        } catch (error) {
-          message.destroy();
-          message.error('图片压缩失败');
-        }
-      } else {
-        setSelectedImages(prev => [...prev, ...newImages]);
-      }
-      
-      if (imageFiles.length > 4 - selectedImages.length) {
-        message.warning('最多只能上传4张图片');
-      }
-    }
-  };
-
-    // 处理从AIToolbar传来的图片上传（带清除功能）
-    const handleToolbarImageUpload = (imageFiles, shouldClear = true) => {
-      // 如果需要清除，先清空已有图片
-      if (shouldClear) {
-        setSelectedImages([]);
-      }
-      
-      // 添加新图片
-      const newImages = imageFiles.slice(0, 4);
-      setSelectedImages(newImages);
-      
-      if (imageFiles.length > 4) {
-        message.warning('最多只能上传4张图片');
-      }
-    };
 
   return (
-    <div style={{ 
-      display: 'flex', 
-      backgroundColor: '#141414',
-    }}>
-      {/* 左侧会话列表侧边栏 - 现在是固定定位 */}
+    <div
+      style={{
+        display: "flex",
+        backgroundColor: "#141414",
+      }}
+    >
       <SessionSidebar
         sessions={sessions}
         currentSessionId={currentSessionId}
         sessionsLoading={sessionsLoading}
         onSessionSwitch={handleSessionSwitch}
-        onSessionsUpdate={setSessions} 
-      />      
-      
-      {/* 右侧聊天区域 - 上下结构布局 */}
-      <div style={{ 
-        flex: 1, 
-        display: 'flex', 
-        flexDirection: 'column',
-        height: 'calc(100vh - 70px)',
-        overflow: 'hidden' // 防止出现滚动条
-      }}>
-        
-        {/* 上方：聊天消息区域 */}
-        <div style={{
+        onSessionsUpdate={setSessions}
+      />
+
+      <div
+        style={{
           flex: 1,
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
-          minHeight: 0 // 确保flex子元素可以收缩
-        }}>
+          display: "flex",
+          flexDirection: "column",
+          height: "calc(100vh - 70px)",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            flex: 1,
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+            minHeight: 0,
+          }}
+        >
           <MessageList
             messages={messages}
             loading={loading}
@@ -571,21 +151,21 @@ const Chat = () => {
             messagesEndRef={messagesEndRef}
           />
         </div>
-        
-        {/* 下方：输入框区域 */}
-        <div style={{
-          flexShrink: 0,
-          position: 'relative' // 添加相对定位，为工具条提供定位基准
-        }}>
-          {/* AI工具条 */}
-          <AIToolbar 
-            onToolClick={handleToolClick} 
+
+        <div
+          style={{
+            flexShrink: 0,
+            position: "relative",
+          }}
+        >
+          <AIToolbar
+            onToolClick={handleToolClick}
             selectedImages={selectedImages}
             setInputValue={setInputValue}
             inputValue={inputValue}
             onImageUpload={handleToolbarImageUpload}
           />
-          
+
           <MessageInput
             inputValue={inputValue}
             setInputValue={setInputValue}
@@ -593,7 +173,7 @@ const Chat = () => {
             setSelectedImages={setSelectedImages}
             loading={loading}
             isDragOver={isDragOver}
-            onSendMessage={handleSendMessage}
+            onSendMessage={onSendMessage}
             onKeyPress={handleKeyPress}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}

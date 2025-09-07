@@ -33,7 +33,7 @@ export const TokenProvider = ({ children }) => {
   const fetchBalance = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/user/balance');
+      const response = await api.user.getUserBalance();
       setBalance(response.data.balance);
       return response.data.balance;
     } catch (error) {
@@ -46,7 +46,8 @@ export const TokenProvider = ({ children }) => {
 
   const fetchUsageStats = async () => {
     try {
-      const response = await api.get('/user/usage-stats');
+      // 将直接的HTTP调用改为服务调用
+      const response = await api.user.getUserUsageStats();
       setUsageStats(response.data);
     } catch (error) {
       console.error('获取使用统计失败:', error);

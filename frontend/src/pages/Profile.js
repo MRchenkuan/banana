@@ -51,7 +51,7 @@ const Profile = () => {
 
   const loadUserStats = async () => {
     try {
-      const response = await api.getUserStats();
+      const response = await api.user.getUserStats();
       setUsageStats(response.data);
     } catch (error) {
       console.error('加载用户统计失败:', error);
@@ -63,7 +63,8 @@ const Profile = () => {
     setLoading(true);
     try {
       const [startDate, endDate] = dateRange;
-      const response = await api.getTokenUsageHistory(
+
+      const response = await api.user.getTokenUsageHistory(
         startDate.format('YYYY-MM-DD'),
         endDate.format('YYYY-MM-DD')
       );

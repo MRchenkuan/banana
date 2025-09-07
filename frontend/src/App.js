@@ -19,7 +19,36 @@ import { switchTheme, theme as customTheme } from './constants/theme';
 window.switchTheme = switchTheme;
 window.customTheme = customTheme;
 
+// 在App组件的开头添加
 function App() {
+  // 监听localStorage变化
+  React.useEffect(() => {
+    const originalSetItem = localStorage.setItem;
+    const originalRemoveItem = localStorage.removeItem;
+    const originalClear = localStorage.clear;
+    
+    localStorage.setItem = function(key, value) {
+      console.log('📝 localStorage.setItem:', key, value);
+      return originalSetItem.apply(this, arguments);
+    };
+    
+    localStorage.removeItem = function(key) {
+      console.log('🗑️ localStorage.removeItem:', key);
+      return originalRemoveItem.apply(this, arguments);
+    };
+    
+    localStorage.clear = function() {
+      console.log('🧹 localStorage.clear called');
+      return originalClear.apply(this, arguments);
+    };
+    
+    return () => {
+      localStorage.setItem = originalSetItem;
+      localStorage.removeItem = originalRemoveItem;
+      localStorage.clear = originalClear;
+    };
+  }, []);
+  
   return (
     <ConfigProvider 
       locale={zhCN}

@@ -131,11 +131,8 @@ const PaymentModal = ({ visible, onClose, defaultPackage = 'standard' }) => {
 
     setLoading(true);
     try {
-      const response = await api.post('/payment/create-order', {
-        amount: selectedPkg.amount,
-        tokens: selectedPkg.tokens,
-        package: selectedPkg.name
-      });
+
+      const response = await api.payment.createPaymentOrder({ amount: selectedPkg.amount });
 
       if (response.data.success) {
         setOrderId(response.data.orderId);
@@ -160,7 +157,7 @@ const PaymentModal = ({ visible, onClose, defaultPackage = 'standard' }) => {
   const startPaymentPolling = (orderId) => {
     pollIntervalRef.current = setInterval(async () => {
       try {
-        const response = await api.get(`/payment/check-status/${orderId}`);
+        const response = await api.payment.getOrderStatus(orderId);
         if (response.data.success) {
           const { status } = response.data;
           if (status === 'paid') {
@@ -186,7 +183,7 @@ const PaymentModal = ({ visible, onClose, defaultPackage = 'standard' }) => {
 
   const fetchPaymentHistory = async () => {
     try {
-      const response = await api.get('/payment/history');
+      const response = await api.payment.getPaymentHistory();
       if (response.data.success) {
         setPaymentHistory(response.data.payments);
         setHistoryVisible(true);

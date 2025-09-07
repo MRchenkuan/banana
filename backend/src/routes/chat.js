@@ -24,5 +24,4 @@ router.post('/image-stream', authenticateToken, ...upload.single('image'), async
   const handler = new ImageStreamHandler(req, res);
   await handler.handle();
 });
-
 module.exports = router;
