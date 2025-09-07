@@ -29,8 +29,21 @@
   max-width: 70%;
 }
 
+:root {
+  --theme-primary: #1890ff;
+  --theme-user-message: #3b82f6;
+  --theme-thinking-bg: #1e3a5f;
+}
+
+/* 添加绿色主题变量 */
+:root.theme-green {
+  --theme-primary: #10b981;
+  --theme-user-message: #059669;
+  --theme-thinking-bg: #064e3b;
+}
+
 .user-message {
-  background-color: #1890ff;
+  background-color: var(--theme-user-message);
   color: white;
   margin-left: auto;
 }

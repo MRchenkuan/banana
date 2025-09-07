@@ -12,6 +12,7 @@ import { useToken } from '../contexts/TokenContext';
 import SessionSidebar from './SessionSidebar';
 import PaymentModal from './PaymentModal';
 import api from '../services/api';
+import { theme } from '../constants/theme';
 
 const { Header, Content } = AntLayout;
 const { Text } = Typography;
@@ -111,7 +112,7 @@ const Layout = ({ children }) => {
           style={{ 
             fontSize: '24px', 
             fontWeight: 'bold',
-            color: '#1890ff',
+            color: theme.primary,
             cursor: 'pointer',
           }}
           onClick={handleLogoClick}
@@ -124,7 +125,7 @@ const Layout = ({ children }) => {
           {/* 可点击的 Token 余额 */}
           <Button 
             type="text"
-            icon={<WalletOutlined style={{ fontSize: '18px', color: '#1890ff' }} />}
+            icon={<WalletOutlined style={{ fontSize: '18px', color: theme.primary }} />}
             onClick={handleTokenClick}
             style={{
               display: 'flex',
@@ -133,7 +134,7 @@ const Layout = ({ children }) => {
               color: '#ffffff'
             }}
           >
-            <Text strong style={{ color: '#1890ff', marginLeft: '8px' }}>
+            <Text strong style={{ color: theme.primary, marginLeft: '8px' }}>
               {typeof balance === 'number' ? balance.toLocaleString() : '0'} Tokens
             </Text>
           </Button>
@@ -144,7 +145,7 @@ const Layout = ({ children }) => {
             arrow
           >
             <Space style={{ cursor: 'pointer' }}>
-              <Avatar icon={<UserOutlined />} style={{ backgroundColor: '#434343' }} />
+              <Avatar icon={<UserOutlined />} style={{ backgroundColor: theme.primary }} />
               <Text style={{ color: '#ffffff' }}>{user?.username}</Text>
             </Space>
           </Dropdown>

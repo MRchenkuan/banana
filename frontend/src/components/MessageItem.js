@@ -11,12 +11,23 @@ import ReactMarkdown from 'react-markdown';
 import useTypewriter from '../hooks/useTypewriter';
 import 'highlight.js/styles/github.css';
 import { optimizeImage } from '../utils/imageOptimizer';
+import { theme } from '../constants/theme';
 
 const { Paragraph } = Typography;
 
 const MessageItem = ({ message, index }) => {
   const isUser = message.role === 'user';
   const isAssistant = message.role === 'assistant';
+  
+  // 添加调试信息
+  console.log('Message:', {
+    id: message.id,
+    role: message.role,
+    content: message.content?.substring(0, 50),
+    isUser,
+    isAssistant
+  });
+  
   const isThinking = message.isThinking;
   const isError = message.isError;
   
@@ -110,9 +121,9 @@ const MessageItem = ({ message, index }) => {
     maxWidth: '70%',
     padding: '12px 16px',
     borderRadius: '12px',
-    backgroundColor: isUser ? '#1890ff' : (isThinking ? '#1e3a5f' : '#262626'),
-    color: isUser ? '#fff' : (isThinking ? '#1890ff' : '#ffffff'),
-    border: isThinking ? '2px dashed #1890ff' : '1px solid #434343',
+    backgroundColor: isUser ? theme.userMessage : (isThinking ? theme.thinkingBackground : theme.darkTertiary),
+    color: isUser ? '#fff' : (isThinking ? theme.thinking : theme.textPrimary),
+    border: isThinking ? `2px dashed ${theme.thinking}` : (isUser ? `1px solid ${theme.userMessageBorder}` : `1px solid ${theme.border}`),
     animation: isThinking ? 'pulse 1.5s infinite' : 'none',
     wordBreak: 'break-word',
     lineHeight: '1.6',
@@ -317,7 +328,7 @@ const MessageItem = ({ message, index }) => {
                     display: 'inline-block',
                     width: '2px',
                     height: '1.2em',
-                    backgroundColor: '#1890ff',
+                    backgroundColor: theme.primary,
                     marginLeft: '2px',
                     animation: 'blink 1s infinite'
                   }}
@@ -415,7 +426,7 @@ const MessageItem = ({ message, index }) => {
         <Avatar
           icon={<UserOutlined />}
           style={{
-            backgroundColor: '#1890ff',
+            backgroundColor: theme.primary,
             marginLeft: '12px',
             flexShrink: 0
           }}

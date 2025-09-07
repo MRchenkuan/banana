@@ -121,8 +121,8 @@ body {
 }
 
 .image-preview:hover {
-  border-color: #1890ff;
-  background: #1e3a5f;
+  border-color: var(--theme-primary, #1890ff);
+  background: var(--theme-thinking-bg, #1e3a5f);
 }
 
 /* 支付二维码样式 - 暗色主题 */
@@ -173,4 +173,34 @@ body {
 
 .streaming-cursor {
   animation: blink 1s infinite;
+}
+
+/* 添加pulse动画 */
+@keyframes pulse {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 确保消息容器正确显示 */
+.message-container {
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+/* 修复头像显示问题 */
+.ant-avatar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }

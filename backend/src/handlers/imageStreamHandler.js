@@ -9,12 +9,23 @@ class ImageStreamHandler extends BaseStreamHandler {
   }
 
   async preProcess() {
-    const { message, sessionId, images } = this.req.body;
+    const { message, sessionId } = this.req.body;
+    const image = this.req.file; // 单个文件上传
     
     // 验证输入
-    if (!message || !sessionId || !images) {
-      throw new Error('缺少必要参数');
+    if (!message || !sessionId || !image) {
+      throw new Error('缺少必要参数: message, sessionId, 或 image');
     }
+    
+    // 将文件信息转换为images数组格式，保持与processBusinessLogic的兼容性
+    this.req.body.images = [{
+      url: image.rosUrl || image.path,
+      key: image.rosKey,
+      location: image.location,
+      originalname: image.originalname,
+      mimetype: image.mimetype,
+      size: image.size
+    }];
   }
 
   async processBusinessLogic() {

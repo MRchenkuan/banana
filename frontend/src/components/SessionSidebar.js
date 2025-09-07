@@ -8,9 +8,10 @@ import {
 import {
   DeleteOutlined,
   MessageOutlined,
-  CommentOutlined // 使用会话图标替代PlusOutlined
+  CommentOutlined
 } from '@ant-design/icons';
 import api from '../services/api';
+import { theme } from '../constants/theme';
 
 const SessionSidebar = ({
   sessions,
@@ -70,7 +71,7 @@ const SessionSidebar = ({
     <div style={{
       width: '280px',
       backgroundColor: '#1f1f1f',
-      borderRight: '1px solid #434343',
+      borderRight: '1px solid #2a2a2a',
       display: 'flex',
       flexDirection: 'column',
       height: '100vh',
@@ -82,30 +83,36 @@ const SessionSidebar = ({
       {/* 创建新会话按钮 */}
       <div style={{ 
         padding: '16px',
-        borderBottom: '1px solid #434343',
+        borderBottom: '1px solid #2a2a2a',
         backgroundColor: '#1f1f1f',
         flexShrink: 0
       }}>
         <Button 
-          type="default"
+          type="primary"
           icon={<CommentOutlined />}
           onClick={createNewSession}
           style={{ 
             width: '100%',
-            backgroundColor: '#262626',
-            borderColor: '#434343',
+            backgroundColor: theme.primary,
+            borderColor: theme.primary,
             color: '#ffffff',
-            height: '40px',
-            fontSize: '14px',
-            fontWeight: '500'
+            height: '44px',
+            fontSize: '15px',
+            fontWeight: '600',
+            boxShadow: `0 2px 8px ${theme.primaryShadow}`,
+            borderRadius: '8px'
           }}
           onMouseEnter={(e) => {
-            e.target.style.backgroundColor = '#434343';
-            e.target.style.borderColor = '#595959';
+            e.target.style.backgroundColor = theme.primaryHover;
+            e.target.style.borderColor = theme.primaryHover;
+            e.target.style.boxShadow = `0 4px 12px ${theme.primaryShadowHover}`;
+            e.target.style.transform = 'translateY(-1px)';
           }}
           onMouseLeave={(e) => {
-            e.target.style.backgroundColor = '#262626';
-            e.target.style.borderColor = '#434343';
+            e.target.style.backgroundColor = theme.primary;
+            e.target.style.borderColor = theme.primary;
+            e.target.style.boxShadow = `0 2px 8px ${theme.primaryShadow}`;
+            e.target.style.transform = 'translateY(0)';
           }}
         >
           新建对话
@@ -133,10 +140,10 @@ const SessionSidebar = ({
                   padding: '12px 16px',
                   cursor: 'pointer',
                   backgroundColor: currentSessionId === session.id ? '#434343' : 'transparent',
-                  borderLeft: currentSessionId === session.id ? '3px solid #1890ff' : '3px solid transparent',
+                  borderLeft: currentSessionId === session.id ? `3px solid ${theme.primary}` : '3px solid transparent',
                   margin: 0,
                   borderRadius: 0,
-                  borderBottom: '1px solid #434343',
+                  borderBottom: '1px solid #2a2a2a',
                   color: '#ffffff'
                 }}
                 onClick={() => onSessionSwitch(session.id)}
@@ -160,7 +167,7 @@ const SessionSidebar = ({
                       whiteSpace: 'nowrap',
                       color: '#ffffff'
                     }}>
-                      <MessageOutlined style={{ marginRight: '8px', color: '#1890ff' }} />
+                      <MessageOutlined style={{ marginRight: '8px', color: theme.primary }} />
                       {session.title}
                     </div>
                     <div style={{ fontSize: '12px', color: '#d9d9d9' }}>

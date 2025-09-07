@@ -1,6 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
-  Card,
   Empty
 } from 'antd';
 import MessageItem from './MessageItem';
@@ -10,53 +9,51 @@ const MessageList = ({
   currentSessionId, 
   messagesEndRef 
 }) => {
+  // 监听会话ID变化，立即滚动到底部
+  useEffect(() => {
+    if (currentSessionId && messagesEndRef.current) {
+      // 会话切换时立即滚动，不播放动画
+      setTimeout(() => {
+        messagesEndRef.current.scrollIntoView({ behavior: 'auto' });
+      }, 50);
+    }
+  }, [currentSessionId]);
+
   return (
     <div style={{ 
       flex: 1,
-      overflowY: 'scroll',
+      overflowY: 'auto',
       display: 'flex',
       flexDirection: 'column',
+      backgroundColor: '#141414',
+      padding: '16px'
     }}>
-      <Card
-        styles={{
-          body: {
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: '#141414'
-          }
-        }}
-        style={{
-          border: 'none',
-          backgroundColor: '#141414'
-        }}
-      >
-        <div
-          style={{
-            flex: 1,
-            overflowY: 'auto',
-            paddingBottom: '20px'
-          }}
-        >
-          {messages.length === 0 ? (
-            <Empty
-              description={currentSessionId ? "开始你的对话吧！" : "选择一个会话或创建新对话"}
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              style={{ color: '#a6a6a6' }}
-            />
-          ) : (
-            messages.map((message, index) => (
-              <MessageItem 
-                key={message.id || index}
-                message={message}
-                index={index}
-              />
-            ))
-          )}
-          
-          <div ref={messagesEndRef} />
+      {messages.length === 0 ? (
+        <div style={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <Empty
+            description={currentSessionId ? "开始你的对话吧！" : "选择一个会话或创建新对话"}
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            style={{ color: '#a6a6a6' }}
+          />
         </div>
-      </Card>
+      ) : (
+        <>
+          {messages.map((message, index) => (
+            <MessageItem 
+              key={message.id || index}
+              message={message}
+              index={index}
+            />
+          ))}
+          
+          <div ref={messagesEndRef} style={{ height: '1px' }} />
+        </>
+      )}
     </div>
   );
 };

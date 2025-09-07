@@ -4,14 +4,20 @@ import { ConfigProvider, theme } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
 import { AuthProvider } from './contexts/AuthContext';
 import { TokenProvider } from './contexts/TokenContext';
+import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Chat from './pages/Chat';
 import Profile from './pages/Profile';
-import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
+
+import { switchTheme, theme as customTheme } from './constants/theme';
+
+// 将 switchTheme 函数暴露到全局，方便在控制台调用
+window.switchTheme = switchTheme;
+window.customTheme = customTheme;
 
 function App() {
   return (
@@ -20,7 +26,7 @@ function App() {
       theme={{
         algorithm: theme.darkAlgorithm,
         token: {
-          colorPrimary: '#1890ff',
+          colorPrimary: customTheme.primary,
           colorBgContainer: '#1f1f1f',
           colorBgElevated: '#262626',
           colorBgLayout: '#141414',

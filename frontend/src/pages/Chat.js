@@ -26,6 +26,73 @@ const Chat = () => {
   const messagesEndRef = useRef(null);
   const { updateBalance } = useToken();
 
+  const loadSessionMessages = async (sessionId) => {
+    try {
+      setLoading(true);
+      const response = await api.getSessionMessages(sessionId);
+      
+      // 转换后端消息格式为前端期望的格式
+      const convertedMessages = [];
+      
+      (response.data.messages || []).forEach(msg => {
+        // 添加用户消息
+        if (msg.userMessage) {
+          convertedMessages.push({
+            id: `${msg.id}-user`,
+            type: msg.type === 'image' ? 'image' : 'text',
+            content: msg.userMessage,
+            role: 'user',
+            timestamp: new Date(msg.createdAt),
+            imageUrl: msg.imageUrl || undefined
+          });
+        }
+        
+        // 添加AI回复消息
+        if (msg.aiResponse) {
+          convertedMessages.push({
+            id: `${msg.id}-assistant`,
+            type: 'text',
+            content: msg.aiResponse,
+            role: 'assistant',
+            timestamp: new Date(msg.createdAt),
+            tokensUsed: msg.tokensUsed,
+            isError: msg.isError || false
+          });
+        }
+      });
+      
+      setMessages(convertedMessages);
+      
+      // 加载完消息后立即滚动到底部
+      setTimeout(() => {
+        scrollToBottom(true);
+      }, 100);
+    } catch (error) {
+      console.error('加载会话消息失败:', error);
+      message.error('加载会话消息失败');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 添加加载会话列表的函数
+  const loadSessions = async () => {
+    try {
+      setSessionsLoading(true);
+      const response = await api.getSessions();
+      setSessions(response.data.sessions || []);
+    } catch (error) {
+      console.error('加载会话列表失败:', error);
+      message.error('加载会话列表失败');
+    } finally {
+      setSessionsLoading(false);
+    }
+  };
+
+  // 组件挂载时加载会话列表
+  useEffect(() => {
+    loadSessions();
+  }, []);
 
 
   // 工具点击处理函数
@@ -48,102 +115,35 @@ const Chat = () => {
     }
   };
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToBottom = (immediate = false) => {
+    if (immediate) {
+      // 立即滚动，不播放动画
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+      }, 50);
+    } else {
+      // 平滑滚动动画
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
   };
 
   useEffect(() => {
-    scrollToBottom();
+    // 普通消息更新时使用平滑滚动
+    scrollToBottom(false);
   }, [messages]);
 
-  useEffect(() => {
-    loadSessions();
-  }, []);
-
-  // 加载会话列表
-  const loadSessions = async () => {
-    try {
-      setSessionsLoading(true);
-      const response = await api.getSessions();
-      setSessions(response.data.sessions);
-      
-      // 如果没有当前会话且有会话列表，选择第一个
-      if (!currentSessionId && response.data.sessions.length > 0) {
-        setCurrentSessionId(response.data.sessions[0].id);
-        loadSessionMessages(response.data.sessions[0].id);
-      }
-    } catch (error) {
-      console.error('加载会话列表失败:', error);
-      message.error('加载会话列表失败');
-    } finally {
-      setSessionsLoading(false);
-    }
-  };
-
-  // 加载指定会话的消息
-  const loadSessionMessages = async (sessionId) => {
-    try {
-      const response = await api.getSessionMessages(sessionId, 1, 50);
-      const historyMessages = [];
-      
-      response.data.messages.forEach(msg => {
-        // 添加用户消息
-        if (msg.userMessage) {
-          historyMessages.push({
-            id: `${msg.id}-user`,
-            type: msg.type,
-            content: msg.userMessage,
-            imageUrl: msg.imageUrl,
-            timestamp: new Date(msg.createdAt),
-            role: 'user'
-          });
-        }
-        
-        // 添加AI回复（根据streamStatus处理）
-        if (msg.aiResponse) {
-          historyMessages.push({
-            id: `${msg.id}-ai`,
-            type: msg.type,
-            content: msg.aiResponse,
-            tokensUsed: msg.tokensUsed,
-            timestamp: new Date(msg.createdAt),
-            role: 'assistant',
-            isError: msg.streamStatus === STREAM_STATUS.ERROR,
-            isInterrupted: msg.streamStatus === STREAM_STATUS.INTERRUPTED,
-            isPending: msg.streamStatus === STREAM_STATUS.PENDING,
-            streamStatus: msg.streamStatus
-          });
-        } else {
-          // 处理没有回复的情况
-          const statusContent = STREAM_STATUS_DESCRIPTIONS[msg.streamStatus] || '无回复';
-          
-          historyMessages.push({
-            id: `${msg.id}-${msg.streamStatus}`,
-            type: msg.streamStatus || 'noword',
-            content: statusContent,
-            timestamp: new Date(msg.createdAt),
-            role: 'assistant',
-            isError: msg.streamStatus === STREAM_STATUS.ERROR,
-            isInterrupted: msg.streamStatus === STREAM_STATUS.INTERRUPTED,
-            isPending: msg.streamStatus === STREAM_STATUS.PENDING,
-            streamStatus: msg.streamStatus
-          });
-        }
-      });
-      
-      setMessages(historyMessages);
-    } catch (error) {
-      console.error('加载会话消息失败:', error);
-      message.error('加载会话消息失败');
-    }
-  };
-
-  // 处理会话切换
+  // 修改会话切换函数，使用立即滚动
   const handleSessionSwitch = (sessionId, newMessages = null) => {
     if (sessionId !== currentSessionId) {
       setCurrentSessionId(sessionId);
       if (newMessages !== null) {
         setMessages(newMessages);
+        // 会话切换后立即滚动到底部，不播放动画
+        setTimeout(() => {
+          scrollToBottom(true);
+        }, 100);
       } else if (sessionId) {
         loadSessionMessages(sessionId);
       }
