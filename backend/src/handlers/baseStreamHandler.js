@@ -4,6 +4,7 @@ const StreamManager = require('../utils/streamManager');
 const { Session } = require('../models');
 const geminiTextService = require('../services/gemini/GeminiTextService');
 const SessionManager = require('../utils/sessionManager');
+const ChatManager = require('../utils/chatManager');
 
 /**
  * 流式处理基础处理器
@@ -21,6 +22,7 @@ class BaseStreamHandler {
     this.res = res;
     this.chatMessage = null;
     this.streamManager = null;
+    this.chatManager = null;
     this.partialResponse = '';
     this.tokensUsed = 0;
     this.fullResponse = '';
@@ -32,17 +34,20 @@ class BaseStreamHandler {
   // 在 BaseStreamHandler 中强制要求
   async handle() {
     try {
+      // 1. 基础初始化（最早执行，确保基础设施可用）
+      await this.initialize();
+      
+      // 2. 业务预处理（验证和准备）
       await this.preProcess();
-      await this.initializeStream();
+      
+      // 3. 流处理核心逻辑
       const streamData = await this.getStreamData();
       await this.processStream(streamData);
-      // 强制发送 complete 事件
+      
+      // 4. 完成处理
       await this.handleStreamComplete();
     } catch (error) {
       await this.handleError(error);
-      // 错误时也必须发送 complete 事件
-      await new Promise(resolve => setTimeout(resolve, 500));
-      await this.sendComplete({ error: true, message: error.message });
     } finally {
       await this.cleanup();
     }
@@ -57,46 +62,76 @@ class BaseStreamHandler {
    * @async
    * @throws {Error} 当预处理失败时抛出错误
    */
+  /**
+   * 简化预处理 - 只做验证
+   */
   async preProcess() {
-    throw new Error('子类必须实现preProcess方法');
+    // 1. 业务验证
+    await this.validateInput();
+    
+    // 2. 估算token消耗并检查余额
+    const estimatedTokens = await this.estimateTokenUsage();
+    await TokenManager.checkBalance(this.user, estimatedTokens);
+  }
+
+  /**
+   * 抽象方法 - 估算token使用量
+   * 子类必须实现此方法来估算具体的token消耗
+   * @abstract
+   * @async
+   * @returns {number} 估算的token数量
+   */
+  async estimateTokenUsage() {
+    throw new Error('子类必须实现estimateTokenUsage方法');
+  }
+
+  /**
+   * 抽象方法 - 验证输入参数
+   * 子类必须实现此方法来验证具体的输入参数
+   * @abstract
+   * @async
+   * @throws {Error} 当输入验证失败时抛出错误
+   */
+  async validateInput() {
+    throw new Error('子类必须实现validateInput方法');
   }
 
   /**
    * 通用流初始化
-   * 创建聊天记录、获取用户余额、初始化流管理器、设置SSE响应头
+   * 创建聊天记录、初始化流管理器、设置SSE响应头
    * @async
-   * @throws {Error} 当用户信息获取失败或数据库操作失败时抛出错误
+   * @throws {Error} 当数据库操作失败时抛出错误
    */
-  async initializeStream() {
-    const { message, sessionId } = this.req.body;
-    const userId = this.req.user.userId;
+  /**
+   * 统一初始化 - 合并原来的initialize和initializeStream
+   */
+  async initialize() {
+    // 1. 创建流管理器
+    this.streamManager = new StreamManager();
+    this.streamManager.setupSSEHeaders(this.res);
     
-    // 获取用户信息和余额
+    // 2. 获取用户信息（从preProcess移过来）
+    const userId = this.req.user.userId;
     const userInfo = await TokenManager.getUserBalance(userId);
     this.user = userInfo.user;
     this.balanceBefore = userInfo.balance;
     
-    // 创建聊天记录
-    this.chatMessage = await ChatMessage.create({
-      userId,
-      sessionId,
-      type: this.getMessageType(),
-      userMessage: message,
-      aiResponse: '',
-      tokensUsed: 0,
-      streamStatus: 'pending',
-      partialResponse: ''
-    });
-    
-    // 创建流管理器
-    this.streamManager = new StreamManager(
-      this.chatMessage, 
+    // 3. 创建聊天管理器
+    this.chatManager = new ChatManager(
       this.user, 
-      userId, 
+      this.req.user.userId, 
       this.balanceBefore
     );
     
-    this.streamManager.setupSSEHeaders(this.res);
+    // 4. 创建聊天记录
+    const { message, sessionId } = this.req.body;
+    await this.chatManager.createChatMessage({
+      sessionId,
+      message,
+      type: this.getMessageType()
+    });
+    
+    this.startTime = Date.now();
   }
 
   /** 
@@ -235,35 +270,6 @@ class BaseStreamHandler {
     });
   }
 
-  /**
-   * 发送完成消息并结束响应
-   * @async
-   * @param {Object} data - 完成数据
-   * @param {number} [data.remainingBalance] - 剩余余额
-   */
-  /**
-   * 安全关闭连接
-   * @private
-   */
-  async _safeCloseConnection() {
-    if (!this.streamManager?.isConnected() || this.res.destroyed) {
-      return;
-    }
-    
-    try {
-      // 确保所有待发送的数据都已写入
-      if (this.res.writableLength > 0) {
-        await new Promise(resolve => {
-          this.res.once('drain', resolve);
-        });
-      }
-      
-      this.res.end();
-    } catch (error) {
-      console.error('关闭连接时出错:', error);
-    }
-  }
-  
   
   // 同时修改 sendComplete 和 sendError
   async sendComplete(data = {}) {
@@ -281,7 +287,18 @@ class BaseStreamHandler {
       remainingBalance: currentBalance,
     };
     
-    this.res.end(`data: ${JSON.stringify(completeData)}\n\n`);
+    try {
+      // 对于重要的complete消息，使用回调确保发送
+      return new Promise((resolve) => {
+        this.res.write(`data: ${JSON.stringify(completeData)}\n\n`, () => {
+          this.res.end();
+          resolve();
+        });
+      });
+    } catch (error) {
+      console.error('发送完成消息失败:', error);
+      this.res.end();
+    }
   }
 
   /**
@@ -290,7 +307,7 @@ class BaseStreamHandler {
    * @async
    */
   async handleStreamComplete() {
-    const result = await this.streamManager.saveCompletedData(
+    const result = await this.chatManager.saveCompletedData(
       this.fullResponse,
       this.tokensUsed
     );
@@ -299,11 +316,6 @@ class BaseStreamHandler {
       tokensUsed: this.tokensUsed,
       remainingBalance: result.remainingBalance,
     })
-
-    // 更新数据库状态
-    await this.chatMessage.update({
-      streamStatus: 'completed'
-    });
   }
 
   /**
@@ -315,12 +327,16 @@ class BaseStreamHandler {
    * @param {number} [error.code] - 错误代码
    */
   async handleError(error) {    
-    // 发送错误响应
+    // 业务层处理错误
+    if (this.chatManager) {
+      await this.chatManager.handleError(error, this.partialResponse);
+    }
+    
+    // 流层发送错误响应
     this.sendError({
-      message: error.message || '服务暂时不可用',
-      code: error.code || -1
-    });
-    console.error('BaseStreamHandler错误:', error);
+        message: error.message || '服务暂时不可用',
+        code: error.code || -1
+    })
   }
 
   /**
@@ -331,18 +347,19 @@ class BaseStreamHandler {
    */
   // 修改 cleanup 方法
   async cleanup(error = null) {
+    // 1. 处理业务层清理
+    if (this.chatManager) {
+      if (error) {
+        await this.chatManager.handleError(error);
+      } else {
+        await this.chatManager.handleInterruption();
+      }
+    }
+    
+    // 2. 处理流层清理
     if (this.streamManager) {
-      await this.streamManager.cleanup();
+      this.streamManager.cleanup();
     }
-    
-    if (error && this.chatMessage) {
-      await this.chatMessage.update({
-        streamStatus: 'error',
-        aiResponse: error.message || '处理失败'
-      });
-    }
-    
-    await this._safeCloseConnection();
   }
 
   /**
@@ -352,11 +369,11 @@ class BaseStreamHandler {
    * @param {Object} data - 要发送的数据对象
    * @private
    */
-  async _sendData(data){
-    if (!this.streamManager.isConnected()) {
-      return;
+  async _sendData(data) {
+    if (this.streamManager) {
+      return this.streamManager.sendData(data);
     }
-    this.res.write(`data: ${JSON.stringify(data)}\n\n`);
+    return false;
   }
 
   /**
