@@ -17,7 +17,7 @@ class MessageHandlerFactory {
   }
 
   initializeHandlers() {
-    this.handlers.set('text', new TextMessageHandler(this.context));
+    this.handlers.set('message', new TextMessageHandler(this.context));
     this.handlers.set('processing', new ProcessingMessageHandler(this.context));
     this.handlers.set('complete', new CompleteMessageHandler(this.context));
     this.handlers.set('error', new ErrorMessageHandler(this.context));
@@ -27,7 +27,6 @@ class MessageHandlerFactory {
   /**
    * 获取消息处理器
    * @param {string} type - 消息类型
-   * @returns {BaseMessageHandler} 处理器实例
    */
   getHandler(type) {
     const handler = this.handlers.get(type);

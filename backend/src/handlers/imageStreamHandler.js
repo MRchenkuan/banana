@@ -1,9 +1,9 @@
-const BaseStreamHandler = require('./baseStreamHandler');
 const ImageStreamService = require('../services/ImageStreamService');
 const TokenManager = require('../utils/tokenManager');
 const ChatValidation = require('../utils/chatValidation');
+const BizStreamHandler = require('./bizStreamHandler');
 
-class ImageStreamHandler extends BaseStreamHandler {
+class ImageStreamHandler extends BizStreamHandler {
 
   getMessageType() {
     return 'image';

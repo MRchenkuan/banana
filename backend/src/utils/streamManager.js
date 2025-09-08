@@ -1,5 +1,3 @@
-const TokenManager = require('./tokenManager');
-const { STREAM_STATUS } = require('../constants/streamStatus');
 
 class StreamManager {
   constructor() {
@@ -46,7 +44,8 @@ class StreamManager {
    * 清理资源
    */
   cleanup() {
-    this.res = null;
+    this.close();              // ✅ 先关闭连接
+    this.res = null;           // ✅ 再清空引用
     this.isInitialized = false;
   }
 }
