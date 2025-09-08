@@ -1,4 +1,4 @@
-const BaseStreamHandler = require("./baseStreamHandler");
+const BaseStreamHandler = require("./BaseStreamHandler");
 const TokenManager = require("../utils/tokenManager");
 const StreamManager = require("../utils/streamManager");
 const { Session } = require("../models");

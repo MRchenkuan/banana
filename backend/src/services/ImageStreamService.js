@@ -5,27 +5,12 @@ const fileManagementService = require('./file_process/FileManagementService');
 
 class ImageStreamService {
   
-  /**
-   * 处理图片流式生成（生成器模式）
-   * @param {Object} params - 参数对象
-   * @param {string} params.message - 用户消息
-   * @param {string} params.imageUrl - 图片URL
-   * @param {string} params.rosKey - ROS文件键
-   * @param {Object} params.user - 用户对象
-   * @returns {AsyncGenerator} 流式结果生成器
-   */
-  async* processImageStream({ message, imageUrl, rosKey, user }) {
-    // 1. 输入验证
-    ChatValidation.validateImageMessage(message, imageUrl);
-    
-    // 2. Token预估和余额检查
-    const estimatedTokens = TokenManager.estimateTokens(message) + 150;
-    await TokenManager.checkBalance(user, estimatedTokens);
+  async* processImageStream({ message, rosKey, user }) {
+    // 移除重复的验证和余额检查，这些已在Handler层完成
     
     try {
-      // 3. 使用临时文件处理图片
+      // 使用临时文件处理图片
       const result = await fileManagementService.withTempFile(rosKey, async (tempImagePath) => {
-        // 收集所有结果
         const chunks = [];
         for await (const chunk of this.generateImageContent(message, tempImagePath, user)) {
           chunks.push(chunk);
@@ -33,7 +18,7 @@ class ImageStreamService {
         return chunks;
       });
       
-      // 4. 逐个yield结果
+      // 逐个yield结果
       for (const chunk of result) {
         yield chunk;
       }

@@ -1,9 +1,9 @@
 const TextStreamService = require('../services/TextStreamService');
 const TokenManager = require('../utils/tokenManager');
 const ChatValidation = require('../utils/chatValidation');
-const BizStreamHandler = require('./bizStreamHandler');
+const AbstractStreamHandler = require('./AbstractStreamHandler');
 
-class TextStreamHandler extends BizStreamHandler {
+class TextStreamHandler extends AbstractStreamHandler {
 
   getMessageType() {
     return 'text';

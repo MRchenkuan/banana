@@ -1,9 +1,9 @@
 const ImageStreamService = require('../services/ImageStreamService');
 const TokenManager = require('../utils/tokenManager');
 const ChatValidation = require('../utils/chatValidation');
-const BizStreamHandler = require('./bizStreamHandler');
+const AbstractStreamHandler = require('./AbstractStreamHandler');
 
-class ImageStreamHandler extends BizStreamHandler {
+class ImageStreamHandler extends AbstractStreamHandler {
 
   getMessageType() {
     return 'image';
@@ -44,15 +44,16 @@ class ImageStreamHandler extends BizStreamHandler {
     // 发送处理开始状态
     await this.sendProcessing('正在分析图片并生成回复...');
 
-    // 使用生成器模式处理流式结果
+    // 修复参数传递 - 传递第一张图片的信息
+    const firstImage = images[0];
     const stream = ImageStreamService.processImageStream({
       message,
       sessionId,
-      images,
+      imageUrl: firstImage.url,           // ✅ 传递imageUrl
+      rosKey: firstImage.key,             // ✅ 传递rosKey
       user: this.user
     });
   
-    // 返回包含stream的结果
     return { stream };
   }
 }
