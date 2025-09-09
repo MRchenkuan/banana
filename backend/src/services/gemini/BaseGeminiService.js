@@ -12,9 +12,8 @@ class BaseGeminiService {
 
 
   // 根据 sessionId 获取聊天历史记录
-  async getChatHistory(sessionId) {
+  async getChatHistory(sessionId,limit=50) {
     try {
-      const limit = this.config.textGeneration.MaxChatHistoryLength;
 
       console.log(`获取会话 ${sessionId} 的聊天历史记录`);
       

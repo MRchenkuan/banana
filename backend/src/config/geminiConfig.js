@@ -6,51 +6,6 @@ const GEMINI_CONFIG = {
     title: 'gemini-2.5-flash'
   },
 
-  // 文本生成配置
-  textGeneration: {
-    model: 'gemini-2.5-flash',
-    MaxChatHistoryLength:50,
-    config: {
-      thinkingConfig: {
-        thinkingBudget: 0, // 禁用思考模式
-      },
-      temperature: 1,
-      safetySettings: [
-          {
-            // 仇恨言论检测
-            category: 'HARM_CATEGORY_HARASSMENT',
-            // 阻止中等及以上风险的内容
-            threshold: 'BLOCK_ONLY_HIGH'
-          },
-          {
-            // 危险内容检测
-            category: 'HARM_CATEGORY_HATE_SPEECH',
-            threshold: 'BLOCK_ONLY_HIGH'
-          },
-          {
-            // 骚扰内容检测
-            category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-            threshold: 'BLOCK_ONLY_HIGH'
-          },
-          {
-            // 性暴露内容检测
-            category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
-            threshold: 'BLOCK_ONLY_HIGH'
-          },
-          {
-            // 性暴露内容检测
-            category: 'HARM_CATEGORY_CIVIC_INTEGRITY',
-            threshold: 'BLOCK_ONLY_HIGH'
-          }
-          // 移除了以下无效的图片专用安全类别：
-          // HARM_CATEGORY_IMAGE_HATE
-          // HARM_CATEGORY_IMAGE_DANGEROUS_CONTENT
-          // HARM_CATEGORY_IMAGE_HARASSMENT
-          // HARM_CATEGORY_IMAGE_SEXUALLY_EXPLICIT
-        ],
-    }
-  },
-
   // 标题生成配置
   titleGeneration: {
     model: 'gemini-2.5-flash',
@@ -143,7 +98,6 @@ const GEMINI_CONFIG = {
     retryAttempts: 3,
     retryDelay: 1000, // 毫秒
     fallbackMessages: {
-      textGeneration: '文本生成服务暂时不可用，请稍后重试',
       imageGeneration: '图片生成服务暂时不可用，请稍后重试',
       titleGeneration: '新对话'
     }
