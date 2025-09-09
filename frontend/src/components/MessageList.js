@@ -1,33 +1,53 @@
-import React, { useEffect } from 'react';
-import {
-  Empty
-} from 'antd';
+import React, { useEffect, useRef } from 'react';
+import { Empty } from 'antd';
 import MessageItem from './MessageItem';
 
 const MessageList = ({ 
   messages, 
   currentSessionId, 
-  messagesEndRef 
+  messagesEndRef,
+  restoreScrollPosition
 }) => {
-  // 监听会话ID变化，立即滚动到底部
+  const containerRef = useRef(null);
+  const isInitialLoad = useRef(true);
+  
+  // 监听会话ID变化，恢复滚动位置或滚动到底部
   useEffect(() => {
     if (currentSessionId && messagesEndRef.current) {
-      // 会话切换时立即滚动，不播放动画
-      setTimeout(() => {
-        messagesEndRef.current.scrollIntoView({ behavior: 'auto' });
-      }, 50);
+      if (isInitialLoad.current) {
+        // 首次加载，尝试恢复滚动位置
+        restoreScrollPosition?.();
+        isInitialLoad.current = false;
+      } else {
+        // 会话切换，滚动到底部
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+        }, 50);
+      }
     }
-  }, [currentSessionId]);
-
+  }, [currentSessionId, restoreScrollPosition]);
+  
+  // 监听消息变化，如果是新消息则滚动到底部
+  useEffect(() => {
+    if (messages.length > 0 && !isInitialLoad.current) {
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
+  }, [messages.length]);
+  
   return (
-    <div style={{ 
-      flex: 1,
-      overflowY: 'auto',
-      display: 'flex',
-      flexDirection: 'column',
-      backgroundColor: '#141414',
-      padding: '16px'
-    }}>
+    <div 
+      ref={containerRef}
+      style={{ 
+        flex: 1,
+        overflowY: 'auto',
+        display: 'flex',
+        flexDirection: 'column',
+        backgroundColor: '#141414',
+        padding: '16px'
+      }}
+    >
       {messages.length === 0 ? (
         <div style={{
           flex: 1,

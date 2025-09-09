@@ -5,6 +5,7 @@ const { Session } = require("../models");
 const geminiTextService = require("../services/gemini/GeminiTextService");
 const SessionManager = require("../utils/sessionManager");
 const ChatManager = require("../utils/chatManager");
+const RosService = require("../services/file_process/RosService");
 
 /**
  * 业务流式处理器 - 业务逻辑层
@@ -31,7 +32,7 @@ class AbstractStreamHandler extends BaseStreamHandler {
       await this.initialize();
       
       // 3. 预处理阶段 - 纯数据处理和记录创建
-      await this.preProcess();
+      await this.prepare();
       
       // 4. 流处理阶段 - 纯业务逻辑
       const streamData = await this.getStreamData();
@@ -74,8 +75,6 @@ class AbstractStreamHandler extends BaseStreamHandler {
     // 3. 初始化计时器
     this.startTime = Date.now();
     
-    // 4. 设置响应头（如果需要）
-    this.setupResponseHeaders();
   }
 
   /**
@@ -85,17 +84,19 @@ class AbstractStreamHandler extends BaseStreamHandler {
    * @async
    * @throws {Error} 当预处理失败时抛出错误
    */
-  async preProcess() {
-    // 1. 先保存用户图片并生成Markdown
-    const userImageMarkdown = await this._saveUserImages(images, user);
-    // 2. 将用户消息和图片Markdown合并
-    const fullUserMessage = message + userImageMarkdown.join('\n');
-    const { sessionId } = this.req.body;
+  async prepare() {
+    const { message, sessionId } = this.req.body;
+    const images = this.req.files;
+  
+    // 使用 initialize 中已获取的用户信息，而不是 req.user
+    const userImageMarkdown = await this._saveUserImages(images, this.user);
+  
+    // 将用户消息和图片Markdown合并
+    const fullUserMessage = (userImageMarkdown ? userImageMarkdown + '\n\n' : '')+message;
     await this.chatManager.createChatMessage({
       sessionId,
       message: fullUserMessage,
     });
-    
   }
 
 
@@ -296,12 +297,12 @@ class AbstractStreamHandler extends BaseStreamHandler {
 
   // 新增方法：保存用户图片
   async _saveUserImages(images, user) {
-    const markdownLinks = [];
 
     if (!images || images.length === 0) {
-      return markdownLinks;
+      return '';
     }
     
+    const markdownLinks = [];
     
     for (const image of images) {
       try {
@@ -312,10 +313,10 @@ class AbstractStreamHandler extends BaseStreamHandler {
         
         // 生成文件名和ROS key
         const fileName = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${image.originalname}`;
-        const imageKey = rosService.generateImageKey(fileName, 'user-upload', user?.id);
+        const imageKey = RosService.generateImageKey(fileName, 'user-upload', user?.id);
         
         // 上传到ROS
-        const uploadResult = await rosService.uploadBuffer(buffer, imageKey, {
+        const uploadResult = await RosService.uploadBuffer(buffer, imageKey, {
           contentType: image.mimetype
         });
         
@@ -344,7 +345,7 @@ class AbstractStreamHandler extends BaseStreamHandler {
       }
     }
     
-    return markdownLinks
+    return markdownLinks.join('\n');
   }
 
 }

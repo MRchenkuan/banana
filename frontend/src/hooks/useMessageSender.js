@@ -51,21 +51,35 @@ const useMessageSender = ({
   };
 
   const sendImageMessage = async (messageText, images, sessionId) => {
-    // 创建用户消息（包含多张图片）
-    const imageUrls = images.map(img => URL.createObjectURL(img));
+    // 为每张图片创建临时URL和markdown
+    const imageMarkdowns = images.map((img, index) => {
+      const imageUrl = URL.createObjectURL(img);
+      const fileName = img.name || `图片${index + 1}`;
+      const markdown = `![${fileName}](${imageUrl})`;
+      return markdown;
+    });
     
+    // 组合用户文本和图片markdown
+    let fullContent = '';
+    if (imageMarkdowns.length > 0) {
+      fullContent += imageMarkdowns.join('\n\n') + '\n\n';
+    }
+    fullContent += messageText;
+    
+    console.log('Full content with markdown:', fullContent);
+    
+    // 创建用户消息
     const newMessage = {
       id: Date.now(),
-      type: 'image',
-      content: messageText,
-      imageUrls: imageUrls, // 使用预先创建的URL数组
+      type: 'text',
+      content: fullContent,
       timestamp: new Date(),
       role: 'user'
     };
     
     setMessages(prev => [...prev, newMessage]);
     
-    // 创建思考中的临时消息
+    // 其余逻辑保持不变
     const thinkingMessageId = Date.now() + 1;
     const thinkingMessage = {
       id: thinkingMessageId,
@@ -78,10 +92,9 @@ const useMessageSender = ({
     
     setMessages(prev => [...prev, thinkingMessage]);
     
-    // 使用流式图片API，传递所有图片
     await api.chat.sendImageMessage(
       messageText,
-      images, // 传递所有图片
+      images,
       sessionId,
       {
         setMessages,
@@ -90,12 +103,13 @@ const useMessageSender = ({
         thinkingMessageId,
         messageId: thinkingMessageId + 1,
         sessionId,
-        setLoading  // 添加这一行
+        setLoading
       }
     );
   };
 
   const handleSendMessage = async (inputValue, selectedImages, setInputValue, setSelectedImages) => {
+    
     if (loading) {
       return;
     }

@@ -29,7 +29,7 @@ class GeminiImageService extends BaseGeminiService {
         // 0.0: 最确定性的输出，适合事实性任务
         // 1.0: 平衡的创造性，适合大多数场景
         // 2.0: 最大创造性，适合艺术创作
-        temperature: 1,
+        temperature: 0.8,
         
         // 限制生成响应的最大token数量
         // 控制输出长度，防止过长的响应

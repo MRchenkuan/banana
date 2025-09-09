@@ -4,7 +4,11 @@ import { optimizeImage } from '../../../utils/imageOptimizer';
 
 export const getMarkdownComponents = () => ({
   p: ({ children }) => (
-    <div style={{ margin: '0 0 8px 0', lineHeight: '1.6' }}>
+    <div style={{ 
+      margin: '0 0 12px 0', // 增加下边距到 12px
+      lineHeight: '1.6',
+      display: 'block' // 确保块级显示
+    }}>
       {children}
     </div>
   ),
@@ -39,24 +43,65 @@ export const getMarkdownComponents = () => ({
     </h6>
   ),
   // 图片组件 - 支持点击放大
-  img: ({ src, alt, ...props }) => (
-    <Image
-      src={optimizeImage(src, 'chat')}
-      alt={alt}
-      style={{
-        maxWidth: '100%',
-        height: 'auto',
-        borderRadius: '8px',
-        margin: '8px 0',
-        display: 'block'
-      }}
-      preview={{
-        mask: '预览图片',
-        src: src // 使用原始URL进行预览
-      }}
-      {...props}
-    />
-  ),
+  img: ({ src, alt, ...props }) => {
+    console.log('ReactMarkdown img component called with:');
+    console.log('- src:', src);
+    console.log('- alt:', alt);
+    console.log('- src type:', typeof src);
+    console.log('- src startsWith blob:', src && src.startsWith('blob:'));
+    
+    // 检查 src 是否为空或未定义
+    if (!src) {
+      console.warn('ReactMarkdown: Image src is empty or undefined');
+      return (
+        <div style={{ 
+          width: '200px', 
+          height: '100px', 
+          backgroundColor: '#f5f5f5', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          border: '2px dashed #d9d9d9',
+          borderRadius: '8px',
+          margin: '8px 0',
+          color: '#999'
+        }}>
+          图片链接为空
+        </div>
+      );
+    }
+    
+    // 对于 blob URL，不进行优化处理
+    const imageSrc = src.startsWith('blob:') ? src : optimizeImage(src, 'chat');
+    console.log('Final imageSrc:', imageSrc);
+    
+    return (
+      <Image
+        src={imageSrc}
+        alt={alt}
+        style={{
+          maxWidth: '30vw',
+          maxHeight: '40vh', // 只限制图片的最大高度
+          height: 'auto',
+          borderRadius: '8px',
+          margin: '8px 0',
+          display: 'block'
+        }}
+        preview={{
+          mask: '预览图片',
+          src: src // 使用原始URL进行预览
+        }}
+        onError={(e) => {
+          console.error('Image load error:', e);
+          console.error('Failed src:', imageSrc);
+        }}
+        onLoad={() => {
+          console.log('Image loaded successfully:', imageSrc);
+        }}
+        {...props}
+      />
+    );
+  },
   // 链接组件
   a: ({ href, children, ...props }) => (
     <a

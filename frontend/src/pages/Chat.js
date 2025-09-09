@@ -22,6 +22,7 @@ const Chat = () => {
     messagesEndRef,
     loadSessionMessages,
     scrollToBottom,
+    restoreScrollPosition, // 新增
     updateBalance,
   } = useChat();
 
@@ -69,18 +70,11 @@ const Chat = () => {
     }
   }, [sessions, currentSessionId, sessionsLoading]);
 
-  // 会话切换处理
+  // 会话切换处理 - 简化逻辑
   const handleSessionSwitch = (sessionId, newMessages = null) => {
     if (sessionId !== currentSessionId) {
       setCurrentSessionId(sessionId);
-      if (newMessages !== null) {
-        setMessages(newMessages);
-        setTimeout(() => {
-          scrollToBottom(true);
-        }, 100);
-      } else if (sessionId) {
-        loadSessionMessages(sessionId);
-      }
+      // 移除手动设置消息的逻辑，让缓存系统处理
     }
   };
 
@@ -103,6 +97,7 @@ const Chat = () => {
   };
 
   const onSendMessage = () => {
+    
     handleSendMessage(
       inputValue,
       selectedImages,
@@ -112,12 +107,7 @@ const Chat = () => {
   };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        backgroundColor: "#141414",
-      }}
-    >
+    <div style={{ display: "flex", backgroundColor: "#141414" }}>
       <SessionSidebar
         sessions={sessions}
         currentSessionId={currentSessionId}
@@ -126,29 +116,26 @@ const Chat = () => {
         onSessionsUpdate={setSessions}
       />
 
-      <div
-        style={{
+      <div style={{
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        height: "calc(100vh - 70px)",
+        overflow: "hidden",
+      }}>
+        <div style={{
           flex: 1,
+          overflow: "hidden",
           display: "flex",
           flexDirection: "column",
-          height: "calc(100vh - 70px)",
-          overflow: "hidden",
-        }}
-      >
-        <div
-          style={{
-            flex: 1,
-            overflow: "hidden",
-            display: "flex",
-            flexDirection: "column",
-            minHeight: 0,
-          }}
-        >
+          minHeight: 0,
+        }}>
           <MessageList
             messages={messages}
             loading={loading}
             currentSessionId={currentSessionId}
             messagesEndRef={messagesEndRef}
+            restoreScrollPosition={restoreScrollPosition} // 新增
           />
         </div>
 

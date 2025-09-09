@@ -27,7 +27,7 @@ import api from '../services/api';
 
 const { Title, Text } = Typography;
 
-// 充值套餐配置
+// 充值套餐配置 - 橙色紫色渐变主题
 const PAYMENT_PACKAGES = [
   {
     id: 'basic',
@@ -36,7 +36,8 @@ const PAYMENT_PACKAGES = [
     tokens: 100000,
     description: '适合轻度使用',
     icon: <StarOutlined />,
-    color: '#52c41a',
+    color: '#ff8c42', // 橙色
+    gradient: 'linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%)',
     popular: false
   },
   {
@@ -46,7 +47,8 @@ const PAYMENT_PACKAGES = [
     tokens: 350000,
     description: '最受欢迎的选择',
     icon: <CrownOutlined />,
-    color: '#1890ff',
+    color: '#a855f7', // 紫色
+    gradient: 'linear-gradient(135deg, #a855f7 0%, #9333ea 100%)',
     popular: true
   },
   {
@@ -56,7 +58,8 @@ const PAYMENT_PACKAGES = [
     tokens: 600000,
     description: '高频使用用户',
     icon: <RocketOutlined />,
-    color: '#722ed1',
+    color: '#f97316', // 深橙色
+    gradient: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
     popular: false
   },
   {
@@ -66,7 +69,8 @@ const PAYMENT_PACKAGES = [
     tokens: 1300000,
     description: '企业级解决方案',
     icon: <ThunderboltOutlined />,
-    color: '#fa8c16',
+    color: '#8b5cf6', // 亮紫色
+    gradient: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
     popular: false
   }
 ];
@@ -238,29 +242,71 @@ const PaymentModal = ({ visible, onClose, defaultPackage = 'standard' }) => {
                           size="small"
                           style={{
                             border: 'none',
-                            background: selectedPackage === pkg.id ? '#f6ffed' : 'transparent'
+                            background: selectedPackage === pkg.id 
+                              ? `linear-gradient(135deg, ${pkg.color}15 0%, ${pkg.color}25 100%)` 
+                              : 'linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%)',
+                            borderRadius: '12px',
+                            transition: 'all 0.3s ease',
+                            boxShadow: selectedPackage === pkg.id 
+                              ? `0 8px 32px ${pkg.color}40` 
+                              : '0 4px 16px rgba(0,0,0,0.3)'
                           }}
-                          bodyStyle={{ padding: '16px' }}
+                          bodyStyle={{ padding: '20px' }}
                         >
                           <Space direction="vertical" size="small" style={{ width: '100%' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                               <Space>
-                                <span style={{ color: pkg.color, fontSize: '18px' }}>
-                                  {pkg.icon}
-                                </span>
-                                <Text strong>{pkg.name}</Text>
+                                <div style={{ 
+                                  background: pkg.gradient,
+                                  borderRadius: '8px',
+                                  padding: '8px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center'
+                                }}>
+                                  <span style={{ color: '#ffffff', fontSize: '18px' }}>
+                                    {pkg.icon}
+                                  </span>
+                                </div>
+                                <Text strong style={{ color: '#ffffff' }}>{pkg.name}</Text>
                               </Space>
-                              {pkg.popular && <Tag color="red">热门</Tag>}
+                              {pkg.popular && (
+                                <Tag 
+                                  style={{
+                                    background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%)',
+                                    border: 'none',
+                                    color: '#ffffff',
+                                    borderRadius: '20px',
+                                    padding: '4px 12px'
+                                  }}
+                                >
+                                  🔥 热门
+                                </Tag>
+                              )}
                             </div>
                             <div>
-                              <Text style={{ fontSize: '24px', fontWeight: 'bold', color: pkg.color }}>
+                              <Text style={{ 
+                                fontSize: '28px', 
+                                fontWeight: 'bold', 
+                                background: pkg.gradient,
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent',
+                                backgroundClip: 'text'
+                              }}>
                                 ¥{pkg.amount}
                               </Text>
-                              <Text type="secondary" style={{ marginLeft: 8 }}>
+                              <Text style={{ 
+                                marginLeft: 8, 
+                                color: 'rgba(255,255,255,0.7)',
+                                fontSize: '14px'
+                              }}>
                                 {(pkg.tokens / 10000).toFixed(0)}万 Tokens
                               </Text>
                             </div>
-                            <Text type="secondary" style={{ fontSize: '12px' }}>
+                            <Text style={{ 
+                              fontSize: '12px',
+                              color: 'rgba(255,255,255,0.6)'
+                            }}>
                               {pkg.description}
                             </Text>
                           </Space>
@@ -283,15 +329,26 @@ const PaymentModal = ({ visible, onClose, defaultPackage = 'standard' }) => {
                 loading={loading}
                 onClick={handlePayment}
                 style={{
-                  background: '#07c160',
-                  borderColor: '#07c160',
-                  height: '50px',
+                  background: 'linear-gradient(135deg, #07c160 0%, #05a050 100%)',
+                  borderColor: 'transparent',
+                  height: '56px',
                   fontSize: '16px',
-                  borderRadius: '8px',
-                  minWidth: '200px'
+                  borderRadius: '16px',
+                  minWidth: '240px',
+                  boxShadow: '0 8px 24px rgba(7, 193, 96, 0.3)',
+                  transition: 'all 0.3s ease',
+                  fontWeight: '600'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.transform = 'translateY(-2px)';
+                  e.target.style.boxShadow = '0 12px 32px rgba(7, 193, 96, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = '0 8px 24px rgba(7, 193, 96, 0.3)';
                 }}
               >
-                微信支付 ¥{selectedPkg?.amount}
+                💳 微信支付 ¥{selectedPkg?.amount}
               </Button>
             </div>
 

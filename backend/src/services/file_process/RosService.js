@@ -102,8 +102,24 @@ class ROSService {
           fs.mkdirSync(localDir, { recursive: true });
         }
         
-        // 从key中提取文件名，保持原有的路径结构
-        const fileName = path.basename(key);
+        // 从key中提取文件名，确保包含扩展名
+        let fileName = path.basename(key);
+        
+        // 如果文件名没有扩展名，根据 contentType 添加
+        if (!path.extname(fileName) && options.contentType) {
+          const mimeToExt = {
+            'image/jpeg': '.jpg',
+            'image/jpg': '.jpg', 
+            'image/png': '.png',
+            'image/gif': '.gif',
+            'image/webp': '.webp',
+            'image/bmp': '.bmp',
+            'image/svg+xml': '.svg'
+          };
+          const ext = mimeToExt[options.contentType] || '.jpg';
+          fileName += ext;
+        }
+        
         const localPath = path.join(localDir, fileName);
         
         // 保存到本地

@@ -29,7 +29,7 @@ const MessageItem = ({ message, index }) => {
         return window.innerWidth < 768 ? '60%' : '40%';
       }
       // 文本消息：小屏幕85%，大屏幕70%
-      return window.innerWidth < 768 ? '85%' : '70%';
+      return window.innerWidth < 768 ? '85%' : '50%';
     };
     
     return {
