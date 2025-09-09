@@ -49,7 +49,7 @@ class TextStreamService {
         const estimatedTokens = TokenManager.estimateTokens(textContent);
         totalTokensUsed += estimatedTokens;
         
-        const processedChunk = {
+        yield {
           type: 'text',
           content: textContent,
           tokens: estimatedTokens,
@@ -60,8 +60,6 @@ class TextStreamService {
           }
         };
         
-        // 直接yield，不使用回调
-        yield processedChunk;
       }
     }
   }

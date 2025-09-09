@@ -5,7 +5,7 @@ const { testConnection } = require('../src/config/database');
 const { sequelize } = require('../src/config/database');
 
 // 重要：导入所有模型定义
-const { User, ChatMessage, PaymentRecord, TokenUsage, Session } = require('../src/models');
+const models = require('../src/models');
 
 // 数据库同步脚本（支持强制模式）
 const runSync = async () => {

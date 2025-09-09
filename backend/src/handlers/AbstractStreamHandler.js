@@ -10,7 +10,7 @@ const ChatManager = require("../utils/chatManager");
  * 业务流式处理器 - 业务逻辑层
  * 负责聊天相关的业务逻辑：用户验证、token管理、会话管理等
  */
-class BizStreamHandler extends BaseStreamHandler {
+class AbstractStreamHandler extends BaseStreamHandler {
   partialResponse = "";
   fullResponse = "";
   chatManager = null;
@@ -92,9 +92,11 @@ class BizStreamHandler extends BaseStreamHandler {
     // 1. 业务验证
     await this.validateInput();
 
-    // 2. 估算token消耗并检查余额
-    const estimatedTokens = await this.estimateTokenUsage();
-    await TokenManager.checkBalance(this.user, estimatedTokens);
+    // 2. 对于图片流，token已在路由层验证，跳过重复验证
+    if (this.getMessageType() !== 'image') {
+      const estimatedTokens = await this.estimateTokenUsage();
+      await TokenManager.checkBalance(this.user, estimatedTokens);
+    }
   }
 
   /**
@@ -149,8 +151,7 @@ class BizStreamHandler extends BaseStreamHandler {
    */
   async sendMessageChunk(chunk) {
     this.sendMessagge({
-      content: chunk.content || chunk.text,
-      tokens: chunk.tokens || chunk.estimatedTokens || 0,
+      ...chunk
     });
   }
 
@@ -274,4 +275,4 @@ class BizStreamHandler extends BaseStreamHandler {
   }
 }
 
-module.exports = BizStreamHandler;
+module.exports = AbstractStreamHandler;

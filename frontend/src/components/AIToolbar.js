@@ -59,7 +59,7 @@ const AIToolbar = ({ onToolClick, selectedImages = [], setInputValue, inputValue
       previewImage: 'https://inews.gtimg.com/news_bt/O3u7K1vynMy4yWqY7fBvS-7TvKt-vmhVyvFoiYnZ4fXcAAA/641',
       description: '智能姿态调整和重构',
       prompts: [
-        '以图中人物为原型，生成一张四格漫画',
+        '将图片做成漫画效果',
       ]
     },
   ];

@@ -13,12 +13,12 @@ class ChatManager {
   /**
    * 创建聊天记录
    */
+  // ChatManager.createChatMessage 方法中
   async createChatMessage(messageData) {
     this.chatMessage = await ChatMessage.create({
       userId: this.userId,
       sessionId: messageData.sessionId,
-      type: messageData.type,
-      userMessage: messageData.message,
+      userMessage: messageData.message, // 这里的message已经包含了图片Markdown
       aiResponse: '',
       tokensUsed: 0,
       streamStatus: STREAM_STATUS.PENDING,
@@ -54,19 +54,19 @@ class ChatManager {
       });
 
       // 2. 扣除用户token余额
-      const result = await TokenManager.deductTokens(this.user, tokensUsed);
+      const remainingBalance = await TokenManager.deductTokens(this.user, tokensUsed);
       
       // 3. 更新用户对象的余额
-      this.user.tokenBalance = result.remainingBalance;
+      this.user.tokenBalance = remainingBalance;
 
-      console.log(`聊天完成 - 用户ID: ${this.userId}, 消耗Token: ${tokensUsed}, 剩余余额: ${result.remainingBalance}`);
+      console.log(`聊天完成 - 用户ID: ${this.userId}, 消耗Token: ${tokensUsed}, 剩余余额: ${remainingBalance}`);
 
       return {
         success: true,
         tokensUsed: tokensUsed,
-        remainingBalance: result.remainingBalance,
+        remainingBalance: remainingBalance,
         balanceBefore: this.balanceBefore,
-        balanceAfter: result.remainingBalance
+        balanceAfter: remainingBalance
       };
     } catch (error) {
       console.error('保存聊天数据失败:', error);

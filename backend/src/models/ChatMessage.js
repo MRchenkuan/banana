@@ -24,11 +24,7 @@ const ChatMessage = sequelize.define('ChatMessage', {
       key: 'id'
     }
   },
-  type: {
-    type: DataTypes.ENUM('text', 'image'),
-    allowNull: false,
-    defaultValue: 'text'
-  },
+  // 移除 type 字段，所有消息都是文本
   userMessage: {
     type: DataTypes.TEXT,
     allowNull: true
@@ -37,10 +33,7 @@ const ChatMessage = sequelize.define('ChatMessage', {
     type: DataTypes.TEXT,
     allowNull: false
   },
-  imageUrl: {
-    type: DataTypes.STRING(500),
-    allowNull: true
-  },
+  // 移除 imageUrl 字段，图片以Markdown形式嵌入到aiResponse中
   tokensUsed: {
     type: DataTypes.INTEGER,
     allowNull: false,
@@ -67,16 +60,13 @@ const ChatMessage = sequelize.define('ChatMessage', {
   tableName: 'chat_messages',
   indexes: [
     {
-      fields: ['user_id', 'created_at']
+      fields: ['user_id', 'created_at']  // 使用下划线命名，匹配数据库实际字段
     },
     {
-      fields: ['session_id', 'created_at']
+      fields: ['session_id', 'created_at']  // 使用下划线命名
     },
     {
-      fields: ['type']
-    },
-    {
-      fields: ['stream_status']
+      fields: ['stream_status']  // 使用下划线命名
     }
   ],
   hooks: {

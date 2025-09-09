@@ -5,15 +5,26 @@ const AbstractStreamHandler = require('./AbstractStreamHandler');
 
 class TextStreamHandler extends AbstractStreamHandler {
 
+  /**
+   * @override 获取消息类型
+   * @returns {string} 消息类型
+   */
   getMessageType() {
     return 'text';
   }
 
+  /**
+   * @override 估计令牌使用量
+   * @returns {number} 令牌使用量
+   */
   async estimateTokenUsage() {
     const { message } = this.req.body;
     return TokenManager.estimateTokens(message);
   }
 
+  /**
+   * @override 验证输入
+   */
   async validateInput() {
     const { message, sessionId } = this.req.body;
     
@@ -26,7 +37,10 @@ class TextStreamHandler extends AbstractStreamHandler {
     ChatValidation.validateTextMessage(message);
   }
 
-  // 移除 sendStatusMessage，统一使用父类方法
+  /**
+   * @override 处理文本流请求
+   * @returns {Object} 包含流式数据的对象
+   */
   async getStreamData() {
     const { message, sessionId } = this.req.body;
     

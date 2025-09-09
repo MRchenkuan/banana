@@ -92,6 +92,40 @@ class ROSService {
    */
   async uploadBuffer(buffer, key, options = {}) {
     try {
+      // 检查是否启用本地保存模式（调试用）
+      if (process.env.IMAGE_SAVE_LOCAL === 'true') {
+        console.log('本地保存模式已启用，跳过ROS上传:', { key, size: buffer.length });
+        
+        // 创建本地保存目录
+        const localDir = path.join(__dirname, '../../../uploads/debug-images');
+        if (!fs.existsSync(localDir)) {
+          fs.mkdirSync(localDir, { recursive: true });
+        }
+        
+        // 从key中提取文件名，保持原有的路径结构
+        const fileName = path.basename(key);
+        const localPath = path.join(localDir, fileName);
+        
+        // 保存到本地
+        fs.writeFileSync(localPath, buffer);
+        
+        console.log('图片已保存到本地调试目录:', localPath);
+        
+        // 返回本地访问URL（模拟ROS返回格式）
+        const localUrl = `http://localhost:${process.env.PORT || 3001}/uploads/debug-images/${fileName}`;
+        
+        return {
+          success: true,
+          url: localUrl,
+          key: key,
+          location: localUrl,
+          etag: `"local-${Date.now()}"`,
+          size: buffer.length,
+          mode: 'local-debug' // 标识这是本地调试模式
+        };
+      }
+      
+      // 原有的ROS上传逻辑
       console.log('开始上传Buffer到雨云ROS:', { key, size: buffer.length });
       
       const uploadParams = {

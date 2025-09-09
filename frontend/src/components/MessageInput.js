@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Input,
   Button,
@@ -14,6 +14,7 @@ import {
   DeleteOutlined
 } from '@ant-design/icons';
 import { compressImages } from '../utils/imageCompression';
+import { useImageUrls } from '../hooks/useImageUrls';
 
 const { TextArea } = Input;
 const { Text } = Typography;
@@ -33,14 +34,17 @@ const MessageInput = ({
 }) => {
   const [compressing, setCompressing] = useState(false);
   const [compressionProgress, setCompressionProgress] = useState(0);
-
-  const removeImage = (index) => {
+  
+  // 使用自定义Hook管理图片URL
+  const imageUrls = useImageUrls(selectedImages);
+  
+  const removeImage = useCallback((index) => {
     setSelectedImages(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const clearAllImages = () => {
+  }, [setSelectedImages]);
+  
+  const clearAllImages = useCallback(() => {
     setSelectedImages([]);
-  };
+  }, [setSelectedImages]);
 
   const handleImageUpload = async (info) => {
     const { fileList } = info;
@@ -53,6 +57,10 @@ const MessageInput = ({
     }).slice(0, 4).map(file => file.originFileObj);
     
     if (validFiles.length === 0) return;
+    if (validFiles.length > 2) {
+      message.warning('最多只能上传2张图片');
+      return;
+    }
     
     // 检查是否需要压缩
     const needCompression = validFiles.some(file => file.size > 500 * 1024);
@@ -85,6 +93,44 @@ const MessageInput = ({
     if (fileList.length > 4) {
       message.warning('最多只能上传4张图片');
     }
+  };
+  
+  // 渲染图片预览
+  const renderImagePreviews = () => {
+    return selectedImages.map((image, index) => {
+      const fileKey = `${image.name}-${image.size}-${image.lastModified}`;
+      
+      return (
+        <div key={fileKey} style={{ position: 'relative' }}>
+          <Image
+            src={imageUrls[index]}
+            alt={`预览 ${index + 1}`}
+            width={60}
+            height={60}
+            style={{ objectFit: 'cover', borderRadius: '6px' }}
+          />
+          <Button
+            type="primary"
+            danger
+            size="small"
+            icon={<DeleteOutlined />}
+            onClick={() => removeImage(index)}
+            style={{
+              position: 'absolute',
+              top: '-6px',
+              right: '-6px',
+              width: '20px',
+              height: '20px',
+              borderRadius: '50%',
+              padding: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          />
+        </div>
+      );
+    });
   };
 
   return (
@@ -121,36 +167,7 @@ const MessageInput = ({
             </Button>
           </div>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {selectedImages.map((image, index) => (
-              <div key={index} style={{ position: 'relative' }}>
-                <Image
-                  src={URL.createObjectURL(image)}
-                  alt={`预览 ${index + 1}`}
-                  width={60}
-                  height={60}
-                  style={{ objectFit: 'cover', borderRadius: '6px' }}
-                />
-                <Button
-                  type="primary"
-                  danger
-                  size="small"
-                  icon={<DeleteOutlined />}
-                  onClick={() => removeImage(index)}
-                  style={{
-                    position: 'absolute',
-                    top: '-6px',
-                    right: '-6px',
-                    width: '20px',
-                    height: '20px',
-                    borderRadius: '50%',
-                    padding: 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                />
-              </div>
-            ))}
+            {renderImagePreviews()}
           </div>
         </div>
       )}
@@ -195,14 +212,14 @@ const MessageInput = ({
             showUploadList={false}
             beforeUpload={() => false}
             onChange={handleImageUpload}
-            disabled={selectedImages.length >= 4 || compressing}
+            disabled={selectedImages.length >= 2 || compressing}
           >
             <Button 
               size="small"
               icon={<PictureOutlined />} 
-              disabled={selectedImages.length >= 4 || compressing}
+              disabled={selectedImages.length >= 2 || compressing}
               loading={compressing}
-              title={selectedImages.length >= 4 ? "最多上传4张图片" : "上传图片"}
+              title={selectedImages.length >= 2 ? "最多上传4张图片" : "上传图片"}
               style={{ 
                 opacity: 1,
                 backgroundColor: '#434343',

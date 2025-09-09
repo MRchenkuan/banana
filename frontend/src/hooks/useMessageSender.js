@@ -50,13 +50,15 @@ const useMessageSender = ({
     );
   };
 
-  const sendImageMessage = async (messageText, image, sessionId) => {
-    // 创建用户消息（包含图片和文本）
+  const sendImageMessage = async (messageText, images, sessionId) => {
+    // 创建用户消息（包含多张图片）
+    const imageUrls = images.map(img => URL.createObjectURL(img));
+    
     const newMessage = {
       id: Date.now(),
       type: 'image',
       content: messageText,
-      imageUrl: URL.createObjectURL(image),
+      imageUrls: imageUrls, // 使用预先创建的URL数组
       timestamp: new Date(),
       role: 'user'
     };
@@ -68,7 +70,7 @@ const useMessageSender = ({
     const thinkingMessage = {
       id: thinkingMessageId,
       type: 'thinking',
-      content: '正在分析图片...',
+      content: `正在分析${images.length}张图片...`,
       timestamp: new Date(),
       role: 'assistant',
       isThinking: true
@@ -76,105 +78,19 @@ const useMessageSender = ({
     
     setMessages(prev => [...prev, thinkingMessage]);
     
-    // 使用流式图片API
+    // 使用流式图片API，传递所有图片
     await api.chat.sendImageMessage(
       messageText,
-      image,
+      images, // 传递所有图片
       sessionId,
-      // onChunk
-      (chunk, estimatedTokens) => {
-        setMessages((prev) => {
-          const filteredMessages = prev.filter(
-            (msg) => msg.id !== thinkingMessageId
-          );
-    
-          const aiMessageId = thinkingMessageId + 1;
-          const existingAiMessage = filteredMessages.find(
-            (msg) => msg.id === aiMessageId
-          );
-    
-          if (existingAiMessage) {
-            return filteredMessages.map((msg) =>
-              msg.id === aiMessageId
-                ? {
-                    ...msg,
-                    content: msg.content + chunk,
-                    estimatedTokens: estimatedTokens,
-                  }
-                : msg
-            );
-          } else {
-            const aiMessage = {
-              id: aiMessageId,
-              type: "text",
-              content: chunk,
-              timestamp: new Date(),
-              role: "assistant",
-              isStreaming: true,
-              isNewMessage: true,
-              estimatedTokens: estimatedTokens,
-            };
-            return [...filteredMessages, aiMessage];
-          }
-        });
-      },
-      // onComplete
-      async (data) => {
-        const aiMessageId = thinkingMessageId + 1;
-        setMessages((prev) => {
-          const filteredMessages = prev.filter(
-            (msg) => msg.id !== thinkingMessageId
-          );
-          return filteredMessages.map((msg) =>
-            msg.id === aiMessageId
-              ? {
-                  ...msg,
-                  isStreaming: false,
-                  tokensUsed: data.tokensUsed,
-                  estimatedTokens: undefined,
-                }
-              : msg
-          );
-        });
-        updateBalance(data.remainingBalance);
-    
-        // 更新会话信息
-        setSessions((prev) =>
-          prev.map((session) =>
-            session.id === sessionId
-              ? {
-                  ...session,
-                  messageCount: (session.messageCount || 0) + 1,
-                  lastMessageAt: new Date().toISOString(),
-                }
-              : session
-          )
-        );
-    
-        setLoading(false);
-      },
-      // onError
-      (error) => {
-        message.error(error);
-        setMessages((prev) => {
-          const filteredMessages = prev.filter(
-            (msg) => msg.id !== thinkingMessageId
-          );
-    
-          const errorMessage = {
-            id: thinkingMessageId + 1,
-            type: "error",
-            content: "图片分析失败，请稍后重试。",
-            timestamp: new Date(),
-            role: "assistant",
-            isError: true,
-            tokensUsed: 0,
-          };
-    
-          return [...filteredMessages, errorMessage];
-        });
-    
-        setLoading(false);
+      {
+        setMessages,
+        updateBalance,
+        setSessions,
+        thinkingMessageId,
+        messageId: thinkingMessageId + 1,
+        sessionId,
+        setLoading  // 添加这一行
       }
     );
   };
@@ -217,7 +133,7 @@ const useMessageSender = ({
   
     try {
       if (images.length > 0) {
-        await sendImageMessage(messageText, images[0], sessionId);
+        await sendImageMessage(messageText, images, sessionId); // 传递所有图片
       } else {
         await sendTextMessage(messageText, sessionId);
       }

@@ -194,7 +194,7 @@ router.delete('/:sessionId', authenticateToken, async (req, res) => {
   }
 });
 
-// 获取指定会话的消息列表 - 添加这个新路由
+// 获取指定会话的消息列表
 router.get('/:sessionId/messages', authenticateToken, async (req, res) => {
   try {
     const { sessionId } = req.params;
@@ -211,7 +211,10 @@ router.get('/:sessionId/messages', authenticateToken, async (req, res) => {
     });
 
     if (!session) {
-      return res.status(404).json({ error: '会话不存在' });
+      return res.status(404).json({ 
+        error: '会话不存在',
+        code: 'SESSION_NOT_FOUND'
+      });
     }
 
     // 获取消息列表 - 修改排序为DESC，获取最新的消息

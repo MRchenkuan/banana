@@ -19,21 +19,36 @@ class ChatService {
     );
   }
 
-  async sendImageMessage(message, imageFile, sessionId, context) {
+  async sendImageMessage(message, imageFiles, sessionId, context) {
     const formData = new FormData();
     formData.append('message', message);
-    formData.append('image', imageFile);
+    
+    // 支持多张图片
+    if (Array.isArray(imageFiles)) {
+      imageFiles.forEach(file => {
+        formData.append('images', file);
+      });
+    } else {
+      formData.append('images', imageFiles);
+    }
+    
     if (sessionId) {
       formData.append('sessionId', sessionId);
     }
 
     console.log('发送图片消息 - 请求数据:', {
       message: message ? '存在' : '缺失',
-      imageFile: imageFile ? {
-        name: imageFile.name,
-        type: imageFile.type,
-        size: imageFile.size
-      } : '缺失',
+      imageFiles: Array.isArray(imageFiles) ? 
+        imageFiles.map(file => ({
+          name: file.name,
+          type: file.type,
+          size: file.size
+        })) : 
+        imageFiles ? {
+          name: imageFiles.name,
+          type: imageFiles.type,
+          size: imageFiles.size
+        } : '缺失',
       sessionId: sessionId ? '存在' : '缺失'
     });
 

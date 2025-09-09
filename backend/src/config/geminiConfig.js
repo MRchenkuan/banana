@@ -14,7 +14,40 @@ const GEMINI_CONFIG = {
       thinkingConfig: {
         thinkingBudget: 0, // 禁用思考模式
       },
-      temperature: 1
+      temperature: 1,
+      safetySettings: [
+          {
+            // 仇恨言论检测
+            category: 'HARM_CATEGORY_HARASSMENT',
+            // 阻止中等及以上风险的内容
+            threshold: 'BLOCK_ONLY_HIGH'
+          },
+          {
+            // 危险内容检测
+            category: 'HARM_CATEGORY_HATE_SPEECH',
+            threshold: 'BLOCK_ONLY_HIGH'
+          },
+          {
+            // 骚扰内容检测
+            category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+            threshold: 'BLOCK_ONLY_HIGH'
+          },
+          {
+            // 性暴露内容检测
+            category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+            threshold: 'BLOCK_ONLY_HIGH'
+          },
+          {
+            // 性暴露内容检测
+            category: 'HARM_CATEGORY_CIVIC_INTEGRITY',
+            threshold: 'BLOCK_ONLY_HIGH'
+          }
+          // 移除了以下无效的图片专用安全类别：
+          // HARM_CATEGORY_IMAGE_HATE
+          // HARM_CATEGORY_IMAGE_DANGEROUS_CONTENT
+          // HARM_CATEGORY_IMAGE_HARASSMENT
+          // HARM_CATEGORY_IMAGE_SEXUALLY_EXPLICIT
+        ],
     }
   },
 

@@ -44,13 +44,13 @@ const Session = sequelize.define('Session', {
   tableName: 'sessions',
   indexes: [
     {
-      fields: ['user_id', 'created_at']
+      fields: ['user_id', 'created_at']  // 使用下划线命名
     },
     {
-      fields: ['user_id', 'is_active']
+      fields: ['user_id', 'is_active']   // 使用下划线命名
     },
     {
-      fields: ['last_message_at']
+      fields: ['last_message_at']       // 使用下划线命名
     }
   ]
 });

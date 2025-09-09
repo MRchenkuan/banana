@@ -47,7 +47,7 @@ const TokenUsage = sequelize.define('TokenUsage', {
   tableName: 'token_usage',
   indexes: [
     {
-      fields: ['user_id', 'created_at']  // 修复：userId -> user_id, createdAt -> created_at
+      fields: ['user_id', 'created_at']  // 使用下划线命名
     },
     {
       fields: ['operation']

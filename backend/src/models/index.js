@@ -4,6 +4,7 @@ const ChatMessage = require('./ChatMessage');
 const PaymentRecord = require('./PaymentRecord');
 const TokenUsage = require('./TokenUsage');
 const Session = require('./Session');
+const MediaResource = require('./MediaResource');
 
 // 定义模型关联
 User.hasMany(ChatMessage, { foreignKey: 'userId', as: 'chatMessages' });
@@ -31,5 +32,6 @@ module.exports = {
   ChatMessage,
   PaymentRecord,
   TokenUsage,
-  Session
+  Session,
+  MediaResource,
 };

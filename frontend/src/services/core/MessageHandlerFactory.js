@@ -1,4 +1,6 @@
 import TextMessageHandler from '../messageHandlers/TextMessageHandler';
+import ImageMessageHandler from '../messageHandlers/ImageMessageHandler'; // 新增
+import ContentMessageHandler from '../messageHandlers/ContentMessageHandler'; // 新增
 import ProcessingMessageHandler from '../messageHandlers/ProcessingMessageHandler';
 import CompleteMessageHandler from '../messageHandlers/CompleteMessageHandler';
 import ErrorMessageHandler from '../messageHandlers/ErrorMessageHandler';
@@ -17,7 +19,8 @@ class MessageHandlerFactory {
   }
 
   initializeHandlers() {
-    this.handlers.set('message', new TextMessageHandler(this.context));
+    // 使用统一的ContentMessageHandler处理所有内容消息
+    this.handlers.set('message', new ContentMessageHandler(this.context));
     this.handlers.set('processing', new ProcessingMessageHandler(this.context));
     this.handlers.set('complete', new CompleteMessageHandler(this.context));
     this.handlers.set('error', new ErrorMessageHandler(this.context));

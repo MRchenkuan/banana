@@ -23,8 +23,13 @@ class FileManagementService {
    * @returns {string} 临时文件路径
    */
   async downloadImageFromRos(rosKey) {
+    // Add validation for rosKey
+    if (!rosKey) {
+      throw new Error('ROS key is required but was undefined');
+    }
+    
     const tempDir = os.tmpdir();
-    const tempFileName = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}${path.extname(rosKey)}`;
+    const tempFileName = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 9)}${path.extname(rosKey)}`;
     const tempFilePath = path.join(tempDir, tempFileName);
     
     try {
@@ -55,7 +60,7 @@ class FileManagementService {
     try {
       if (fs.existsSync(tempFilePath)) {
         fs.unlinkSync(tempFilePath);
-        console.log('已删除临时图片文件:', tempFilePath);
+        // console.log('已删除临时图片文件:', tempFilePath);
       }
     } catch (cleanupError) {
       console.error('清理临时文件失败:', cleanupError);
@@ -69,15 +74,19 @@ class FileManagementService {
    * @param {Function} callback - 回调函数
    * @returns {*} 回调函数的返回值
    */
-  async withTempFile(rosKey, callback) {
-    let tempImagePath = null;
+  async withTempFile(imageArray, callback) {
+    let tempImagePaths = null;
     try {
-      tempImagePath = await this.downloadImageFromRos(rosKey);
-      return await callback(tempImagePath);
+      tempImagePaths = await Promise.all(imageArray.map(async (image) => {
+        return await this.downloadImageFromRos(image.key);
+      }));
+      return await callback(tempImagePaths);
     } finally {
       // 无论成功还是失败都清理临时文件
-      if (tempImagePath) {
-        await this.cleanupTempFile(tempImagePath);
+      if (tempImagePaths) {
+        await Promise.all(tempImagePaths.map(async (tempImagePath) => {
+          await this.cleanupTempFile(tempImagePath);
+        }));
       }
     }
   }

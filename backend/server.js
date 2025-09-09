@@ -22,6 +22,8 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // 静态文件服务
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// 添加调试图片静态服务
+app.use('/uploads/debug-images', express.static(path.join(__dirname, 'uploads/debug-images')));
 
 // 注册路由
 app.use('/api/auth', authRoutes);

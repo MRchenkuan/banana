@@ -5,55 +5,72 @@ const AbstractStreamHandler = require('./AbstractStreamHandler');
 
 class ImageStreamHandler extends AbstractStreamHandler {
 
+  /**
+   * @override 设置消息类型
+   * @returns {string} 消息类型
+   */
   getMessageType() {
     return 'image';
   }
 
+  /**
+   * @override 估计令牌使用量
+   * @returns {number} 令牌使用量
+   */
   async estimateTokenUsage() {
+    // 由于已在路由层验证，这里可以简化
     const { message } = this.req.body;
-    // 图片处理需要额外的token消耗
-    return TokenManager.estimateTokens(message) + 150;
+    const images = this.req.files || [];
+    
+    const baseTokens = TokenManager.estimateTokens(message);
+    const imageTokens = images.length * 150;
+    
+    return baseTokens + imageTokens;
   }
 
   async validateInput() {
     const { message, sessionId } = this.req.body;
-    const image = this.req.file; // 单个文件上传
+    const files = this.req.files;
     
-    // 验证输入
-    if (!message || !sessionId || !image) {
-      throw new Error('缺少必要参数: message, sessionId, 或 image');
+    // 1. 基础验证
+    if (!message || !sessionId || !files || files.length === 0) {
+      throw new Error('缺少必要参数: message, sessionId, 或 images');
     }
     
-    // 使用ChatValidation进行更详细的验证
-    ChatValidation.validateImageMessage(message, image.rosUrl || image.path);
+    // 2. 数量限制
+    if (files.length > 2) {
+      throw new Error('最多支持上传2张图片');
+    }
     
-    // 将文件信息转换为images数组格式，保持与getStreamData的兼容性
-    this.req.body.images = [{
-      url: image.rosUrl || image.path,
-      key: image.rosKey,
-      location: image.location,
-      originalname: image.originalname,
-      mimetype: image.mimetype,
-      size: image.size
-    }];
+    // 3. 文件格式验证
+    for (const file of files) {
+      if (!file.path) {
+        throw new Error('文件数据无效');
+      }
+      ChatValidation.validateImageMessage(message, file.originalname);
+    }
+    
+    // 4. 设置处理后的图片数据
+    this.req.body.images = files.map(file => ({
+      path: file.path,
+      originalname: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size
+    }));
   }
 
   async getStreamData() {
-    const { message, sessionId, images } = this.req.body;
+    const { message, sessionId, images = [] } = this.req.body;
 
-    // 发送处理开始状态
-    await this.sendProcessing('正在分析图片并生成回复...');
+    await this.sendProcessing(`正在分析${images.length}张图片中...`);
 
-    // 修复参数传递 - 传递第一张图片的信息
-    const firstImage = images[0];
     const stream = ImageStreamService.processImageStream({
-      message,
+      message, // 原始用户消息
       sessionId,
-      imageUrl: firstImage.url,           // ✅ 传递imageUrl
-      rosKey: firstImage.key,             // ✅ 传递rosKey
+      images,
       user: this.user
     });
-  
+
     return { stream };
   }
 }

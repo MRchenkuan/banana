@@ -24,6 +24,7 @@ class BaseStreamHandler {
     this._sendSSE({
       ...data,
       type: 'message',
+      messageType: data.type,
     });
   }
 
