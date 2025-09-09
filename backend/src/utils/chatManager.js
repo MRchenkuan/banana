@@ -13,7 +13,6 @@ class ChatManager {
   /**
    * 创建聊天记录
    */
-  // ChatManager.createChatMessage 方法中
   async createChatMessage(messageData) {
     this.chatMessage = await ChatMessage.create({
       userId: this.userId,

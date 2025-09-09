@@ -6,14 +6,6 @@ const AbstractStreamHandler = require('./AbstractStreamHandler');
 class ImageStreamHandler extends AbstractStreamHandler {
 
   /**
-   * @override 设置消息类型
-   * @returns {string} 消息类型
-   */
-  getMessageType() {
-    return 'image';
-  }
-
-  /**
    * @override 估计令牌使用量
    * @returns {number} 令牌使用量
    */
@@ -73,6 +65,7 @@ class ImageStreamHandler extends AbstractStreamHandler {
 
     return { stream };
   }
+
 }
 
 module.exports = ImageStreamHandler;

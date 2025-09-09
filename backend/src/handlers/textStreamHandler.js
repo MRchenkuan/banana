@@ -6,14 +6,6 @@ const AbstractStreamHandler = require('./AbstractStreamHandler');
 class TextStreamHandler extends AbstractStreamHandler {
 
   /**
-   * @override 获取消息类型
-   * @returns {string} 消息类型
-   */
-  getMessageType() {
-    return 'text';
-  }
-
-  /**
    * @override 估计令牌使用量
    * @returns {number} 令牌使用量
    */

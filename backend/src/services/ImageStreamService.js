@@ -9,15 +9,8 @@ const rosService = require('./file_process/RosService');
 class ImageStreamService {
   
   async * processImageStream({ message, images, sessionId, user }) {
-    try {
-      // 1. 先保存用户图片并生成Markdown
-      const userImageMarkdown = await this.saveUserImages(images, user);
-      
-      // 2. 将用户消息和图片Markdown合并
-      const fullUserMessage = message + (userImageMarkdown ? '\n\n' + userImageMarkdown : '');
-      
-      // 3. 继续原有的AI处理流程
-      for await (const chunk of this.generateImageContent(fullUserMessage, images, user)) {
+    try {      
+      for await (const chunk of this.generateImageContent(message, images, user)) {
         yield chunk;
       }
       
@@ -26,58 +19,7 @@ class ImageStreamService {
       throw error;
     }
   }
-
-  // 新增方法：保存用户图片
-  async saveUserImages(images, user) {
-    if (!images || images.length === 0) {
-      return '';
-    }
-    
-    const markdownLinks = [];
-    
-    for (const image of images) {
-      try {
-        const fs = require('fs');
-        
-        // 读取图片文件
-        const buffer = fs.readFileSync(image.path);
-        
-        // 生成文件名和ROS key
-        const fileName = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${image.originalname}`;
-        const imageKey = rosService.generateImageKey(fileName, 'user-upload', user?.id);
-        
-        // 上传到ROS
-        const uploadResult = await rosService.uploadBuffer(buffer, imageKey, {
-          contentType: image.mimetype
-        });
-        
-        // 保存媒体资源记录
-        const MediaResource = require('../models/MediaResource');
-        await MediaResource.create({
-          userId: user?.id,
-          fileName: fileName,
-          originalName: image.originalname,
-          fileSize: uploadResult.size || buffer.length,
-          mimeType: image.mimetype,
-          storageType: 'ros',
-          storageKey: uploadResult.key,
-          storageUrl: uploadResult.url,
-          source: 'user_upload'
-        });
-        
-        // 生成Markdown链接
-        markdownLinks.push(`![${image.originalname}](${uploadResult.url})`);
-        
-        console.log(`用户图片已保存: ${fileName} -> ${uploadResult.url}`);
-        
-      } catch (error) {
-        console.error('保存用户图片失败:', error);
-        markdownLinks.push(`[图片上传失败: ${image.originalname}]`);
-      }
-    }
-    
-    return markdownLinks.join('\n');
-  }
+ 
 
   /**
    * 按照官方样板代码生成图片内容
@@ -132,7 +74,7 @@ class ImageStreamService {
             });
             
             // 生成Markdown链接并作为文本内容返回
-            const markdownLink = `![AI生成图片](${uploadResult.url})`;
+            const markdownLink = `\n![AI生成图片](${uploadResult.url})\n`;
             const estimatedTokens = 1;
             totalTokensUsed += estimatedTokens;
             fullTextResponse += markdownLink;

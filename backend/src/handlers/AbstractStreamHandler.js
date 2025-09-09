@@ -22,20 +22,21 @@ class AbstractStreamHandler extends BaseStreamHandler {
   /**
    * 主处理流程 - 简化职责
    */
-  // 在 BaseStreamHandler 中强制要求
   async handle() {
     try {
-      // 1. 基础初始化（最早执行，确保基础设施可用）
+      // 1. 验证阶段 - 纯验证逻辑
+      await this.validate();
+      
+      // 2. 初始化阶段 - 纯基础设施初始化
       await this.initialize();
-
-      // 2. 业务预处理（验证和准备）
+      
+      // 3. 预处理阶段 - 纯数据处理和记录创建
       await this.preProcess();
-
-      // 3. 流处理核心逻辑
+      
+      // 4. 流处理阶段 - 纯业务逻辑
       const streamData = await this.getStreamData();
       await this.processStream(streamData);
-
-      // 4. 完成处理
+      
       await this.handleStreamComplete();
     } catch (error) {
       await this.handleError(error);
@@ -53,29 +54,28 @@ class AbstractStreamHandler extends BaseStreamHandler {
   /**
    * 统一初始化 - 合并原来的initialize和initializeStream
    */
+  /**
+   * 初始化阶段 - 纯基础设施初始化
+   */
   async initialize() {
-    // 2. 获取用户信息（从preProcess移过来）
+    // 1. 获取用户信息
     const userId = this.req.user.userId;
     const userInfo = await TokenManager.getUserBalance(userId);
     this.user = userInfo.user;
     this.balanceBefore = userInfo.balance;
-
-    // 3. 创建聊天管理器
+    
+    // 2. 创建管理器实例
     this.chatManager = new ChatManager(
       this.user,
       this.req.user.userId,
       this.balanceBefore
     );
-
-    // 4. 创建聊天记录
-    const { message, sessionId } = this.req.body;
-    await this.chatManager.createChatMessage({
-      sessionId,
-      message,
-      type: this.getMessageType(),
-    });
-
+    
+    // 3. 初始化计时器
     this.startTime = Date.now();
+    
+    // 4. 设置响应头（如果需要）
+    this.setupResponseHeaders();
   }
 
   /**
@@ -85,19 +85,19 @@ class AbstractStreamHandler extends BaseStreamHandler {
    * @async
    * @throws {Error} 当预处理失败时抛出错误
    */
-  /**
-   * 简化预处理 - 只做验证
-   */
   async preProcess() {
-    // 1. 业务验证
-    await this.validateInput();
-
-    // 2. 对于图片流，token已在路由层验证，跳过重复验证
-    if (this.getMessageType() !== 'image') {
-      const estimatedTokens = await this.estimateTokenUsage();
-      await TokenManager.checkBalance(this.user, estimatedTokens);
-    }
+    // 1. 先保存用户图片并生成Markdown
+    const userImageMarkdown = await this._saveUserImages(images, user);
+    // 2. 将用户消息和图片Markdown合并
+    const fullUserMessage = message + userImageMarkdown.join('\n');
+    const { sessionId } = this.req.body;
+    await this.chatManager.createChatMessage({
+      sessionId,
+      message: fullUserMessage,
+    });
+    
   }
+
 
   /**
    * 统一的流处理逻辑
@@ -252,8 +252,39 @@ class AbstractStreamHandler extends BaseStreamHandler {
    * @async
    * @throws {Error} 当输入验证失败时抛出错误
    */
+  
+  /**
+   * 验证阶段 - 纯验证逻辑，不涉及任何状态修改
+   */
+  async validate() {
+    // 1. 输入参数验证
+    await this.validateInput();
+    
+    // 2. 权限验证
+    await this.validatePermissions();
+    
+    // 3. 业务规则验证
+    await this.validateBusinessRules();
+    
+    // 4. Token余额预检查（不扣费）
+    const estimatedTokens = await this.estimateTokenUsage();
+    await TokenManager.checkBalance(this.req.user.userId, estimatedTokens);
+  }
+  
+  // 子类可重写的验证方法
   async validateInput() {
-    throw new Error("子类必须实现validateInput方法");
+    const { message, sessionId } = this.req.body;
+    if (!message || !sessionId) {
+      throw new Error('缺少必要参数');
+    }
+  }
+  
+  async validatePermissions() {
+    // 基础权限验证
+  }
+  
+  async validateBusinessRules() {
+    // 业务规则验证，子类可重写
   }
 
   /**
@@ -263,16 +294,59 @@ class AbstractStreamHandler extends BaseStreamHandler {
     throw new Error("子类必须实现getStreamData方法");
   }
 
-  /**
-   * 抽象方法 - 获取消息类型
-   * 子类必须实现此方法来返回具体的消息类型
-   * @abstract
-   * @returns {string} 消息类型（如'text', 'image'等）
-   * @throws {Error} 子类未实现时抛出错误
-   */
-  getMessageType() {
-    throw new Error("子类必须实现getMessageType方法");
+  // 新增方法：保存用户图片
+  async _saveUserImages(images, user) {
+    const markdownLinks = [];
+
+    if (!images || images.length === 0) {
+      return markdownLinks;
+    }
+    
+    
+    for (const image of images) {
+      try {
+        const fs = require('fs');
+        
+        // 读取图片文件
+        const buffer = fs.readFileSync(image.path);
+        
+        // 生成文件名和ROS key
+        const fileName = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${image.originalname}`;
+        const imageKey = rosService.generateImageKey(fileName, 'user-upload', user?.id);
+        
+        // 上传到ROS
+        const uploadResult = await rosService.uploadBuffer(buffer, imageKey, {
+          contentType: image.mimetype
+        });
+        
+        // 保存媒体资源记录
+        const MediaResource = require('../models/MediaResource');
+        await MediaResource.create({
+          userId: user?.id,
+          fileName: fileName,
+          originalName: image.originalname,
+          fileSize: uploadResult.size || buffer.length,
+          mimeType: image.mimetype,
+          storageType: 'ros',
+          storageKey: uploadResult.key,
+          storageUrl: uploadResult.url,
+          source: 'user_upload'
+        });
+        
+        // 生成Markdown链接
+        markdownLinks.push(`![${image.originalname}](${uploadResult.url})`);
+        
+        console.log(`用户图片已保存: ${fileName} -> ${uploadResult.url}`);
+        
+      } catch (error) {
+        console.error('保存用户图片失败:', error);
+        markdownLinks.push(`[图片上传失败: ${image.originalname}]`);
+      }
+    }
+    
+    return markdownLinks
   }
+
 }
 
 module.exports = AbstractStreamHandler;
