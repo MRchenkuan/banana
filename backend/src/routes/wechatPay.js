@@ -85,3 +85,85 @@ router.get('/order-status/:orderId', authenticateToken, async (req, res) => {
     
     // 查询本地订单
     const order = await PaymentRecord.findOne({
+      where: { orderId, userId: req.user.userId }
+    });
+
+    if (!order) {
+      return res.status(404).json({ error: '订单不存在' });
+    }
+
+    // 如果订单状态为pending，查询微信支付状态
+    if (order.status === 'pending') {
+      const wechatResult = await wechatPayService.queryOrder(orderId);
+      
+      if (wechatResult.success && wechatResult.tradeState === 'SUCCESS') {
+        // 更新本地订单状态
+        await order.update({
+          status: 'completed',
+          transactionId: wechatResult.transactionId
+        });
+        
+        // 更新用户token余额
+        const { User } = require('../utils/database');
+        await User.increment('tokenBalance', {
+          by: order.tokensPurchased,
+          where: { id: req.user.userId }
+        });
+      }
+    }
+
+    res.json({
+      orderId: order.orderId,
+      status: order.status,
+      amount: order.amount,
+      tokensPurchased: order.tokensPurchased,
+      createdAt: order.createdAt
+    });
+  } catch (error) {
+    console.error('查询订单状态错误:', error);
+    res.status(500).json({ error: '查询订单状态失败' });
+  }
+});
+
+// 模拟支付成功（仅开发环境）
+router.post('/simulate-success/:orderId', authenticateToken, async (req, res) => {
+  if (process.env.NODE_ENV !== 'development') {
+    return res.status(403).json({ error: '此接口仅在开发环境可用' });
+  }
+
+  try {
+    const { orderId } = req.params;
+    
+    const order = await PaymentRecord.findOne({
+      where: { orderId, userId: req.user.userId, status: 'pending' }
+    });
+
+    if (!order) {
+      return res.status(404).json({ error: '订单不存在或已处理' });
+    }
+
+    // 更新订单状态
+    await order.update({
+      status: 'completed',
+      transactionId: `mock_${Date.now()}`
+    });
+
+    // 更新用户token余额
+    const { User } = require('../utils/database');
+    await User.increment('tokenBalance', {
+      by: order.tokensPurchased,
+      where: { id: req.user.userId }
+    });
+
+    res.json({
+      success: true,
+      message: '模拟支付成功',
+      tokensAdded: order.tokensPurchased
+    });
+  } catch (error) {
+    console.error('模拟支付错误:', error);
+    res.status(500).json({ error: '模拟支付失败' });
+  }
+});
+
+module.exports = router;
