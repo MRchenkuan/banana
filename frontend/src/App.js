@@ -11,6 +11,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Chat from './pages/Chat';
 import Profile from './pages/Profile';
+import WechatQRScan from './pages/WechatQRScan';
 import './App.css';
 
 import { switchTheme, theme as customTheme } from './constants/theme';
@@ -73,6 +74,7 @@ function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/wechat-qr-scan" element={<WechatQRScan />} />
                 
                 <Route path="/app/*" element={
                   <ProtectedRoute>

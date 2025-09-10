@@ -4,15 +4,16 @@ const axios = require('axios');
 const { v4: uuidv4 } = require('uuid');
 const { authenticateToken } = require('../middleware/auth');
 const { User, PaymentRecord } = require('../utils/database');
+const WechatPayService = require('../services/WechatPayService');
 
 const router = express.Router();
 
 // 微信支付配置
 const WECHAT_CONFIG = {
-  appId: process.env.WECHAT_APP_ID,
-  mchId: process.env.WECHAT_MCH_ID,
-  apiKey: process.env.WECHAT_API_KEY,
-  notifyUrl: process.env.WECHAT_NOTIFY_URL || 'http://localhost:3001/api/payment/notify'
+  appId: process.env.WECHAT_PAY_APP_ID,
+  mchId: process.env.WECHAT_PAY_MCH_ID,
+  apiKey: process.env.WECHAT_PAY_API_KEY,
+  notifyUrl: process.env.WECHAT_PAY_NOTIFY_URL || 'http://localhost:3001/api/payment/notify'
 };
 
 // 生成微信支付签名
@@ -26,11 +27,13 @@ function generateSign(params, apiKey) {
   return crypto.createHash('md5').update(stringSignTemp, 'utf8').digest('hex').toUpperCase();
 }
 
+const wechatPayService = new WechatPayService();
+
 // 创建支付订单
 router.post('/create-order', authenticateToken, async (req, res) => {
   try {
-    const { amount = 10 } = req.body; // 默认 10 元
-    const tokensToAdd = amount * 1000; // 1 元 = 1000 tokens
+    const { amount = 10 } = req.body;
+    const tokensToAdd = amount * 1000;
     const orderId = uuidv4().replace(/-/g, '');
     
     // 创建支付记录
@@ -42,79 +45,27 @@ router.post('/create-order', authenticateToken, async (req, res) => {
       status: 'pending'
     });
 
-    // 微信统一下单参数
-    const unifiedOrderParams = {
-      appid: WECHAT_CONFIG.appId,
-      mch_id: WECHAT_CONFIG.mchId,
-      nonce_str: crypto.randomBytes(16).toString('hex'),
+    // 使用服务类创建订单
+    const orderResult = await wechatPayService.createUnifiedOrder({
+      orderId,
+      amount: amount * 100, // 转换为分
       body: `Banana AI Chat - ${tokensToAdd} Tokens`,
-      out_trade_no: orderId,
-      total_fee: amount * 100, // 微信支付金额单位为分
-      spbill_create_ip: req.ip || '127.0.0.1',
-      notify_url: WECHAT_CONFIG.notifyUrl,
-      trade_type: 'NATIVE' // 扫码支付
-    };
+      userId: req.user.userId
+    });
 
-    // 生成签名
-    unifiedOrderParams.sign = generateSign(unifiedOrderParams, WECHAT_CONFIG.apiKey);
-
-    // 构建 XML 请求体
-    const xmlData = `<xml>
-      ${Object.keys(unifiedOrderParams)
-        .map(key => `<${key}><![CDATA[${unifiedOrderParams[key]}]]></${key}>`)
-        .join('\n      ')}
-    </xml>`;
-
-    try {
-      // 调用微信统一下单接口
-      const response = await axios.post('https://api.mch.weixin.qq.com/pay/unifiedorder', xmlData, {
-        headers: {
-          'Content-Type': 'application/xml'
-        }
-      });
-
-      // 解析微信返回的 XML（这里简化处理，实际项目中应该使用 XML 解析库）
-      const codeUrlMatch = response.data.match(/<code_url><!\[CDATA\[(.+?)\]\]><\/code_url>/);
-      const prepayIdMatch = response.data.match(/<prepay_id><!\[CDATA\[(.+?)\]\]><\/prepay_id>/);
-      
-      if (codeUrlMatch && prepayIdMatch) {
-        const codeUrl = codeUrlMatch[1];
-        const prepayId = prepayIdMatch[1];
-        
-        // 更新订单记录
-        await PaymentRecord.update(
-          { transactionId: prepayId },
-          { where: { orderId: orderId } }
-        );
-
-        res.json({
-          orderId,
-          qrCodeUrl: codeUrl,
-          amount,
-          tokensToAdd,
-          message: '支付订单创建成功，请扫码支付'
-        });
-      } else {
-        throw new Error('微信支付接口返回异常');
-      }
-    } catch (wechatError) {
-      console.error('微信支付接口错误:', wechatError);
-      // 模拟支付二维码（开发环境）
-      if (process.env.NODE_ENV === 'development') {
-        res.json({
-          orderId,
-          qrCodeUrl: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=mock_payment_${orderId}`,
-          amount,
-          tokensToAdd,
-          message: '开发环境模拟支付订单创建成功'
-        });
-      } else {
-        throw wechatError;
-      }
+    if (!orderResult.success) {
+      throw new Error(orderResult.error);
     }
+
+    res.json({
+      success: true,
+      orderId,
+      prepayId: orderResult.prepayId,
+      codeUrl: orderResult.codeUrl
+    });
   } catch (error) {
-    console.error('创建支付订单错误:', error);
-    res.status(500).json({ error: '创建支付订单失败' });
+    console.error('创建支付订单失败:', error);
+    res.status(500).json({ error: '创建订单失败' });
   }
 });
 
