@@ -5,32 +5,30 @@ require('dotenv').config();
 
 const { initDatabase, closeDatabase } = require('./src/utils/database');
 
-// 导入路由
-const authRoutes = require('./src/routes/auth');
-const chatRoutes = require('./src/routes/chat');
-const paymentRoutes = require('./src/routes/payment');
-const userRoutes = require('./src/routes/user');
-const sessionsRoutes = require('./src/routes/sessions');
-
+// 创建Express应用
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// 中间件
+// 中间件配置
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// 静态文件服务
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-// 添加调试图片静态服务
-app.use('/uploads/debug-images', express.static(path.join(__dirname, 'uploads/debug-images')));
+// 导入路由
+const authRoutes = require('./src/routes/auth');
+const chatRoutes = require('./src/routes/chat');
+const wechatPayRoutes = require('./src/routes/wechatPay');
+const userRoutes = require('./src/routes/user');
+const sessionsRoutes = require('./src/routes/sessions');
+const WechatModule = require('./src/wechat');
 
 // 注册路由
 app.use('/api/auth', authRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/payment', wechatPayRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/sessions', sessionsRoutes);
-app.use('/api/wechat', require('./src/routes/wechat')); // 新增微信路由
+app.use('/api/wechat', WechatModule.init());
 
 // 健康检查
 app.get('/api/health', (req, res) => {
