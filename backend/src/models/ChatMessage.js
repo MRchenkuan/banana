@@ -55,6 +55,23 @@ const ChatMessage = sequelize.define('ChatMessage', {
     type: DataTypes.INTEGER,
     allowNull: true,
     defaultValue: 0
+  },
+  // 新增字段：输入token消耗
+  inputTokens: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+    comment: '用户输入消息的token消耗'
+  },
+  // 新增字段：输出token消耗
+  outputTokens: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+    comment: 'AI响应的token消耗'
+  },
+  // 新增字段：当前token余额
+  tokenBalance: {
+    type: DataTypes.INTEGER,
+    comment: '消息发送时的用户token余额'
   }
 }, {
   tableName: 'chat_messages',

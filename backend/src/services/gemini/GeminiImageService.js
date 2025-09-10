@@ -9,7 +9,7 @@ class GeminiImageService extends BaseGeminiService {
   /**
    * 从图片生成内容（核心AI调用方法）
    */
-  async generateImageFromImage(textPrompt, imageArray=[], options = {}) {
+  async * generateImageFromImage(textPrompt, imageArray=[], options = {}) {
     try {
       // 按照官方格式构建图片数据
       const imageParts = await Promise.all(imageArray.map(async (image) => {
@@ -75,11 +75,6 @@ class GeminiImageService extends BaseGeminiService {
             category: 'HARM_CATEGORY_CIVIC_INTEGRITY',
             threshold: 'BLOCK_ONLY_HIGH'
           }
-          // 移除了以下无效的图片专用安全类别：
-          // HARM_CATEGORY_IMAGE_HATE
-          // HARM_CATEGORY_IMAGE_DANGEROUS_CONTENT
-          // HARM_CATEGORY_IMAGE_HARASSMENT
-          // HARM_CATEGORY_IMAGE_SEXUALLY_EXPLICIT
         ],
         
         // 其他可选配置参数：
@@ -101,7 +96,7 @@ class GeminiImageService extends BaseGeminiService {
       };
 
       // 使用官方格式调用API
-      const response = await this.ai.models.generateContentStream({
+      yield * await this.ai.models.generateContentStream({
         model:'gemini-2.5-flash-image-preview',
         contents:[{
           role: 'user',
@@ -112,12 +107,10 @@ class GeminiImageService extends BaseGeminiService {
         }],
         config,
       });
-
-      return response;
       
     } catch (error) {
       console.error('AI图片生成错误:', error);
-      throw error;
+      throw new Error('图片生成出错，请稍后重试');
     }
   }
 

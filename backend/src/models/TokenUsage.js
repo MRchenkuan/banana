@@ -30,6 +30,32 @@ const TokenUsage = sequelize.define('TokenUsage', {
       min: 0
     }
   },
+  inputTokens: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: 0,
+    validate: {
+      min: 0
+    },
+    comment: '输入token消耗量（promptTokenCount）'
+  },
+  outputTokens: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: 0,
+    validate: {
+      min: 0
+    },
+    comment: '输出token消耗量（candidatesTokenCount）'
+  },
+  tokenBalance: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    validate: {
+      min: 0
+    },
+    comment: '操作后的token余额快照'
+  },
   operation: {
     type: DataTypes.ENUM('chat', 'image_analysis', 'deduction', 'refund'),
     allowNull: false,

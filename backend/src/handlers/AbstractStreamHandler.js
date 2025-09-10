@@ -103,40 +103,43 @@ class AbstractStreamHandler extends BaseStreamHandler {
   /**
    * 统一的流处理逻辑
    */
-  async processStream(streamData) {
-    if (!streamData || !streamData.stream) {
-      throw new Error("无效的流数据");
-    }
-
-    let fullResponse = "";
-
-    // 第121行 - processStream方法
-    for await (const chunk of streamData.stream) {
-
-      if (chunk.content) {
-        await this.sendMessageChunk(chunk);
-        fullResponse += chunk.content;
-        this.partialResponse += chunk.content;
+  async processStream() {
+    try {
+      const { stream } = await this.getStreamData();
+      let userMessage = this.req.body.message || '';
+      
+      for await (const chunk of stream) {
+        if (chunk.type === 'text') {
+          this.partialResponse += chunk.content;
+          this.fullResponse += chunk.content;
+          this.tokensUsed += chunk.tokens || 0;
+          
+          await this.sendMessageChunk(chunk);
+        } else if (chunk.type === 'usage_final') {
+          // 保存真实的usage数据
+          this.chatManager.setUsageMetadata(chunk.usageMetadata);
+        }
       }
-
-      this.tokensUsed += chunk.tokens || 0;
+      
+      await this.handleStreamComplete(userMessage);
+    } catch (error) {
+      await this.handleStreamError(error);
     }
-
-    this.fullResponse = fullResponse;
-
-    // 生成标题
-    await this.generateTitleIfNeeded();
   }
 
-  async handleStreamComplete() {
+  async handleStreamComplete(userMessage = '') {
     const result = await this.chatManager.saveCompletedData(
       this.fullResponse,
-      this.tokensUsed
+      this.tokensUsed,
+      userMessage
     );
 
     this.sendComplete({
-      tokensUsed: this.tokensUsed,
+      tokensUsed: result.tokensUsed,
+      inputTokens: result.inputTokens,
+      outputTokens: result.outputTokens,
       remainingBalance: result.remainingBalance,
+      dataSource: result.dataSource
     });
   }
 
@@ -184,6 +187,22 @@ class AbstractStreamHandler extends BaseStreamHandler {
    * @param {Error} [error=null] - 可选的错误对象，如果提供则更新聊天记录为错误状态
    */
   async cleanup() {
+    // 清理临时文件
+    if (this.req.files && this.req.files.length > 0) {
+      const fs = require('fs');
+      for (const file of this.req.files) {
+        try {
+          if (file.path && fs.existsSync(file.path)) {
+            fs.unlinkSync(file.path);
+            console.log(`临时文件已删除: ${file.path}`);
+          }
+        } catch (error) {
+          console.error(`清理临时文件失败: ${file.path}`, error);
+        }
+      }
+    }
+    
+    // 原有的cleanup逻辑
     if (this.streamManager && this.streamManager.isConnected()) {
       if(this.chatManager){
         await this.chatManager.handleInterruption();

@@ -35,5 +35,5 @@ module.exports = {
   TokenUsage,
   Session,
   MediaResource,
-  Order
+  Order,
 };

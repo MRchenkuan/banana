@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Empty } from 'antd';
 import MessageItem from './MessageItem';
+import TokenMonitor from './TokenMonitor';
 
 const MessageList = ({ 
   messages, 
@@ -37,44 +38,55 @@ const MessageList = ({
   }, [messages.length]);
   
   return (
-    <div 
-      ref={containerRef}
-      style={{ 
-        flex: 1,
-        overflowY: 'auto',
-        display: 'flex',
-        flexDirection: 'column',
-        backgroundColor: '#141414',
-        padding: '16px'
-      }}
-    >
-      {messages.length === 0 ? (
-        <div style={{
+    <>
+      {/* 简化版Token监测组件 */}
+      <TokenMonitor messages={messages} />
+      
+      {/* 消息列表容器 */}
+      <div 
+        ref={containerRef}
+        style={{ 
           flex: 1,
+          overflowY: 'auto',
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
-          <Empty
-            description={currentSessionId ? "开始你的对话吧！" : "选择一个会话或创建新对话"}
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-            style={{ color: '#a6a6a6' }}
-          />
-        </div>
-      ) : (
-        <>
-          {messages.map((message, index) => (
-            <MessageItem 
-              key={message.id || index}
-              message={message}
-              index={index}
+          flexDirection: 'column',
+          backgroundColor: '#141414',
+          padding: '16px'
+        }}
+      >
+        {messages.length === 0 ? (
+          <div style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <Empty
+              description={currentSessionId ? "开始你的对话吧！" : "选择一个会话或创建新对话"}
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              style={{ color: '#a6a6a6' }}
             />
-          ))}
-          
-          <div ref={messagesEndRef} style={{ height: '1px' }} />
-        </>
-      )}
-    </div>
+          </div>
+        ) : (
+          <>
+            {messages.map((message, index) => {
+              // 生成稳定的key
+              const messageKey = message.id || `${message.role}-${message.timestamp || index}`;
+              
+              return (
+                <MessageItem 
+                  key={messageKey}
+                  message={message}
+                  index={index}
+                />
+              );
+            })}
+            
+            <div ref={messagesEndRef} style={{ height: '1px' }} />
+          </>
+        )}
+      </div>
+    </>
   );
 };
 

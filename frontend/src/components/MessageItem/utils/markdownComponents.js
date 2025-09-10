@@ -1,6 +1,7 @@
 import React from 'react';
 import { Image } from 'antd';
 import { optimizeImage } from '../../../utils/imageOptimizer';
+import { createImageDragHandler, getDragImageStyle } from '../../../utils/imageDragUtils';
 
 export const getMarkdownComponents = () => ({
   p: ({ children }) => (
@@ -42,14 +43,8 @@ export const getMarkdownComponents = () => ({
       {children}
     </h6>
   ),
-  // 图片组件 - 支持点击放大
+  // 图片组件 - 支持点击放大和拖拽
   img: ({ src, alt, ...props }) => {
-    console.log('ReactMarkdown img component called with:');
-    console.log('- src:', src);
-    console.log('- alt:', alt);
-    console.log('- src type:', typeof src);
-    console.log('- src startsWith blob:', src && src.startsWith('blob:'));
-    
     // 检查 src 是否为空或未定义
     if (!src) {
       console.warn('ReactMarkdown: Image src is empty or undefined');
@@ -73,7 +68,6 @@ export const getMarkdownComponents = () => ({
     
     // 对于 blob URL，不进行优化处理
     const imageSrc = src.startsWith('blob:') ? src : optimizeImage(src, 'chat');
-    console.log('Final imageSrc:', imageSrc);
     
     return (
       <Image
@@ -81,24 +75,26 @@ export const getMarkdownComponents = () => ({
         alt={alt}
         style={{
           maxWidth: '30vw',
-          maxHeight: '40vh', // 只限制图片的最大高度
+          maxHeight: '40vh',
           height: 'auto',
           borderRadius: '8px',
           margin: '8px 0',
-          display: 'block'
+          display: 'block',
+          ...getDragImageStyle() // 使用工具函数获取拖拽样式
         }}
         preview={{
-          mask: '预览图片',
-          src: src // 使用原始URL进行预览
+          mask: false,
+          src: src
         }}
+        draggable={true}
+        onDragStart={createImageDragHandler(src)} // 使用工具函数创建拖拽处理器
         onError={(e) => {
           console.error('Image load error:', e);
           console.error('Failed src:', imageSrc);
+          console.error('Original src:', src);
+          // 不显示错误消息，避免用户体验问题
         }}
-        onLoad={() => {
-          console.log('Image loaded successfully:', imageSrc);
-        }}
-        {...props}
+        fallback="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmNWY1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuWbvueJh+WKoOi9veWksei0pTwvdGV4dD48L3N2Zz4="
       />
     );
   },

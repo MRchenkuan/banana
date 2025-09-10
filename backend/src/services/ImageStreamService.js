@@ -10,9 +10,7 @@ class ImageStreamService {
   
   async * processImageStream({ message, images, sessionId, user }) {
     try {      
-      for await (const chunk of this.generateImageContent(message, images, user)) {
-        yield chunk;
-      }
+      yield* this.generateImageContent(message, images, user);
       
     } catch (error) {
       console.error('图片流处理服务错误:', error);
@@ -28,17 +26,24 @@ class ImageStreamService {
     const tempFiles = images.map(image => image.path);
     
     try {
-      const response = await GeminiImageService.generateImageFromImage(message, tempFiles, { user });
+      const response = GeminiImageService.generateImageFromImage(message, tempFiles, { user });
       
-      await Promise.all(
-        tempFiles.map(tempFile => fileManagementService.cleanupTempFile(tempFile))
-      );
+      // await Promise.all(
+      //   tempFiles.map(tempFile => fileManagementService.cleanupTempFile(tempFile))
+      // );
       
       let fileIndex = 0;
       let totalTokensUsed = 0;
       let fullTextResponse = '';
       
       for await (const chunk of response) {
+        const { text, usageMetadata } = chunk;
+        const {
+          candidatesTokenCount,
+          promptTokenCount,
+          promptTokensDetails,
+          totalTokenCount
+        } = usageMetadata || {}
         if (!chunk?.candidates?.[0]?.content?.parts?.[0]) {
           continue;
         }
@@ -74,7 +79,7 @@ class ImageStreamService {
             });
             
             // 生成Markdown链接并作为文本内容返回
-            const markdownLink = `\n![AI生成图片](${uploadResult.url})\n`;
+            const markdownLink = `\n\n![AI生成图片](${uploadResult.url})\n\n`;
             const estimatedTokens = 1;
             totalTokensUsed += estimatedTokens;
             fullTextResponse += markdownLink;
@@ -85,7 +90,7 @@ class ImageStreamService {
               tokens: estimatedTokens,
               metadata: { 
                 estimatedTokens,
-                totalTokensUsed,
+                totalTokensUsed: usageMetadata,
                 fullTextResponse,
                 mediaResourceId: mediaResource.id
               }

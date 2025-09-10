@@ -19,6 +19,7 @@ import { useImageUrls } from '../hooks/useImageUrls';
 const { TextArea } = Input;
 const { Text } = Typography;
 
+// 在 MessageInput 组件中添加粘贴事件处理
 const MessageInput = ({
   inputValue,
   setInputValue,
@@ -30,7 +31,8 @@ const MessageInput = ({
   onKeyPress,
   onDragOver,
   onDragLeave,
-  onDrop
+  onDrop,
+  onPaste // 新增粘贴事件处理器
 }) => {
   const [compressing, setCompressing] = useState(false);
   const [compressionProgress, setCompressionProgress] = useState(0);
@@ -99,15 +101,41 @@ const MessageInput = ({
   const renderImagePreviews = () => {
     return selectedImages.map((image, index) => {
       const fileKey = `${image.name}-${image.size}-${image.lastModified}`;
+      const imageUrl = imageUrls[index];
+      
+      // 确保 URL 存在才渲染
+      if (!imageUrl) {
+        return (
+          <div key={fileKey} style={{ position: 'relative' }}>
+            <div 
+              style={{
+                width: 60,
+                height: 60,
+                backgroundColor: '#f5f5f5',
+                borderRadius: '6px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#999'
+              }}
+            >
+              加载中...
+            </div>
+          </div>
+        );
+      }
       
       return (
         <div key={fileKey} style={{ position: 'relative' }}>
           <Image
-            src={imageUrls[index]}
+            src={imageUrl}
             alt={`预览 ${index + 1}`}
             width={60}
             height={60}
             style={{ objectFit: 'cover', borderRadius: '6px' }}
+            onError={() => {
+              console.error('图片预览加载失败:', imageUrl);
+            }}
           />
           <Button
             type="primary"
@@ -133,6 +161,44 @@ const MessageInput = ({
     });
   };
 
+  // 处理粘贴事件
+  const handlePaste = async (e) => {
+    // 检查是否有图片数据
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    
+    const imageFiles = [];
+    
+    // 遍历剪贴板项目
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      
+      // 检查是否为图片类型
+      if (item.type.startsWith('image/')) {
+        e.preventDefault(); // 阻止默认粘贴行为
+        
+        const file = item.getAsFile();
+        if (file) {
+          // 重命名文件
+          const renamedFile = new File(
+            [file], 
+            `pasted-image-${Date.now()}.${item.type.split('/')[1]}`, 
+            { 
+              type: item.type,
+              lastModified: Date.now()
+            }
+          );
+          imageFiles.push(renamedFile);
+        }
+      }
+    }
+    
+    // 如果有图片文件，调用父组件的粘贴处理器
+    if (imageFiles.length > 0 && onPaste) {
+      await onPaste(imageFiles);
+    }
+  };
+  
   return (
     <div
       style={{
@@ -183,7 +249,8 @@ const MessageInput = ({
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={onKeyPress}
-          placeholder={(isDragOver ? "松开鼠标上传图片..." : "输入消息或拖拽图片到此处...")}
+          onPaste={handlePaste} // 添加粘贴事件处理
+          placeholder={(isDragOver ? "松开鼠标上传图片..." : "输入消息、拖拽图片或粘贴图片到此处...")}
           autoSize={{ minRows: 3, maxRows: 4 }}
           style={{ 
             width: '100%',

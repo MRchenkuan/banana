@@ -1,5 +1,5 @@
 const { ChatMessage } = require('../models');
-const TokenManager = require('./tokenManager');
+const TokenBillingService = require('../services/bill/TokenBillingService');
 const { STREAM_STATUS } = require('../constants/streamStatus');
 
 class ChatManager {
@@ -8,6 +8,7 @@ class ChatManager {
     this.userId = userId;
     this.balanceBefore = balanceBefore;
     this.chatMessage = null;
+    this.usageMetadata = null; // 保存真实的usage数据
   }
 
   /**
@@ -36,36 +37,55 @@ class ChatManager {
   }
 
   /**
-   * 保存完成的数据
+   * 设置真实的usage数据
    */
-  async saveCompletedData(fullResponse, tokensUsed) {
+  setUsageMetadata(usageMetadata) {
+    this.usageMetadata = usageMetadata;
+  }
+
+  /**
+   * 保存完成的数据（使用新的计费服务）
+   */
+  async saveCompletedData(fullResponse, estimatedTokens, userMessage = '') {
     if (!this.chatMessage) {
       throw new Error('ChatMessage未初始化');
     }
 
     try {
-      // 1. 更新聊天记录
+      // 使用新的计费服务
+      const billingResult = await TokenBillingService.processMessageBilling({
+        userId: this.userId,
+        chatMessageId: this.chatMessage.id,
+        usageMetadata: this.usageMetadata,
+        userMessage: userMessage,
+        aiResponse: fullResponse
+      });
+
+      if (!billingResult.success) {
+        throw new Error(billingResult.message);
+      }
+
+      // 更新聊天记录状态
       await this.chatMessage.update({
         aiResponse: fullResponse,
-        tokensUsed: tokensUsed,
         streamStatus: STREAM_STATUS.COMPLETED,
         partialResponse: ''
       });
 
-      // 2. 扣除用户token余额
-      const remainingBalance = await TokenManager.deductTokens(this.user, tokensUsed);
-      
-      // 3. 更新用户对象的余额
-      this.user.tokenBalance = remainingBalance;
+      // 更新用户对象的余额
+      this.user.tokenBalance = billingResult.balanceAfter;
 
-      console.log(`聊天完成 - 用户ID: ${this.userId}, 消耗Token: ${tokensUsed}, 剩余余额: ${remainingBalance}`);
+      console.log(`聊天完成 - 用户ID: ${this.userId}, 消耗Token: ${billingResult.tokensUsed} (输入:${billingResult.inputTokens}, 输出:${billingResult.outputTokens}), 数据源: ${billingResult.dataSource}, 剩余余额: ${billingResult.balanceAfter}`);
 
       return {
         success: true,
-        tokensUsed: tokensUsed,
-        remainingBalance: remainingBalance,
-        balanceBefore: this.balanceBefore,
-        balanceAfter: remainingBalance
+        tokensUsed: billingResult.tokensUsed,
+        inputTokens: billingResult.inputTokens,
+        outputTokens: billingResult.outputTokens,
+        remainingBalance: billingResult.balanceAfter,
+        balanceBefore: billingResult.balanceBefore,
+        balanceAfter: billingResult.balanceAfter,
+        dataSource: billingResult.dataSource
       };
     } catch (error) {
       console.error('保存聊天数据失败:', error);
@@ -75,8 +95,7 @@ class ChatManager {
         try {
           await this.chatMessage.update({
             streamStatus: STREAM_STATUS.ERROR,
-            aiResponse: fullResponse || '保存失败',
-            tokensUsed: tokensUsed
+            aiResponse: fullResponse || '保存失败'
           });
         } catch (updateError) {
           console.error('更新错误状态失败:', updateError);

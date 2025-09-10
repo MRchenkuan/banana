@@ -39,10 +39,18 @@ class TextStreamService {
     
     let totalTokensUsed = 0;
     let fullTextResponse = '';
+    let finalUsageMetadata = null; // 保存最终的usage数据
     
     // 处理AI返回的流式结果
     for await (const chunk of streamIterator) {
-      if (chunk.text) {
+      const { text, usageMetadata } = chunk;
+      
+      // 保存最新的usageMetadata（通常最后一个chunk包含完整数据）
+      if (usageMetadata) {
+        finalUsageMetadata = usageMetadata;
+      }
+      
+      if (text) {
         const textContent = chunk.text;
         fullTextResponse += textContent;
         
@@ -55,13 +63,22 @@ class TextStreamService {
           tokens: estimatedTokens,
           metadata: { 
             estimatedTokens,
-            totalTokensUsed: totalTokensUsed,
-            fullTextResponse: fullTextResponse
+            totalTokensUsed: usageMetadata,
+            fullTextResponse: fullTextResponse,
+            usageMetadata,
+            // 添加最终的usage数据
+            finalUsageMetadata
           }
         };
-        
       }
     }
+    
+    // 在流结束时返回完整的usage数据
+    yield {
+      type: 'usage_final',
+      usageMetadata: finalUsageMetadata,
+      fullResponse: fullTextResponse
+    };
   }
 }
 

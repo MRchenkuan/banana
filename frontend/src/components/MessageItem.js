@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { useMessageState } from '../hooks/useMessageState';
 import { useTypewriterEffect } from '../hooks/useTypewriterEffect';
 import { useMessageTimer } from '../hooks/useMessageTimer';
@@ -7,7 +7,7 @@ import MessageMeta from './MessageItem/MessageMeta';
 import { AssistantAvatar, UserAvatar } from './MessageItem/MessageAvatar';
 import { theme } from '../constants/theme';
 
-const MessageItem = ({ message, index }) => {
+const MessageItem = memo(({ message, index }) => {
   // 使用自定义 Hook 管理状态
   const messageState = useMessageState(message);
   const typewriterState = useTypewriterEffect(message, messageState);
@@ -43,7 +43,7 @@ const MessageItem = ({ message, index }) => {
       animation: isThinking ? 'pulse 1.5s infinite' : 'none',
       wordBreak: 'break-word',
       lineHeight: '1.6',
-      overflow: 'hidden', // 添加overflow处理
+      overflow: 'visible', // 修改为 visible 以显示计时器
       boxSizing: 'border-box' // 确保padding计算正确
     };
   };
@@ -91,6 +91,6 @@ const MessageItem = ({ message, index }) => {
       {isUser && <UserAvatar />}
     </div>
   );
-};
+});
 
 export default MessageItem;

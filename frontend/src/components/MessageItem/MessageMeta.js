@@ -56,26 +56,15 @@ const MessageMeta = ({ message, messageState, elapsedTime }) => {
           
           {/* Token显示 */}
           {!isThinking && (message.tokensUsed !== undefined || message.estimatedTokens) && (
-            <span
-              style={{
-                opacity: message.estimatedTokens && message.tokensUsed === undefined ? 0.6 : 1,
-                fontStyle: message.estimatedTokens && message.tokensUsed === undefined ? 'italic' : 'normal'
-              }}
-              title={`${
-                message.tokensUsed !== undefined
-                  ? `消耗了 ${message.tokensUsed} tokens` 
-                  : `估算消耗 ${message.estimatedTokens} tokens`
-              }`}
-            >
-              {message.tokensUsed !== undefined ? message.tokensUsed : message.estimatedTokens}
-              {message.estimatedTokens && message.tokensUsed === undefined ? '~t' : 't'}
+            <span>
+              { message?.totalTokensUsed?.promptTokenCount || 1 } ~t
             </span>
           )}
         </div>
       </div>
       
-      {/* 计时器显示 - 简化条件，AI消息都显示计时器 */}
-      {!isUser && elapsedTime > 0 && (
+      {/* 计时器显示 - 修改条件，让所有AI消息都显示计时器 */}
+      {!isUser && (elapsedTime > 0 || (!isThinking && !isStreaming && !isPending && !isError)) && (
         <div
           style={{
             position: 'absolute',
@@ -91,7 +80,7 @@ const MessageMeta = ({ message, messageState, elapsedTime }) => {
             zIndex: 10
           }}
         >
-          {elapsedTime}s
+          {elapsedTime > 0 ? `${elapsedTime}s` : '0.0s'}
         </div>
       )}
     </>

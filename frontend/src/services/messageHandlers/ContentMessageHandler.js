@@ -1,6 +1,7 @@
 import BaseMessageHandler from './BaseMessageHandler';
 import TextMessageHandler from './TextMessageHandler';
 import ImageMessageHandler from './ImageMessageHandler';
+import { tokenMonitorEvents } from '../../utils/tokenMonitorEvents';
 
 /**
  * 统一内容消息处理器
@@ -15,6 +16,15 @@ class ContentMessageHandler extends BaseMessageHandler {
 
   handle(data, metadata) {
     this.validate(data);
+    
+    // 直接从stream数据中提取totalTokensUsed并发送到monitor
+    if (data.metadata?.totalTokensUsed) {
+      tokenMonitorEvents.publish({
+        totalTokensUsed: data.metadata.totalTokensUsed,
+        timestamp: new Date(),
+        messageType: data.messageType || data.type || 'text'
+      });
+    }
     
     // 根据messageType字段分发到具体处理器
     const messageType = data.messageType || data.type || 'text';
