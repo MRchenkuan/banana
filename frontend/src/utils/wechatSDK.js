@@ -64,18 +64,18 @@ class WechatSDK {
   }
 
   // 微信授权登录
-  async authorize(scope = 'snsapi_userinfo', redirectUri = null) {
+  async authorize(scope = 'snsapi_login', redirectUri = null) {
     if (!this.isInWechat()) {
       throw new Error('不在微信环境中');
     }
-
+  
     try {
       // 使用传入的redirectUri或默认值
       const finalRedirectUri = redirectUri || (window.location.origin + '/wechat-callback');
       
       // 使用api.post方法，自动带上统一前缀
       const response = await api.post('/wechat/auth/oauth-url', {
-        scope,
+        scope, // 现在默认为 snsapi_login
         redirectUri: finalRedirectUri,
         state: Date.now().toString()
       });

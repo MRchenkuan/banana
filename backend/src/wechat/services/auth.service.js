@@ -65,7 +65,7 @@ class WechatAuthService {
    * @param {string} state - 状态参数
    * @param {string} redirectUri - 前端传入的回调地址
    */
-  generateOAuthUrl(scope = 'snsapi_userinfo', state, redirectUri) {
+  generateOAuthUrl(scope = 'snsapi_login', state, redirectUri) {
     if (!redirectUri) {
       throw new Error('redirectUri参数必填');
     }
@@ -73,7 +73,8 @@ class WechatAuthService {
     const appId = this.config.appId;
     const encodedRedirectUri = encodeURIComponent(redirectUri);
     
-    return `https://open.weixin.qq.com/connect/oauth2/authorize?appid=${appId}&redirect_uri=${encodedRedirectUri}&response_type=code&scope=${scope}&state=${state}#wechat_redirect`;
+    // 微信开放平台授权URL
+    return `https://open.weixin.qq.com/connect/qrconnect?appid=${appId}&redirect_uri=${encodedRedirectUri}&response_type=code&scope=${scope}&state=${state}#wechat_redirect`;
   }
 
   /**

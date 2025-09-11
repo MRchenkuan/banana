@@ -53,7 +53,7 @@ const QRCodeLogin = forwardRef(({ onLoginSuccess, style = {}, visible = true }, 
       setLoading(true);
       
       // 使用配置工具获取当前baseUrl
-      const currentBaseUrl = UrlConfig.getCurrentBaseUrl();
+      const currentBaseUrl = UrlConfig.getCurrentDomainUrl();
       
       const response = await api.post('/wechat/auth/qr-login', {
         baseUrl: currentBaseUrl

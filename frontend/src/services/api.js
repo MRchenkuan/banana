@@ -3,8 +3,10 @@ import ChatService from './ChatService';
 import SessionService from './SessionService';
 import PaymentService from './PaymentService';
 import UserService from './UserService';
+import UrlConfig from '../utils/urlConfig';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+// 使用 urlConfig 统一获取 API 地址
+const API_BASE_URL = UrlConfig.getBackendApiUrl();
 
 class ApiService {
   constructor() {

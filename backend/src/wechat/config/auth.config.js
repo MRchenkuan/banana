@@ -3,7 +3,7 @@ class WechatAuthConfig {
     return {
       appId: process.env.WECHAT_AUTH_APP_ID,
       appSecret: process.env.WECHAT_AUTH_APP_SECRET,
-      scope: process.env.WECHAT_AUTH_SCOPE || 'snsapi_userinfo'
+      scope: process.env.WECHAT_AUTH_SCOPE || 'snsapi_login' // 改为开放平台scope
     };
   }
   

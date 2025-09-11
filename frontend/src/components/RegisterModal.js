@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Modal, Form, Input, Button, message } from 'antd';
 import { UserOutlined, LockOutlined, MessageOutlined } from '@ant-design/icons';
+import api from '../services/api';
 
 const RegisterModal = ({ visible, onClose, onSwitchToLogin }) => {
   const [form] = Form.useForm();
@@ -15,16 +16,10 @@ const RegisterModal = ({ visible, onClose, onSwitchToLogin }) => {
   const handleRegister = async (values) => {
     try {
       setLoading(true);
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          username: values.username,
-          email: values.email,
-          password: values.password
-        })
+      const response = await api.post('/auth/register', {
+        username: values.username,
+        email: values.email,
+        password: values.password
       });
       
       const data = await response.json();

@@ -4,55 +4,47 @@
  */
 class UrlConfig {
   /**
-   * 获取当前页面的baseUrl
-   * @returns {string} 当前页面的baseUrl
+   * 获取当前页面的基础URL（协议+域名+端口）
+   * @returns {string} 如：http://localhost:3000 或 https://example.com
    */
-  static getCurrentBaseUrl() {
+  static getCurrentDomainUrl() {
     return `${window.location.protocol}//${window.location.host}`;
   }
   
   /**
-   * 获取API baseUrl
-   * @returns {string} API的baseUrl
+   * 获取后端API服务的基础URL
+   * @returns {string} API服务的完整URL
    */
-  static getApiBaseUrl() {
-    // 可以根据环境变量或当前域名动态决定
-    const currentHost = window.location.host;
-    
-    // 如果是开发环境
-    if (currentHost.includes('localhost') || currentHost.includes('127.0.0.1')) {
-      return process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
-    }
-    
-    // 生产环境，假设API和前端在同一域名下
-    return `${window.location.protocol}//${window.location.host}/api`;
+  static getBackendApiUrl() {
+    // 开发环境：优先使用环境变量，否则使用当前域名的3001端口
+      return process.env.REACT_APP_API_URL || `${window.location.protocol}//${window.location.hostname}:3001/api`;
   }
   
   /**
-   * 构建完整的页面URL
+   * 构建完整的前端页面URL
    * @param {string} path - 页面路径
    * @returns {string} 完整的页面URL
    */
-  static buildPageUrl(path) {
-    const baseUrl = this.getCurrentBaseUrl();
+  static buildFrontendPageUrl(path) {
+    const baseUrl = this.getCurrentDomainUrl();
     return `${baseUrl}${path.startsWith('/') ? path : '/' + path}`;
   }
   
   /**
-   * 检测当前是否为移动设备访问
+   * 检测当前访问设备是否为移动设备
    * @returns {boolean} 是否为移动设备
    */
-  static isMobileDevice() {
+  static isAccessFromMobileDevice() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   }
   
   /**
-   * 获取适合的二维码扫描页面URL
+   * 获取微信二维码扫描页面的完整URL
    * @param {string} scene - 场景值
    * @returns {string} 二维码扫描页面URL
    */
-  static getQRScanUrl(scene) {
-    return this.buildPageUrl(`/wechat/qr-scan?scene=${scene}`);
+  static getWechatQRScanPageUrl(scene) {
+    return this.buildFrontendPageUrl(`/wechat/qr-scan?scene=${scene}`);
   }
 }
 

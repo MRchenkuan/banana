@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Card, Button, Spin, Result, Typography, Space } from 'antd';
 import { WechatOutlined, CheckCircleOutlined, ExclamationCircleOutlined, LoadingOutlined } from '@ant-design/icons';
@@ -30,7 +30,60 @@ function WechatQRScan() {
     return ua.includes('micromessenger');
   };
   
+  const initiateWechatLogin = useCallback(async () => {
+    try {
+      // 构建回调地址
+      const redirectUri = `${window.location.origin}/wechat/callback?scene=${scene}`;
+      
+      // 调用后端接口获取授权URL
+      const response = await api.post('/wechat/auth/oauth-url', {
+        scope: 'snsapi_login', // 改为开放平台scope
+        state: scene,
+        redirectUri: redirectUri
+      });
+      
+      if (response.data.authUrl) {
+        window.location.href = response.data.authUrl;
+      } else {
+        throw new Error('获取授权URL失败');
+      }
+    } catch (error) {
+      console.error('获取微信授权URL失败:', error);
+      setError('获取授权链接失败');
+      setStatus('error');
+    }
+  }, [scene]);
+  
+  const confirmQRLogin = useCallback(async () => {
+    try {
+      setStatus('confirming');
+      
+      const response = await api.post('/wechat/auth/qr-confirm', {
+        scene: scene
+      });
+      
+      if (response.data.success) {
+        setStatus('success');
+        setTimeout(() => {
+          navigate('/');
+        }, 2000);
+      } else {
+        throw new Error(response.data.message || '确认登录失败');
+      }
+    } catch (error) {
+      console.error('确认二维码登录失败:', error);
+      setError(error.message || '确认登录失败');
+      setStatus('error');
+    }
+  }, [scene, navigate]);
+  
+  const hasInitiatedRef = useRef(false);
+  
   useEffect(() => {
+    // 防止重复执行
+    if (hasInitiatedRef.current) return;
+    hasInitiatedRef.current = true;
+    
     // 首先检查是否在微信浏览器中
     const inWechat = checkWechatBrowser();
     setIsWechatBrowser(inWechat);
@@ -56,54 +109,7 @@ function WechatQRScan() {
       // 已登录，直接确认登录
       confirmQRLogin();
     }
-  }, [scene]);
-  
-  const initiateWechatLogin = async () => {
-    try {
-      // 构建回调地址
-      const redirectUri = `${window.location.origin}/wechat/callback?scene=${scene}`;
-      
-      // 调用后端接口获取授权URL
-      const response = await api.post('/wechat/auth/oauth-url', {
-        scope: 'snsapi_userinfo',
-        state: scene,
-        redirectUri: redirectUri
-      });
-      
-      if (response.authUrl) {
-        window.location.href = response.authUrl;
-      } else {
-        throw new Error('获取授权URL失败');
-      }
-    } catch (error) {
-      console.error('获取微信授权URL失败:', error);
-      setError('获取授权链接失败');
-      setStatus('error');
-    }
-  };
-  
-  const confirmQRLogin = async () => {
-    try {
-      setStatus('confirming');
-      
-      const response = await api.post('/wechat/auth/qr-confirm', {
-        scene: scene
-      });
-      
-      if (response.success) {
-        setStatus('success');
-        setTimeout(() => {
-          navigate('/');
-        }, 2000);
-      } else {
-        throw new Error(response.message || '确认登录失败');
-      }
-    } catch (error) {
-      console.error('确认二维码登录失败:', error);
-      setError(error.message || '确认登录失败');
-      setStatus('error');
-    }
-  };
+  }, [scene, initiateWechatLogin, confirmQRLogin]);
   
   const renderContent = () => {
     switch (status) {
