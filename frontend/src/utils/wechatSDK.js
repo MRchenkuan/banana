@@ -1,3 +1,5 @@
+import api from '../services/api';
+
 class WechatSDK {
   constructor() {
     this.isReady = false;
@@ -8,14 +10,8 @@ class WechatSDK {
   async init() {
     try {
       // 获取微信 JS-SDK 配置
-      const response = await fetch('/api/wechat/js-config', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          url: window.location.href.split('#')[0] // 当前页面URL
-        })
+      const response = await api.post('/wechat/js-config', {
+        url: window.location.href.split('#')[0] // 当前页面URL
       });
       
       const config = await response.json();
@@ -68,26 +64,23 @@ class WechatSDK {
   }
 
   // 微信授权登录
-  async authorize(scope = 'snsapi_userinfo') {
+  async authorize(scope = 'snsapi_userinfo', redirectUri = null) {
     if (!this.isInWechat()) {
       throw new Error('不在微信环境中');
     }
 
     try {
-      // 获取授权 URL
-      const response = await fetch('/api/wechat/oauth-url', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          scope,
-          redirectUri: window.location.origin + '/wechat-callback',
-          state: Date.now().toString()
-        })
+      // 使用传入的redirectUri或默认值
+      const finalRedirectUri = redirectUri || (window.location.origin + '/wechat-callback');
+      
+      // 使用api.post方法，自动带上统一前缀
+      const response = await api.post('/wechat/auth/oauth-url', {
+        scope,
+        redirectUri: finalRedirectUri,
+        state: Date.now().toString()
       });
       
-      const { authUrl } = await response.json();
+      const { authUrl } = response.data;
       
       // 跳转到微信授权页面
       window.location.href = authUrl;

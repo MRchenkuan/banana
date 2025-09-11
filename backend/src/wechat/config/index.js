@@ -7,7 +7,14 @@ class WechatConfig {
     const payValid = payConfig.validate();
     
     if (!authValid.isValid || !payValid.isValid) {
-      throw new Error('微信配置验证失败');
+      const errors = [];
+      if (!authValid.isValid) {
+        errors.push(`微信登录配置缺失: ${authValid.missing.join(', ')}`);
+      }
+      if (!payValid.isValid) {
+        errors.push(`微信支付配置缺失: ${payValid.missing.join(', ')}`);
+      }
+      throw new Error(errors.join('; '));
     }
     
     return { isValid: true };

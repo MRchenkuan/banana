@@ -36,8 +36,11 @@ class AbstractStreamHandler extends BaseStreamHandler {
       
       // 4. 流处理阶段 - 纯业务逻辑
       const streamData = await this.getStreamData();
+
+      // 5. 流处理阶段 - 纯业务逻辑
       await this.processStream(streamData);
       
+      // 6. 完成阶段
       await this.handleStreamComplete();
     } catch (error) {
       await this.handleError(error);
@@ -106,7 +109,6 @@ class AbstractStreamHandler extends BaseStreamHandler {
   async processStream() {
     try {
       const { stream } = await this.getStreamData();
-      let userMessage = this.req.body.message || '';
       
       for await (const chunk of stream) {
         if (chunk.type === 'text') {
@@ -121,17 +123,20 @@ class AbstractStreamHandler extends BaseStreamHandler {
         }
       }
       
-      await this.handleStreamComplete(userMessage);
+      // 移除这行，让 handle() 统一处理
+      // await this.handleStreamComplete(userMessage);
     } catch (error) {
-      await this.handleStreamError(error);
+      await this.handleError(error);
     }
   }
 
-  async handleStreamComplete(userMessage = '') {
+  async handleStreamComplete() {
+    const message = this.req.body.message || '';
+    
     const result = await this.chatManager.saveCompletedData(
       this.fullResponse,
       this.tokensUsed,
-      userMessage
+      message
     );
 
     this.sendComplete({

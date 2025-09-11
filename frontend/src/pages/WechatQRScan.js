@@ -1,150 +1,147 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Result, Button, Spin, message } from 'antd';
-import { WechatOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
-import wechatSDK from '../utils/wechatSDK';
+import { Card, Button, Spin, Result, Typography, Space } from 'antd';
+import { WechatOutlined, CheckCircleOutlined, ExclamationCircleOutlined, LoadingOutlined } from '@ant-design/icons';
+import { useAuth } from '../contexts/AuthContext';
+import api from '../services/api';
 
-const WechatQRScan = () => {
+// 在开发环境中引入vconsole
+if (process.env.NODE_ENV === 'development') {
+  import('vconsole').then(VConsole => {
+    new VConsole.default();
+  });
+}
+
+const { Title, Paragraph } = Typography;
+
+function WechatQRScan() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [status, setStatus] = useState('loading'); // loading, confirm, success, error
-  const [scene, setScene] = useState('');
-
+  const { login } = useAuth();
+  const [status, setStatus] = useState('loading');
+  const [error, setError] = useState('');
+  const [isWechatBrowser, setIsWechatBrowser] = useState(false);
+  
+  const scene = searchParams.get('scene');
+  
+  // 检测是否在微信浏览器中
+  const checkWechatBrowser = () => {
+    const ua = navigator.userAgent.toLowerCase();
+    return ua.includes('micromessenger');
+  };
+  
   useEffect(() => {
-    const sceneParam = searchParams.get('scene');
-    if (!sceneParam) {
-      setStatus('error');
-      return;
-    }
-    setScene(sceneParam);
+    // 首先检查是否在微信浏览器中
+    const inWechat = checkWechatBrowser();
+    setIsWechatBrowser(inWechat);
     
-    // 检查是否在微信环境中
-    if (!wechatSDK.isInWechat()) {
-      message.error('请在微信中打开此页面');
+    if (!inWechat) {
+      setError('请在微信中打开此页面');
       setStatus('error');
       return;
     }
     
-    setStatus('confirm');
-  }, [searchParams]);
-
-  const handleConfirm = async () => {
+    if (!scene) {
+      setError('无效的二维码');
+      setStatus('error');
+      return;
+    }
+    
+    // 检查用户是否已登录
+    const token = localStorage.getItem('token');
+    if (!token) {
+      // 未登录，跳转到微信授权
+      initiateWechatLogin();
+    } else {
+      // 已登录，直接确认登录
+      confirmQRLogin();
+    }
+  }, [scene]);
+  
+  const initiateWechatLogin = async () => {
     try {
-      setStatus('loading');
+      // 构建回调地址
+      const redirectUri = `${window.location.origin}/wechat/callback?scene=${scene}`;
       
-      // 获取微信授权码
-      const urlParams = new URLSearchParams(window.location.search);
-      const code = urlParams.get('code');
-      
-      if (!code) {
-        // 如果没有授权码，跳转到微信授权
-        await wechatSDK.authorize('snsapi_userinfo');
-        return;
-      }
-      
-      // 发送确认请求到后端
-      const response = await fetch('/api/wechat/qr-confirm', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          scene,
-          code
-        })
+      // 调用后端接口获取授权URL
+      const response = await api.post('/wechat/auth/oauth-url', {
+        scope: 'snsapi_userinfo',
+        state: scene,
+        redirectUri: redirectUri
       });
       
-      const result = await response.json();
-      
-      if (response.ok && result.status === 'confirmed') {
-        setStatus('success');
-        message.success('登录确认成功！');
-        
-        // 3秒后关闭页面
-        setTimeout(() => {
-          window.close();
-        }, 3000);
+      if (response.authUrl) {
+        window.location.href = response.authUrl;
       } else {
-        throw new Error(result.message || '确认失败');
+        throw new Error('获取授权URL失败');
       }
     } catch (error) {
-      console.error('确认登录失败:', error);
-      message.error(error.message || '确认登录失败');
+      console.error('获取微信授权URL失败:', error);
+      setError('获取授权链接失败');
       setStatus('error');
     }
   };
-
-  const handleCancel = () => {
-    window.close();
+  
+  const confirmQRLogin = async () => {
+    try {
+      setStatus('confirming');
+      
+      const response = await api.post('/wechat/auth/qr-confirm', {
+        scene: scene
+      });
+      
+      if (response.success) {
+        setStatus('success');
+        setTimeout(() => {
+          navigate('/');
+        }, 2000);
+      } else {
+        throw new Error(response.message || '确认登录失败');
+      }
+    } catch (error) {
+      console.error('确认二维码登录失败:', error);
+      setError(error.message || '确认登录失败');
+      setStatus('error');
+    }
   };
-
+  
   const renderContent = () => {
     switch (status) {
       case 'loading':
         return (
           <Result
-            icon={<Spin size="large" />}
-            title="正在处理中..."
-            subTitle="请稍候，正在确认您的登录请求"
+            icon={<Spin indicator={<LoadingOutlined style={{ fontSize: 48, color: '#1890ff' }} spin />} />}
+            title={<Title level={3} style={{ color: '#1890ff' }}>正在处理登录请求</Title>}
+            subTitle={<Paragraph style={{ fontSize: '16px', color: '#666' }}>请稍候，我们正在为您准备登录...</Paragraph>}
           />
         );
       
-      case 'confirm':
+      case 'confirming':
         return (
           <Result
-            icon={<WechatOutlined style={{ color: '#07c160', fontSize: '72px' }} />}
-            title="确认登录 Banana AI"
-            subTitle="请确认是否要登录到 Banana AI 平台"
-            extra={[
-              <Button 
-                key="confirm" 
-                type="primary" 
-                size="large"
-                onClick={handleConfirm}
-                style={{ 
-                  background: '#07c160', 
-                  borderColor: '#07c160',
-                  marginRight: '12px'
-                }}
-              >
-                确认登录
-              </Button>,
-              <Button 
-                key="cancel" 
-                size="large"
-                onClick={handleCancel}
-              >
-                取消
-              </Button>
-            ]}
+            icon={<Spin indicator={<LoadingOutlined style={{ fontSize: 48, color: '#52c41a' }} spin />} />}
+            title={<Title level={3} style={{ color: '#52c41a' }}>正在确认登录</Title>}
+            subTitle={<Paragraph style={{ fontSize: '16px', color: '#666' }}>即将完成登录，请稍候...</Paragraph>}
           />
         );
       
       case 'success':
         return (
           <Result
-            icon={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
             status="success"
-            title="登录成功！"
-            subTitle="您已成功登录 Banana AI，页面将自动关闭"
+            icon={<CheckCircleOutlined style={{ fontSize: 48, color: '#52c41a' }} />}
+            title={<Title level={3} style={{ color: '#52c41a' }}>登录成功！</Title>}
+            subTitle={<Paragraph style={{ fontSize: '16px', color: '#666' }}>正在跳转到主页，请稍候...</Paragraph>}
           />
         );
       
       case 'error':
         return (
           <Result
-            icon={<CloseCircleOutlined style={{ color: '#ff4d4f' }} />}
             status="error"
-            title="登录失败"
-            subTitle="登录过程中出现错误，请重试"
-            extra={[
-              <Button key="retry" type="primary" onClick={() => window.location.reload()}>
-                重试
-              </Button>,
-              <Button key="close" onClick={handleCancel}>
-                关闭
-              </Button>
-            ]}
+            icon={<ExclamationCircleOutlined style={{ fontSize: 48, color: '#ff4d4f' }} />}
+            title={<Title level={3} style={{ color: 'rgb(7, 193, 96)' }}>{error || '扫码失败'}</Title>}
+            subTitle={<Paragraph style={{ fontSize: '16px', color: '#666' }}>请重新扫码</Paragraph>}
           />
         );
       
@@ -152,27 +149,43 @@ const WechatQRScan = () => {
         return null;
     }
   };
-
+  
   return (
-    <div style={{
-      minHeight: '100vh',
+    <div style={{ 
+      minHeight: '100vh', 
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: '#f0f2f5'
+      padding: '20px'
     }}>
-      <div style={{
-        background: '#fff',
-        borderRadius: '8px',
-        padding: '40px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-        maxWidth: '500px',
-        width: '90%'
-      }}>
+      <Card
+        style={{
+          width: '100%',
+          maxWidth: '500px',
+          borderRadius: '16px',
+          boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+          border: 'none'
+        }}
+        bodyStyle={{ padding: '40px 32px' }}
+      >
+        {status !== 'error' && (
+          <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <Space direction="vertical" size="small">
+            <WechatOutlined style={{ fontSize: '48px', color: '#07c160' }} />
+            <Title level={2} style={{ margin: '16px 0 8px 0', color: '#262626' }}>
+              微信扫码登录
+            </Title>
+            <Paragraph style={{ fontSize: '16px', color: '#8c8c8c', margin: 0 }}>
+              安全便捷的登录方式
+            </Paragraph>
+          </Space>
+        </div>
+        )}
         {renderContent()}
-      </div>
+      </Card>
     </div>
   );
-};
+}
 
 export default WechatQRScan;

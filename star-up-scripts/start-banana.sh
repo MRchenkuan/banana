@@ -98,7 +98,6 @@ WECHAT_APP_SECRET=your-wechat-app-secret
 
 # 生产环境 URL（请替换为你的域名）
 WECHAT_NOTIFY_URL=https://yourdomain.com/api/payment/notify
-WECHAT_REDIRECT_URI=https://yourdomain.com/auth/wechat/callback
 REACT_APP_API_URL=https://yourdomain.com:3001
 EOF
     log_warning "请编辑 $ENV_FILE 文件，配置正确的环境变量"

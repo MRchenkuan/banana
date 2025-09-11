@@ -189,7 +189,7 @@ class TokenCalculationService {
       return {
         allowed: false,
         reason: 'insufficient_balance',
-        message: 'Token余额不足2',
+        message: 'token余额不足，余额：' + user.tokenBalance,
         required: requestedTokens,
         available: user.tokenBalance
       };

@@ -54,7 +54,6 @@ services:
       
       # 微信登录配置
       - WECHAT_APP_SECRET=${WECHAT_APP_SECRET}
-      - WECHAT_REDIRECT_URI=${WECHAT_REDIRECT_URI:-http://localhost:3000/auth/wechat/callback}
     ports:
       - "3001:3001"
     depends_on:

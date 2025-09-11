@@ -56,7 +56,6 @@ services:
       # 微信登录配置
       - WECHAT_AUTH_APP_ID=${WECHAT_AUTH_APP_ID}
       - WECHAT_AUTH_APP_SECRET=${WECHAT_AUTH_APP_SECRET}
-      - WECHAT_AUTH_REDIRECT_URI=http://localhost:3000/auth/wechat/callback
     ports:
       - "3001:3001"
     depends_on:
@@ -69,14 +68,12 @@ services:
     image: banana-frontend:latest
     container_name: banana-frontend
     environment:
-      - REACT_APP_API_URL=http://backend:3000
       - DISABLE_ESLINT_PLUGIN=true
+      - REACT_APP_WECHAT_AUTHAPP_ID=${WECHAT_AUTH_APP_ID}
     ports:
       - "3000:80"
     depends_on:
       - backend
-    networks:
-      - banana-network
 
 volumes:
   mysql_data:

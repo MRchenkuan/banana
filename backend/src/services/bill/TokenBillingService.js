@@ -41,7 +41,7 @@ class TokenBillingService {
         return {
           success: false,
           error: 'insufficient_balance',
-          message: 'Token余额不足',
+          message: 'Token余额不足, 当前余额: ' + balanceBefore,
           required: tokenData.totalTokens,
           available: balanceBefore
         };

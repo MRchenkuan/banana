@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const os = require('os'); // 添加os模块
 require('dotenv').config();
 
 const { initDatabase, closeDatabase } = require('./src/utils/database');
@@ -17,7 +18,6 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // 导入路由
 const authRoutes = require('./src/routes/auth');
 const chatRoutes = require('./src/routes/chat');
-const wechatPayRoutes = require('./src/routes/wechatPay');
 const userRoutes = require('./src/routes/user');
 const sessionsRoutes = require('./src/routes/sessions');
 const WechatModule = require('./src/wechat');
@@ -25,7 +25,6 @@ const WechatModule = require('./src/wechat');
 // 注册路由
 app.use('/api/auth', authRoutes);
 app.use('/api/chat', chatRoutes);
-app.use('/api/payment', wechatPayRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/sessions', sessionsRoutes);
 app.use('/api/wechat', WechatModule.init());
@@ -53,6 +52,20 @@ app.use((err, req, res, next) => {
   });
 });
 
+// 获取本机IP地址的函数
+const getLocalIP = () => {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const interface of interfaces[name]) {
+      // 跳过内部地址和IPv6地址
+      if (interface.family === 'IPv4' && !interface.internal) {
+        return interface.address;
+      }
+    }
+  }
+  return 'localhost'; // 如果没找到，返回localhost作为备选
+};
+
 // 启动服务器
 const startServer = async () => {
   try {
@@ -67,10 +80,13 @@ const startServer = async () => {
       console.log('🔄 开发环境：跳过数据库同步，仅验证连接');
     }
     
+    // 获取本机IP地址
+    const localIP = getLocalIP();
+    
     // 启动服务器
     app.listen(PORT, () => {
-      console.log(`🚀 服务器运行在 http://localhost:${PORT}`);
-      console.log(`📊 健康检查: http://localhost:${PORT}/api/health`);
+      console.log(`🚀 服务器运行在 http://${localIP}:${PORT}`);
+      console.log(`📊 健康检查: http://${localIP}:${PORT}/api/health`);
       console.log(`🌍 环境: ${process.env.NODE_ENV || 'development'}`);
     });
   } catch (error) {

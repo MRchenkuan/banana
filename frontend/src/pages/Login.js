@@ -1,28 +1,15 @@
-import React, { useState } from 'react';
-import { Form, Input, Button, Card, Typography, Space, Divider, message } from 'antd';
-import { UserOutlined, LockOutlined } from '@ant-design/icons';
+import React from 'react';
+import { Card, Typography, Space, Divider, Button } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import LoginComponent from '../components/LoginComponent';
 
 const { Title, Text } = Typography;
 
 const Login = () => {
-  const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
   const navigate = useNavigate();
 
-  const onFinish = async (values) => {
-    setLoading(true);
-    try {
-      const result = await login(values.username, values.password);
-      if (result.success) {
-        navigate('/chat');
-      }
-    } catch (error) {
-      console.error('登录错误:', error);
-    } finally {
-      setLoading(false);
-    }
+  const handleLoginSuccess = (result) => {
+    navigate('/chat');
   };
 
   return (
@@ -37,7 +24,7 @@ const Login = () => {
       <Card
         style={{
           width: '100%',
-          maxWidth: '400px',
+          maxWidth: '800px',
           borderRadius: '12px',
           boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
         }}
@@ -50,56 +37,13 @@ const Login = () => {
           <Text type="secondary">香蕉 AI 绘图创作助手</Text>
         </div>
 
-        <Form
-          name="login"
-          onFinish={onFinish}
-          autoComplete="off"
-          size="large"
-        >
-          <Form.Item
-            name="username"
-            rules={[
-              { required: true, message: '请输入用户名!' },
-              { min: 3, message: '用户名至少3个字符!' }
-            ]}
-          >
-            <Input
-              prefix={<UserOutlined />}
-              placeholder="用户名"
-            />
-          </Form.Item>
+        <LoginComponent 
+          onLoginSuccess={handleLoginSuccess}
+          showWechatSDK={true}
+          compact={false}
+        />
 
-          <Form.Item
-            name="password"
-            rules={[
-              { required: true, message: '请输入密码!' },
-              { min: 6, message: '密码至少6个字符!' }
-            ]}
-          >
-            <Input.Password
-              prefix={<LockOutlined />}
-              placeholder="密码"
-            />
-          </Form.Item>
-
-          <Form.Item>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={loading}
-              style={{
-                width: '100%',
-                height: '44px',
-                borderRadius: '8px',
-                fontSize: '16px'
-              }}
-            >
-              登录
-            </Button>
-          </Form.Item>
-        </Form>
-
-        <Divider>或</Divider>
+        <Divider />
 
         <div style={{ textAlign: 'center' }}>
           <Space>
