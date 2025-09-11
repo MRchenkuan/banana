@@ -47,15 +47,19 @@ const SessionSidebar = ({
       cancelText: '取消',
       onOk: async () => {
         try {
-          // 将 api.deleteSession() 改为 api.session.deleteSession()
           await api.session.deleteSession(sessionId);
           const updatedSessions = sessions.filter(s => s.id !== sessionId);
           onSessionsUpdate(() => updatedSessions);
           
+          // 规则2：在session列表被主动删除时，如果删除的是当前，则清理当前ID
           if (currentSessionId === sessionId) {
+            console.log('🗑️ 删除当前会话，清理localStorage:', sessionId);
+            
             if (updatedSessions.length > 0) {
+              // 切换到第一个可用会话（规则1：选中时会自动保存ID）
               onSessionSwitch(updatedSessions[0].id);
             } else {
+              // 没有其他会话，清理当前ID
               onSessionSwitch(null, []);
             }
           }

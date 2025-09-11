@@ -26,7 +26,7 @@ const validateJSConfigParams = (req, res, next) => {
  */
 const validateOAuthParams = (req, res, next) => {
   const schema = Joi.object({
-    scope: Joi.string().valid('snsapi_base', 'snsapi_userinfo').default('snsapi_base'),
+    scope: Joi.string().valid('snsapi_base', 'snsapi_userinfo', 'snsapi_login').default('snsapi_base'),
     state: Joi.string().optional(),
     redirectUri: Joi.string().uri().required().messages({
       'string.uri': 'redirectUri格式不正确',

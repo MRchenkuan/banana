@@ -10,34 +10,31 @@ const User = sequelize.define('User', {
   },
   username: {
     type: DataTypes.STRING(50),
-    allowNull: false,
-    unique: true,
+    allowNull: true, // 改为可选，从微信昵称获取
     validate: {
-      len: [3, 50],
-      notEmpty: true
+      len: [1, 50]
     }
   },
   email: {
     type: DataTypes.STRING(100),
     allowNull: true, // 微信登录时可能没有邮箱
-    unique: true,
     validate: {
       isEmail: true
     }
   },
   password: {
     type: DataTypes.STRING(255),
-    allowNull: true, // 微信登录用户可能没有密码
+    allowNull: true, // 微信登录用户不需要密码
     validate: {
       len: [6, 255]
     }
   },
-  // 新增微信相关字段
+  // 微信相关字段 - 作为主要身份标识
   wechatOpenId: {
     type: DataTypes.STRING(100),
-    allowNull: true,
+    allowNull: false, // 改为必填
     unique: true,
-    comment: '微信OpenID'
+    comment: '微信OpenID - 主要身份标识'
   },
   wechatUnionId: {
     type: DataTypes.STRING(100),
@@ -47,7 +44,7 @@ const User = sequelize.define('User', {
   },
   wechatNickname: {
     type: DataTypes.STRING(100),
-    allowNull: true,
+    allowNull: false, // 改为必填
     comment: '微信昵称'
   },
   wechatAvatar: {
@@ -56,9 +53,9 @@ const User = sequelize.define('User', {
     comment: '微信头像URL'
   },
   loginType: {
-    type: DataTypes.ENUM('password', 'wechat'),
+    type: DataTypes.ENUM('wechat'), // 只保留微信登录
     allowNull: false,
-    defaultValue: 'password',
+    defaultValue: 'wechat',
     comment: '登录方式'
   },
   tokenBalance: {
@@ -70,13 +67,22 @@ const User = sequelize.define('User', {
   tableName: 'users',
   hooks: {
     beforeCreate: async (user) => {
+      // 移除密码加密逻辑，因为只使用微信登录
       if (user.password) {
         user.password = await bcrypt.hash(user.password, 12);
+      }
+      // 如果没有用户名，使用微信昵称
+      if (!user.username && user.wechatNickname) {
+        user.username = user.wechatNickname;
       }
     },
     beforeUpdate: async (user) => {
       if (user.changed('password') && user.password) {
         user.password = await bcrypt.hash(user.password, 12);
+      }
+      // 同步更新用户名为微信昵称
+      if (user.changed('wechatNickname') && user.wechatNickname) {
+        user.username = user.wechatNickname;
       }
     }
   }

@@ -9,23 +9,12 @@ const MessageContent = ({ message, messageState, typewriterState }) => {
   const { contentToShow } = typewriterState;
   const { isThinking, isAssistant, isUser } = messageState;
   
-  // 渲染思考状态
+  // 思考状态直接显示内容，使用与助手消息相同的样式
   if (isThinking) {
     return (
-      <>
+      <div style={{ position: 'relative', width: '100%' }}>
         <span>{contentToShow}</span>
-        <span 
-          style={{
-            display: 'inline-block',
-            width: '4px',
-            height: '4px',
-            backgroundColor: '#1890ff',
-            borderRadius: '50%',
-            marginLeft: '8px',
-            animation: 'pulse 1.5s infinite'
-          }}
-        />
-      </>
+      </div>
     );
   }
   

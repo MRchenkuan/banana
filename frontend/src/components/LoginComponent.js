@@ -1,20 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Form, Input, Button, Typography, Row, Col, message } from 'antd';
-import { UserOutlined, LockOutlined, QrcodeOutlined } from '@ant-design/icons';
-import { useAuth } from '../contexts/AuthContext';
-import QRCodeLogin from './QRCodeLogin';
+import React, { useState, useEffect } from 'react';
+import { Button, Typography, message } from 'antd';
+import { WechatOutlined } from '@ant-design/icons';
 import wechatSDK from '../utils/wechatSDK';
+import api from '../services/api';
 
 const { Title, Text } = Typography;
 
 const LoginComponent = ({ onLoginSuccess, showWechatSDK = false, compact = false, visible = true }) => {
-  const [loading, setLoading] = useState(false);
-  const [form] = Form.useForm();
   const [isWechatEnv, setIsWechatEnv] = useState(false);
   const [isSDKReady, setIsSDKReady] = useState(false);
   const [wechatLoading, setWechatLoading] = useState(false);
-  const { login } = useAuth();
-  const qrCodeRef = useRef(null);
 
   useEffect(() => {
     // 检测微信环境
@@ -38,39 +33,6 @@ const LoginComponent = ({ onLoginSuccess, showWechatSDK = false, compact = false
     }
   }, [showWechatSDK]);
 
-  // 当组件不可见时清理二维码轮询
-  useEffect(() => {
-    if (!visible && qrCodeRef.current) {
-      // 通知QRCodeLogin组件清理轮询
-      qrCodeRef.current.clearPolling && qrCodeRef.current.clearPolling();
-    }
-  }, [visible]);
-
-  // 组件卸载时清理
-  useEffect(() => {
-    return () => {
-      if (qrCodeRef.current) {
-        qrCodeRef.current.clearPolling && qrCodeRef.current.clearPolling();
-      }
-    };
-  }, []);
-
-  const handleLogin = async (values) => {
-    setLoading(true);
-    try {
-      const result = await login(values.username, values.password);
-      if (result.success) {
-        message.success('登录成功!');
-        onLoginSuccess && onLoginSuccess(result);
-      }
-    } catch (error) {
-      console.error('登录错误:', error);
-      message.error(error.message || '登录失败，请重试');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleWechatSDKLogin = async () => {
     if (!isSDKReady) {
       message.warning('微信SDK未就绪，请稍后重试');
@@ -89,25 +51,47 @@ const LoginComponent = ({ onLoginSuccess, showWechatSDK = false, compact = false
     }
   };
 
-  const handleQRLoginSuccess = (result) => {
-    message.success('登录成功!');
-    onLoginSuccess && onLoginSuccess(result);
+  const handleWechatLogin = async () => {
+    try {
+      setWechatLoading(true);
+      
+      // 构建回调地址
+      const redirectUri = `${window.location.origin}/wechat-login-callback`;
+      
+      // 调用后端接口获取授权URL
+      const response = await api.post('/wechat/auth/oauth-url', {
+        scope: 'snsapi_login',
+        state: Date.now().toString(),
+        redirectUri: redirectUri
+      });
+      
+      if (response.data.authUrl) {
+        // 直接跳转到微信开放平台授权页面
+        window.location.href = response.data.authUrl;
+      } else {
+        throw new Error('获取授权URL失败');
+      }
+    } catch (error) {
+      console.error('微信登录失败:', error);
+      message.error('微信登录失败，请重试');
+    } finally {
+      setWechatLoading(false);
+    }
   };
 
   const cardStyle = {
-    padding: compact ? '16px' : '24px',
-    border: '1px solid #f0f0f0',
-    borderRadius: '8px',
-    height: '100%',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center'
+    padding: compact ? '24px' : '32px',
+    textAlign: 'center',
+    maxWidth: compact ? '320px' : '380px',
+    margin: '0 auto',
+    background: 'transparent'
   };
 
   const titleStyle = {
-    fontSize: compact ? '16px' : '18px',
-    margin: '8px 0',
-    color: '#1890ff'
+    fontSize: compact ? '20px' : '24px',
+    margin: '20px 0 16px 0',
+    color: '#07c160',
+    fontWeight: '600'
   };
 
   return (
@@ -138,88 +122,45 @@ const LoginComponent = ({ onLoginSuccess, showWechatSDK = false, compact = false
         </div>
       )}
 
-      {/* 左右布局的登录方式 */}
-      <Row gutter={compact ? 16 : 32} align="stretch">
-        {/* 左侧：二维码登录 */}
-        <Col xs={24} md={12}>
-          <div style={cardStyle}>
-            <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-              <QrcodeOutlined style={{ fontSize: compact ? '20px' : '24px', color: '#1890ff' }} />
-              <Title level={compact ? 5 : 4} style={titleStyle}>
-                扫码登录
-              </Title>
-              <Text type="secondary" style={{ fontSize: compact ? '12px' : '14px' }}>
-                使用微信扫描二维码快速登录
-              </Text>
-            </div>
-            <QRCodeLogin 
-              ref={qrCodeRef}
-              onLoginSuccess={handleQRLoginSuccess}
-              style={{ minHeight: compact ? '150px' : '200px' }}
-              visible={visible}
-            />
-          </div>
-        </Col>
-
-        {/* 右侧：传统登录表单 */}
-        <Col xs={24} md={12}>
-          <div style={cardStyle}>
-            <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-              <UserOutlined style={{ fontSize: compact ? '20px' : '24px', color: '#1890ff' }} />
-              <Title level={compact ? 5 : 4} style={titleStyle}>
-                账号登录
-              </Title>
-              <Text type="secondary" style={{ fontSize: compact ? '12px' : '14px' }}>
-                使用用户名和密码登录
-              </Text>
-            </div>
-            
-            <Form
-              form={form}
-              onFinish={handleLogin}
-              layout="vertical"
-            >
-              <Form.Item
-                name="username"
-                rules={[
-                  { required: true, message: '请输入用户名或邮箱' }
-                ]}
-              >
-                <Input
-                  prefix={<UserOutlined />}
-                  placeholder="用户名或邮箱"
-                  size={compact ? 'middle' : 'large'}
-                />
-              </Form.Item>
-              
-              <Form.Item
-                name="password"
-                rules={[
-                  { required: true, message: '请输入密码' }
-                ]}
-              >
-                <Input.Password
-                  prefix={<LockOutlined />}
-                  placeholder="密码"
-                  size={compact ? 'middle' : 'large'}
-                />
-              </Form.Item>
-              
-              <Form.Item>
-                <Button
-                  type="primary"
-                  htmlType="submit"
-                  loading={loading}
-                  size={compact ? 'middle' : 'large'}
-                  style={{ width: '100%' }}
-                >
-                  登录
-                </Button>
-              </Form.Item>
-            </Form>
-          </div>
-        </Col>
-      </Row>
+      {/* 微信登录 */}
+      <div style={cardStyle}>
+        <div style={{ marginBottom: '32px' }}>
+          <WechatOutlined style={{ 
+            fontSize: compact ? '40px' : '48px', 
+            color: '#07c160',
+            marginBottom: '16px',
+            display: 'block'
+          }} />
+          <Title level={compact ? 4 : 3} style={titleStyle}>
+            微信登录
+          </Title>
+          <Text type="secondary" style={{ 
+            fontSize: compact ? '14px' : '15px',
+            color: '#666666',
+            lineHeight: '1.5'
+          }}>
+            使用微信扫描二维码快速登录
+          </Text>
+        </div>
+        <Button
+          type="primary"
+          size="large"
+          loading={wechatLoading}
+          onClick={handleWechatLogin}
+          style={{
+            width: '100%',
+            height: compact ? '48px' : '52px',
+            background: 'linear-gradient(135deg, #07c160 0%, #00a854 100%)',
+            borderColor: '#07c160',
+            fontSize: compact ? '16px' : '17px',
+            fontWeight: '500',
+            borderRadius: '8px',
+            boxShadow: '0 2px 4px rgba(7, 193, 96, 0.2)'
+          }}
+        >
+          {wechatLoading ? '正在跳转...' : '🔐 微信扫码登录'}
+        </Button>
+      </div>
     </div>
   );
 };

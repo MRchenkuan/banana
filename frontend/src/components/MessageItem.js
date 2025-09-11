@@ -37,10 +37,9 @@ const MessageItem = memo(({ message, index }) => {
       maxWidth: getMaxWidth(),
       padding: '12px 16px',
       borderRadius: '12px',
-      backgroundColor: isUser ? theme.userMessage : (isThinking ? theme.thinkingBackground : theme.darkTertiary),
-      color: isUser ? '#fff' : (isThinking ? theme.thinking : theme.textPrimary),
-      border: isThinking ? `2px dashed ${theme.thinking}` : (isUser ? `1px solid ${theme.userMessageBorder}` : `1px solid ${theme.border}`),
-      animation: isThinking ? 'pulse 1.5s infinite' : 'none',
+      backgroundColor: isUser ? theme.userMessage : theme.darkTertiary,
+      color: isUser ? '#fff' : theme.textPrimary,
+      border: isUser ? `1px solid ${theme.userMessageBorder}` : `1px solid ${theme.border}`,
       wordBreak: 'break-word',
       lineHeight: '1.6',
       overflow: 'visible', // 修改为 visible 以显示计时器
@@ -66,7 +65,7 @@ const MessageItem = memo(({ message, index }) => {
         <div
           style={{
             margin: 0,
-            color: isUser ? '#fff' : (isThinking ? '#1890ff' : '#ffffff'),
+            color: isUser ? '#fff' : '#ffffff',
             textAlign: 'left',
             display: 'flex',
             alignItems: 'center'

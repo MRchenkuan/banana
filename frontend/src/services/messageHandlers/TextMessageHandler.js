@@ -27,12 +27,13 @@ class TextMessageHandler extends BaseMessageHandler {
             : msg
         );
       } else if (thinkingMessage) {
-        // 如果thinking消息存在但AI消息不存在，将thinking消息转换为AI消息
+        // 如果thinking消息存在但AI消息不存在，更新thinking消息内容
+        // 关键修改：保持原始ID不变，只更新内容和状态
         return prev.map((msg) =>
           msg.id === thinkingMessageId
             ? {
                 ...msg,
-                id: messageId, // 更改ID
+                // id: messageId, // 移除这行，保持原始ID
                 type: "text",
                 content: content, // 替换为实际内容
                 isThinking: false, // 移除thinking状态

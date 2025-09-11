@@ -15,10 +15,24 @@ class ChatManager {
    * 创建聊天记录
    */
   async createChatMessage(messageData) {
+    // 在创建消息前再次验证 sessionId
+    const { Session } = require('../models');
+    const session = await Session.findOne({
+      where: {
+        id: messageData.sessionId,
+        userId: this.userId,
+        isActive: true
+      }
+    });
+    
+    if (!session) {
+      throw new Error('会话不存在，无法创建消息');
+    }
+    
     this.chatMessage = await ChatMessage.create({
       userId: this.userId,
       sessionId: messageData.sessionId,
-      userMessage: messageData.message, // 这里的message已经包含了图片Markdown
+      userMessage: messageData.message,
       aiResponse: '',
       tokensUsed: 0,
       streamStatus: STREAM_STATUS.PENDING,

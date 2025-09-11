@@ -12,14 +12,13 @@ class CompleteMessageHandler extends BaseMessageHandler {
     
     // 更新消息状态为完成
     this.context.setMessages((prev) => {
-      const filteredMessages = prev.filter(
-        (msg) => msg.id !== thinkingMessageId
-      );
-      return filteredMessages.map((msg) =>
-        msg.id === messageId
+      // 不再过滤掉思考消息，而是更新所有消息的状态
+      return prev.map((msg) =>
+        msg.id === thinkingMessageId
           ? {
               ...msg,
               isStreaming: false,
+              isThinking: false,
               tokensUsed: tokensUsed,
               estimatedTokens: undefined,
             }

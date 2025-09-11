@@ -29,7 +29,7 @@ class WechatPayController {
       const result = await this.payService.createUnifiedOrder({
         orderNo: orderId,
         amount: amount,
-        description: `Banana AI Chat - ${tokensToAdd} Tokens`,
+        description: `Banana AI - ${tokensToAdd} Tokens`,
         clientIp: req.ip || '127.0.0.1'
       });
 

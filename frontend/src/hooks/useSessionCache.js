@@ -17,6 +17,17 @@ const useSessionCache = () => {
   const loadSessionIfNeeded = useCallback(async (sessionId) => {
     if (!sessionId) return;
     
+    // 检查是否为临时会话ID，如果是则跳过API调用
+    // 修复：确保sessionId是字符串类型再调用startsWith
+    try {
+      if (String(sessionId).startsWith('temp-')) {
+        console.log('跳过临时会话ID的API调用:', sessionId);
+        return [];
+      }
+    } catch (error) {
+      console.error('检查sessionId类型失败:', error, '类型:', typeof sessionId, '值:', sessionId);
+    }
+    
     // 使用函数式更新避免依赖sessionCache
     setSessionCache(prev => {
       const cached = prev.get(sessionId);
@@ -34,7 +45,7 @@ const useSessionCache = () => {
       });
       return newCache;
     });
-
+  
     const cached = sessionCache.get(sessionId);
     if (cached && cached.messages.length > 0) {
       // 已缓存，直接返回
@@ -159,6 +170,53 @@ const useSessionCache = () => {
       return newCache;
     });
   }, []);
+
+  // 清理指定会话的所有缓存
+    const clearSessionCache = useCallback((sessionId) => {
+      if (!sessionId) return;
+      
+      console.log('🗑️ 清理会话缓存:', sessionId);
+      
+      // 清理内存缓存
+      setSessionCache(prev => {
+        const newCache = new Map(prev);
+        newCache.delete(sessionId);
+        return newCache;
+      });
+      
+      // 清理滚动位置缓存
+      scrollPositions.current.delete(sessionId);
+    }, []);
+    
+    // 清理所有缓存
+    const clearAllCache = useCallback(() => {
+      console.log('🗑️ 清理所有会话缓存');
+      setSessionCache(new Map());
+      scrollPositions.current.clear();
+    }, []);
+    
+    // 验证会话是否存在（新增方法）
+    const validateSession = useCallback(async (sessionId) => {
+      if (!sessionId) return false;
+      
+      // 临时会话ID始终视为有效，避免API调用
+      if (sessionId.startsWith('temp-')) {
+        return true;
+      }
+      
+      try {
+        await api.session.getSessionMessages(sessionId, 1, 1);
+        return true;
+      } catch (error) {
+        if (error.response?.status === 404 || 
+            error.response?.data?.code === 'SESSION_NOT_FOUND') {
+          console.warn('会话验证失败，会话不存在:', sessionId);
+          return false;
+        }
+        // 其他错误不清理缓存
+        throw error;
+      }
+    }, []);
   
   return {
     getSessionData,
@@ -167,6 +225,9 @@ const useSessionCache = () => {
     saveScrollPosition,
     getScrollPosition,
     cleanupCache,
+    clearSessionCache,
+    clearAllCache,
+    validateSession,
     sessionCache
   };
 };

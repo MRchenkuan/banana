@@ -13,14 +13,15 @@ class ErrorMessageHandler extends BaseMessageHandler {
     // 移除错误提示
     // message.error(errorMessage);
     
-    // 创建错误消息卡片
+    // 创建错误消息卡片，不再过滤思考状态卡片
     this.context.setMessages((prev) => {
-      const filteredMessages = prev.filter(
-        (msg) => msg.id !== thinkingMessageId
-      );
+      // 不再过滤思考状态卡片
+      // const filteredMessages = prev.filter(
+      //   (msg) => msg.id !== thinkingMessageId
+      // );
 
       const errorMsg = {
-        id: thinkingMessageId + 1,
+        id: generateUniqueId(), // 生成新的唯一ID
         type: "error",
         content: errorMessage || "处理请求时出现错误，请稍后重试。",
         timestamp: new Date(),
@@ -29,12 +30,17 @@ class ErrorMessageHandler extends BaseMessageHandler {
         tokensUsed: 0,
       };
 
-      return [...filteredMessages, errorMsg];
+      return [...prev, errorMsg]; // 保留所有现有消息，包括思考状态卡片
     });
     
     // 调用错误回调
     onError && onError(errorMessage);
   }
+}
+
+// 生成唯一ID的辅助函数
+function generateUniqueId() {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
 export default ErrorMessageHandler;

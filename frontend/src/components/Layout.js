@@ -13,6 +13,7 @@ import SessionSidebar from './SessionSidebar';
 import PaymentModal from './PaymentModal';
 import api from '../services/api';
 import { theme } from '../constants/theme';
+import useSessions from '../hooks/useSessions'; // 添加这一行
 
 const { Header, Content } = AntLayout;
 const { Text } = Typography;
@@ -23,26 +24,13 @@ const Layout = ({ children }) => {
   const { user, logout } = useAuth();
   const { balance } = useToken();
   
-  // 会话管理状态
-  const [sessions, setSessions] = useState([]);
+  // 使用 useSessions hook 替代本地状态和加载逻辑
+  const { sessions, setSessions, sessionsLoading } = useSessions();
   const [currentSessionId, setCurrentSessionId] = useState(null);
-  const [sessionsLoading, setSessionsLoading] = useState(false);
   const [paymentModalVisible, setPaymentModalVisible] = useState(false);
   const [defaultPackage, setDefaultPackage] = useState('standard');
   
-  // 加载会话列表
-  const loadSessions = async () => {
-    try {
-      setSessionsLoading(true);
-      // 将 api.getSessions() 改为 api.session.getSessions()
-      const response = await api.session.getSessions();
-      setSessions(response.data.sessions); // 修复：正确获取sessions数组
-    } catch (error) {
-      console.error('加载会话列表失败:', error);
-    } finally {
-      setSessionsLoading(false);
-    }
-  };
+  // 移除 loadSessions 函数和相关的 useEffect
 
   // 处理会话切换
   const handleSessionSwitch = (sessionId, messages = null) => {
@@ -50,11 +38,6 @@ const Layout = ({ children }) => {
     // 跳转到聊天页面，并传递会话ID
     navigate(`/app/chat${sessionId ? `?sessionId=${sessionId}` : ''}`);
   };
-
-  // 组件挂载时加载会话列表
-  useEffect(() => {
-    loadSessions();
-  }, []);
 
   // 从URL参数中获取当前会话ID
   useEffect(() => {
@@ -64,7 +47,7 @@ const Layout = ({ children }) => {
       setCurrentSessionId(sessionId);
     }
   }, [location.search]);
-
+  
   const userMenuItems = [
     {
       key: 'profile',

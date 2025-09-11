@@ -47,7 +47,7 @@ const Register = () => {
           <Title level={2} style={{ margin: 0, color: '#1890ff' }}>
             注册账号
           </Title>
-          <Text type="secondary">加入 Banana AI Chat</Text>
+          <Text type="secondary">加入 Banana AI</Text>
         </div>
 
         <Form

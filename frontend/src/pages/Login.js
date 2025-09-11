@@ -1,6 +1,6 @@
 import React from 'react';
-import { Card, Typography, Space, Divider, Button } from 'antd';
-import { Link, useNavigate } from 'react-router-dom';
+import { Typography } from 'antd';
+import { useNavigate } from 'react-router-dom';
 import LoginComponent from '../components/LoginComponent';
 
 const { Title, Text } = Typography;
@@ -21,20 +21,32 @@ const Login = () => {
       alignItems: 'center',
       padding: '20px'
     }}>
-      <Card
-        style={{
-          width: '100%',
-          maxWidth: '800px',
-          borderRadius: '12px',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
-        }}
-      >
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>🍌</div>
-          <Title level={2} style={{ margin: 0, color: '#1890ff' }}>
-            Banana AI Chat
+      <div style={{
+        width: '100%',
+        maxWidth: '420px',
+        padding: '40px 32px',
+        background: '#ffffff',
+        borderRadius: '16px',
+        boxShadow: '0 12px 40px rgba(0,0,0,0.15)'
+      }}>
+        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+          <div style={{ 
+            fontSize: '56px', 
+            marginBottom: '20px',
+            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
+          }}>🍌</div>
+          <Title level={2} style={{ 
+            margin: '0 0 8px 0', 
+            color: '#1890ff',
+            fontSize: '28px',
+            fontWeight: '600'
+          }}>
+            Banana AI
           </Title>
-          <Text type="secondary">香蕉 AI 绘图创作助手</Text>
+          <Text type="secondary" style={{
+            fontSize: '16px',
+            color: '#666666'
+          }}>你的创作助手</Text>
         </div>
 
         <LoginComponent 
@@ -42,20 +54,7 @@ const Login = () => {
           showWechatSDK={true}
           compact={false}
         />
-
-        <Divider />
-
-        <div style={{ textAlign: 'center' }}>
-          <Space>
-            <Text>还没有账号？</Text>
-            <Link to="/register">
-              <Button type="link" style={{ padding: 0 }}>
-                立即注册
-              </Button>
-            </Link>
-          </Space>
-        </div>
-      </Card>
+      </div>
     </div>
   );
 };

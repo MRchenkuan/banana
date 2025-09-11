@@ -37,15 +37,6 @@ class UrlConfig {
   static isAccessFromMobileDevice() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   }
-  
-  /**
-   * 获取微信二维码扫描页面的完整URL
-   * @param {string} scene - 场景值
-   * @returns {string} 二维码扫描页面URL
-   */
-  static getWechatQRScanPageUrl(scene) {
-    return this.buildFrontendPageUrl(`/wechat/qr-scan?scene=${scene}`);
-  }
 }
 
 export default UrlConfig;

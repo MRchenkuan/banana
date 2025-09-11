@@ -1,9 +1,14 @@
 import React from 'react';
-import { Button, Space, Spin } from 'antd';
+import { Space, Spin, Button, Typography } from 'antd';
+import { LogoutOutlined, WalletOutlined } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToken } from '../../contexts/TokenContext';
 
-const HomeNavbar = ({ onLoginClick, onRegisterClick, sdkLoading }) => {
-  const { isAuthenticated } = useAuth();
+const { Text } = Typography;
+
+const HomeNavbar = ({ sdkLoading }) => {
+  const { isAuthenticated, user, logout } = useAuth();
+  const { balance } = useToken();
 
   const navbarStyle = {
     padding: '0 24px',
@@ -21,20 +26,8 @@ const HomeNavbar = ({ onLoginClick, onRegisterClick, sdkLoading }) => {
     color: '#fff'
   };
 
-  const loginButtonStyle = {
-    height: '56px',
-    fontSize: '18px',
-    fontWeight: 'bold',
-    padding: '0 32px',
-    borderRadius: '28px',
-    background: 'rgba(255, 255, 255, 0.9)',
-    border: '2px solid rgba(255, 255, 255, 0.3)',
-    color: '#666',
-    boxShadow: '0 6px 24px rgba(255, 255, 255, 0.2)',
-    transition: 'all 0.3s ease',
-    position: 'relative',
-    zIndex: 2,
-    marginLeft: '16px'
+  const handleLogout = () => {
+    logout();
   };
 
   return (
@@ -45,21 +38,49 @@ const HomeNavbar = ({ onLoginClick, onRegisterClick, sdkLoading }) => {
         {sdkLoading && (
           <Spin size="small" style={{ color: '#fff' }} />
         )}
-        {!isAuthenticated && (
-          <Button 
-            style={loginButtonStyle}
-            onClick={onLoginClick}
-            onMouseEnter={(e) => {
-              e.target.style.transform = 'scale(1.05)';
-              e.target.style.boxShadow = '0 8px 32px rgba(255, 255, 255, 0.4)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.transform = 'scale(1)';
-              e.target.style.boxShadow = '0 6px 24px rgba(255, 255, 255, 0.2)';
-            }}
-          >
-            登录
-          </Button>
+        
+        {/* 用户已登录时显示token余额和退出按钮 */}
+        {isAuthenticated && user && (
+          <>
+            {/* Token 余额显示 */}
+            <Space align="center" style={{ 
+              background: 'rgba(255, 255, 255, 0.1)',
+              padding: '4px 12px',
+              borderRadius: '16px',
+              border: '1px solid rgba(255, 255, 255, 0.2)'
+            }}>
+              <WalletOutlined style={{ color: '#fff', fontSize: '14px' }} />
+              <Text style={{ color: '#fff', fontSize: '14px', fontWeight: '500' }}>
+                {typeof balance === 'number' ? balance.toLocaleString() : '0'} Tokens
+              </Text>
+            </Space>
+            
+            {/* 退出登录按钮 */}
+            <Button
+              type="text"
+              size="small"
+              icon={<LogoutOutlined />}
+              onClick={handleLogout}
+              style={{
+                color: '#fff',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                borderRadius: '6px',
+                height: '32px',
+                padding: '0 12px',
+                fontSize: '12px'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = 'rgba(255, 255, 255, 0.1)';
+                e.target.style.borderColor = 'rgba(255, 255, 255, 0.5)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = 'transparent';
+                e.target.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+              }}
+            >
+              退出
+            </Button>
+          </>
         )}
       </Space>
     </div>

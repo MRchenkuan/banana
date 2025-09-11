@@ -45,8 +45,6 @@ const Home = () => {
   return (
     <div style={containerStyle}>
       <HomeNavbar 
-        onLoginClick={showLoginModal}
-        onRegisterClick={showRegisterModal}
         sdkLoading={sdkLoading}
       />
       

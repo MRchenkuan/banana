@@ -71,7 +71,7 @@ class WechatSDK {
   
     try {
       // 使用传入的redirectUri或默认值
-      const finalRedirectUri = redirectUri || (window.location.origin + '/wechat-callback');
+      const finalRedirectUri = redirectUri || (window.location.origin + '/wechat-login-callback');
       
       // 使用api.post方法，自动带上统一前缀
       const response = await api.post('/wechat/auth/oauth-url', {

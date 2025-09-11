@@ -35,16 +35,15 @@ class AbstractStreamHandler extends BaseStreamHandler {
       await this.prepare();
       
       // 4. 流处理阶段 - 纯业务逻辑
-      const streamData = await this.getStreamData();
-
-      // 5. 流处理阶段 - 纯业务逻辑
-      await this.processStream(streamData);
+      await this.processStream();
       
-      // 6. 完成阶段
-      await this.handleStreamComplete();
     } catch (error) {
       await this.handleError(error);
     } finally {
+      // 5. 完成阶段
+      await this.handleStreamComplete();
+
+      // 5. 清理阶段
       await this.cleanup();
     }
   }
@@ -309,7 +308,21 @@ class AbstractStreamHandler extends BaseStreamHandler {
   }
   
   async validateBusinessRules() {
-    // 业务规则验证，子类可重写
+    const { sessionId } = this.req.body;
+    const userId = this.req.user.userId;
+    
+    // 验证 sessionId 是否存在且属于当前用户
+    const session = await Session.findOne({
+      where: {
+        id: sessionId,
+        userId: userId,
+        isActive: true
+      }
+    });
+    
+    if (!session) {
+      throw new Error('会话不存在或已被删除，请刷新页面后重试');
+    }
   }
 
   /**

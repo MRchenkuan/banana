@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Spin, Result, Button } from 'antd';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -7,16 +7,23 @@ import api from '../services/api';
 const WechatCallback = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { wechatLogin } = useAuth();
   const [status, setStatus] = useState('loading');
   const [error, setError] = useState('');
+  const isProcessingRef = useRef(false); // 添加防重复请求的标志
   
   const code = searchParams.get('code');
-  const state = searchParams.get('state'); // 这里是scene值
+  const state = searchParams.get('state');
   const scene = searchParams.get('scene') || state;
   
   useEffect(() => {
+    // 防止重复执行
+    if (isProcessingRef.current) {
+      return;
+    }
+    
     if (code) {
+      isProcessingRef.current = true;
       handleWechatLogin();
     } else {
       setError('授权失败，未获取到授权码');
@@ -29,55 +36,29 @@ const WechatCallback = () => {
       setStatus('processing');
       
       // 使用授权码登录
-      const response = await api.post('/wechat/auth/oauth-login', {
+      const response = await api.post('/wechat/auth/callback', {
         code: code,
         state: state
       });
       
-      if (response.success && response.data.token) {
+      if (response.data.success && response.data.token) {
         // 登录成功，保存token
-        login(response.data.token, response.data.user);
-        
-        // 如果有scene，说明是二维码登录，需要确认
-        if (scene) {
-          await confirmQRLogin(scene);
-        } else {
-          // 普通登录，直接跳转
+        await wechatLogin(response.data.token, response.data.user);
+        setStatus('success');
+        // 延迟跳转，让用户看到成功提示
+        setTimeout(() => {
           navigate('/');
-        }
+        }, 1500);
       } else {
-        throw new Error(response.message || '登录失败');
+        throw new Error(response.data.error || '登录失败');
       }
     } catch (error) {
       console.error('微信登录失败:', error);
-      setError(error.message || '登录失败');
+      setError(error.response?.data?.error || error.message || '登录失败');
       setStatus('error');
     }
   };
   
-  const confirmQRLogin = async (scene) => {
-    try {
-      setStatus('confirming');
-      
-      const response = await api.post('/wechat/auth/qr-confirm', {
-        scene: scene
-      });
-      
-      if (response.success) {
-        setStatus('success');
-        setTimeout(() => {
-          navigate('/');
-        }, 2000);
-      } else {
-        throw new Error(response.message || '确认登录失败');
-      }
-    } catch (error) {
-      console.error('确认二维码登录失败:', error);
-      setError(error.message || '确认登录失败');
-      setStatus('error');
-    }
-  };
-
   // 渲染不同状态的UI
   if (status === 'loading' || status === 'processing') {
     return (
@@ -131,12 +112,7 @@ const WechatCallback = () => {
         <Result
           status="error"
           title="登录失败"
-          subTitle={error}
-          extra={[
-            <Button type="primary" key="retry" onClick={() => navigate('/')}>
-              返回首页
-            </Button>
-          ]}
+          subTitle="请重新登录"
         />
       </div>
     );

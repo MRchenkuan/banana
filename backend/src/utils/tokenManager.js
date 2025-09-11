@@ -14,6 +14,7 @@ class TokenManager {
   }
   
   static async checkBalance(user, estimatedTokens) {
+    // 移除余额检查，允许余额为负
     if (user.tokenBalance < estimatedTokens) {
       throw new Error('Token余额不足3');
     }

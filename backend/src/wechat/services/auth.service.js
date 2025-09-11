@@ -4,7 +4,6 @@ const WechatSignatureUtil = require('../utils/signature.util');
 const WechatCryptoUtil = require('../utils/crypto.util');
 const { User } = require('../../utils/database');
 const jwt = require('jsonwebtoken');
-const QRCode = require('qrcode');
 
 class WechatAuthService {
   constructor() {
@@ -92,25 +91,104 @@ class WechatAuthService {
   }
   
   /**
-   * 生成二维码
-   * @param {string} scene - 场景值
-   * @param {string} baseUrl - 前端传入的baseUrl（可选）
+   * 获取用户访问令牌（开放平台）
    */
-  async generateQRCode(scene, baseUrl = null) {
+  async getUserAccessToken(code) {
+    const url = 'https://api.weixin.qq.com/sns/oauth2/access_token';
+    const params = {
+      appid: this.config.appId,
+      secret: this.config.appSecret,
+      code: code,
+      grant_type: 'authorization_code'
+    };
+    
+    const result = await WechatHttpUtil.get(url, params);
+    
+    if (result.success && result.data.access_token) {
+      return result.data;
+    }
+    
+    throw new Error('获取用户访问令牌失败: ' + (result.data?.errmsg || result.error));
+  }
+  
+  /**
+   * 获取用户信息（开放平台）
+   */
+  async getUserInfo(accessToken, openid) {
+    const url = 'https://api.weixin.qq.com/sns/userinfo';
+    const params = {
+      access_token: accessToken,
+      openid: openid,
+      lang: 'zh_CN'
+    };
+    
+    const result = await WechatHttpUtil.get(url, params);
+    
+    if (result.success && result.data.openid) {
+      return result.data;
+    }
+    
+    throw new Error('获取用户信息失败: ' + (result.data?.errmsg || result.error));
+  }
+  
+  /**
+   * 处理用户登录逻辑
+   */
+  async processUserLogin(wechatUserInfo) {
     try {
-      console.log('开始生成自定义二维码，场景值:', scene);
+      // 查找或创建用户
+      let user = await User.findOne({
+        where: { wechatOpenId: wechatUserInfo.openid }
+      });
       
-      // 优先使用前端传入的baseUrl，其次使用环境变量，最后使用默认值
-      const finalBaseUrl = baseUrl || process.env.FRONTEND_URL || 'http://localhost:3000';
-      const loginUrl = `${finalBaseUrl}/wechat/qr-scan?scene=${scene}`;
+      if (!user) {
+        // 创建新用户
+        user = await User.create({
+          username: wechatUserInfo.nickname || `微信用户_${wechatUserInfo.openid.slice(-8)}`,
+          wechatOpenId: wechatUserInfo.openid,
+          wechatUnionId: wechatUserInfo.unionid,
+          wechatAvatar: wechatUserInfo.headimgurl,  // 修正字段名
+          wechatNickname: wechatUserInfo.nickname,  // 修正字段名
+          loginType: 'wechat',  // 添加登录类型
+          tokenBalance: 100 // 新用户赠送100个token
+        });
+      } else {
+        // 更新用户信息
+        await user.update({
+          wechatAvatar: wechatUserInfo.headimgurl,  // 修正字段名
+          wechatNickname: wechatUserInfo.nickname,  // 修正字段名
+          wechatUnionId: wechatUserInfo.unionid
+        });
+      }
       
-      console.log('生成的登录URL:', loginUrl);
+      // 生成JWT token
+      const token = jwt.sign(
+        { 
+          userId: user.id, 
+          username: user.username,
+          openId: user.wechatOpenId
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: '7d' }
+      );
       
-      // 直接返回URL，让前端QRCode组件处理
-      return loginUrl;
+      return {
+        success: true,
+        token,
+        user: {
+          id: user.id,
+          username: user.username,
+          nickname: user.wechatNickname,  // 修正字段名
+          avatar: user.wechatAvatar,      // 修正字段名
+          tokenBalance: user.tokenBalance
+        }
+      };
     } catch (error) {
-      console.error('生成自定义二维码失败:', error);
-      throw new Error('二维码生成失败');
+      console.error('处理用户登录失败:', error);
+      return {
+        success: false,
+        error: '登录处理失败'
+      };
     }
   }
 }

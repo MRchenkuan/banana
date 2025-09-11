@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal, Divider, Space, Button } from 'antd';
-import { Link } from 'react-router-dom';
+import { Modal } from 'antd';
 import LoginComponent from './LoginComponent';
 
 const LoginModal = ({ visible, onClose, onSwitchToRegister }) => {
@@ -10,42 +9,42 @@ const LoginModal = ({ visible, onClose, onSwitchToRegister }) => {
 
   return (
     <Modal
-      title={
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '32px', marginBottom: '8px' }}>🍌</div>
-          <div style={{ fontSize: '18px', color: '#1890ff' }}>登录 Banana AI</div>
-        </div>
-      }
       open={visible}
       onCancel={onClose}
       footer={null}
-      width={800}
+      width={480}
       centered
       styles={{
-        body: { padding: '24px' }
+        body: { padding: '40px 32px' }
+      }}
+      maskStyle={{
+        backgroundColor: 'rgba(0, 0, 0, 0.6)'
       }}
     >
+      <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+        <div style={{ 
+          fontSize: '56px', 
+          marginBottom: '20px',
+          filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
+        }}>🍌</div>
+        <div style={{ 
+          fontSize: '28px', 
+          color: '#1890ff',
+          fontWeight: '600',
+          margin: '0 0 8px 0'
+        }}>Banana AI</div>
+        <div style={{
+          fontSize: '16px',
+          color: '#666666'
+        }}>你的创作助手</div>
+      </div>
+      
       <LoginComponent 
         onLoginSuccess={handleLoginSuccess}
         showWechatSDK={true}
-        compact={true}
+        compact={false}
         visible={visible}
       />
-
-      <Divider />
-
-      <div style={{ textAlign: 'center' }}>
-        <Space>
-          <span>还没有账号？</span>
-          <Button 
-            type="link" 
-            onClick={onSwitchToRegister}
-            style={{ padding: 0 }}
-          >
-            立即注册
-          </Button>
-        </Space>
-      </div>
     </Modal>
   );
 };

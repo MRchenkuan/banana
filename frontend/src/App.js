@@ -11,7 +11,6 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Chat from './pages/Chat';
 import Profile from './pages/Profile';
-import WechatQRScan from './pages/WechatQRScan';
 import WechatCallback from './pages/WechatCallback';
 import './App.css';
 
@@ -23,7 +22,7 @@ window.customTheme = customTheme;
 
 // 在App组件的开头添加
 function App() {
-  // 监听localStorage变化
+  // 删除第14行和第79行的注释
   React.useEffect(() => {
     const originalSetItem = localStorage.setItem;
     const originalRemoveItem = localStorage.removeItem;
@@ -75,9 +74,7 @@ function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
-                <Route path="/wechat-callback" element={<WechatCallback />} />
-                <Route path="/wechat/qr-scan" element={<WechatQRScan />} />
-
+                <Route path="/wechat-login-callback" element={<WechatCallback />} />
                 <Route path="/app/*" element={
                   <ProtectedRoute>
                     <Layout>

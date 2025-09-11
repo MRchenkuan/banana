@@ -1,7 +1,7 @@
 {
   "name": "banana-backend",
   "version": "1.0.0",
-  "description": "Banana AI Chat Backend with Gemini Integration",
+  "description": "Banana AI Backend with Gemini Integration",
   "main": "server.js",
   "scripts": {
     "dev": "nodemon server.js",

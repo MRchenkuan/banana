@@ -35,17 +35,17 @@ class TokenBillingService {
       // 提取真实token数据，提供兜底机制
       const tokenData = this._extractTokenData(usageMetadata, userMessage, aiResponse);
       
-      // 检查余额
-      if (balanceBefore < tokenData.totalTokens) {
-        await transaction.rollback();
-        return {
-          success: false,
-          error: 'insufficient_balance',
-          message: 'Token余额不足, 当前余额: ' + balanceBefore,
-          required: tokenData.totalTokens,
-          available: balanceBefore
-        };
-      }
+      // 移除余额检查，允许余额为负
+      // if (balanceBefore < tokenData.totalTokens) {
+      //   await transaction.rollback();
+      //   return {
+      //     success: false,
+      //     error: 'insufficient_balance',
+      //     message: 'Token余额不足, 当前余额: ' + balanceBefore,
+      //     required: tokenData.totalTokens,
+      //     available: balanceBefore
+      //   };
+      // }
 
       // 扣除tokens
       const balanceAfter = balanceBefore - tokenData.totalTokens;

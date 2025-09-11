@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { message } from "antd"; // 添加这行
+import { message } from "antd";
 import SessionSidebar from "../components/SessionSidebar";
 import MessageList from "../components/MessageList";
 import MessageInput from "../components/MessageInput";
@@ -8,9 +8,8 @@ import useChat from "../hooks/useChat";
 import useSessions from "../hooks/useSessions";
 import useMessageSender from "../hooks/useMessageSender";
 import useImageHandler from "../hooks/useImageHandler";
-import { compressImages } from "../utils/imageCompression"; // 添加这行
+import { compressImages } from "../utils/imageCompression";
 
-// 改进键盘事件处理和添加专门的粘贴处理器
 const Chat = () => {
   const [inputValue, setInputValue] = useState("");
 
@@ -23,13 +22,30 @@ const Chat = () => {
     currentSessionId,
     setCurrentSessionId,
     messagesEndRef,
-    loadSessionMessages,
     scrollToBottom,
-    restoreScrollPosition, // 新增
+    restoreScrollPosition,
     updateBalance,
+    clearCurrentSessionCache,
+    validateAndCleanSession,
+    clearCurrentSessionFromStorage // 新增
   } = useChat();
-
+  
+  // 先初始化 sessions
   const { sessions, setSessions, sessionsLoading } = useSessions();
+  
+  // 然后使用 sessions 初始化 useMessageSender
+  const { handleSendMessage } = useMessageSender({
+    loading,
+    setLoading,
+    currentSessionId,
+    setCurrentSessionId,
+    sessions,
+    setSessions,
+    setMessages,
+    updateBalance,
+    clearCurrentSessionCache,
+    validateAndCleanSession
+  });
 
   const {
     selectedImages,
@@ -41,43 +57,45 @@ const Chat = () => {
     handleToolbarImageUpload,
   } = useImageHandler();
 
-  const { handleSendMessage } = useMessageSender({
-    loading,
-    setLoading,
-    currentSessionId,
-    setCurrentSessionId,
-    sessions,
-    setSessions,
-    setMessages,
-    updateBalance,
-  });
-
   // 滚动效果
   useEffect(() => {
     scrollToBottom(false);
   }, [messages]);
 
-  // 验证当前会话ID是否在会话列表中存在
+  // 新的会话验证逻辑：刷新时根据session列表状态决定保留或清理ID
   useEffect(() => {
-    // 只在会话列表加载完成且不为空时才进行验证
-    if (currentSessionId && sessions.length > 0 && !sessionsLoading) {
-      // 确保类型一致性：将两边都转换为字符串进行比较
-      const sessionExists = sessions.some(session => String(session.id) === String(currentSessionId));
-      
-      if (!sessionExists) {
-        // 如果当前会话ID不存在于会话列表中，清除它
-        console.warn('⚠️ 当前会话不存在，清除会话ID:', currentSessionId);
-        setCurrentSessionId(null);
-        setMessages([]);
+    if (!sessionsLoading) {
+      if (sessions.length === 0) {
+        // 规则3：当列表被刷新时，如果没有任何聊天，则清理当前ID
+        if (currentSessionId) {
+          console.log('📝 会话列表为空，清理当前会话ID:', currentSessionId);
+          clearCurrentSessionFromStorage();
+          setCurrentSessionId(null);
+          setMessages([]);
+        }
+      } else if (currentSessionId) {
+        // 刷新时，检查当前ID是否包含在session列表中
+        const sessionExists = sessions.some(session => String(session.id) === String(currentSessionId));
+        
+        if (sessionExists) {
+          // 如果包含，则选中这个session（由于逻辑1，会自动储存ID）
+          console.log('✅ 当前会话ID存在于列表中，保持选中:', currentSessionId);
+          // 这里不需要额外操作，因为setCurrentSessionId会自动保存到localStorage
+        } else {
+          // 如果不包含就直接清理掉当前ID
+          console.warn('⚠️ 当前会话不存在于列表中，清理会话ID:', currentSessionId);
+          clearCurrentSessionFromStorage();
+          setCurrentSessionId(null);
+          setMessages([]);
+        }
       }
     }
-  }, [sessions, currentSessionId, sessionsLoading]);
+  }, [sessions, currentSessionId, sessionsLoading, clearCurrentSessionFromStorage, setCurrentSessionId, setMessages]);
 
-  // 会话切换处理 - 简化逻辑
+  // 会话切换处理
   const handleSessionSwitch = (sessionId, newMessages = null) => {
     if (sessionId !== currentSessionId) {
       setCurrentSessionId(sessionId);
-      // 移除手动设置消息的逻辑，让缓存系统处理
     }
   };
 
@@ -86,14 +104,12 @@ const Chat = () => {
     try {
       if (imageFiles.length === 0) return;
       
-      // 检查当前已选择的图片数量
       const totalImages = selectedImages.length + imageFiles.length;
       if (totalImages > 2) {
         message.warning('最多只能上传2张图片');
         return;
       }
       
-      // 检查是否需要压缩
       const needCompression = imageFiles.some(file => file.size > 500 * 1024);
       
       if (needCompression) {
@@ -118,14 +134,12 @@ const Chat = () => {
     }
   };
   
-  // 改进的键盘事件处理（保留作为备用方案）
+  // 改进的键盘事件处理
   const handleKeyPress = async (e) => {
-    // 处理 Ctrl+V 粘贴图片（备用方案）
     if (e.key === 'v' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       
       try {
-        // 尝试使用现代 Clipboard API
         if (navigator.clipboard && navigator.clipboard.read) {
           const clipboardItems = await navigator.clipboard.read();
           const imageFiles = [];
@@ -162,15 +176,18 @@ const Chat = () => {
       return;
     }
     
-    // 原有的 Enter 键发送消息逻辑
+    // Enter 键发送消息逻辑
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSendMessage(
-        inputValue,
-        selectedImages,
-        setInputValue,
-        setSelectedImages
-      );
+      // 检查是否有内容可发送
+      if (inputValue.trim() || selectedImages.length > 0) {
+        handleSendMessage(
+          inputValue,
+          selectedImages,
+          setInputValue,
+          setSelectedImages
+        );
+      }
     }
   };
 
@@ -180,13 +197,17 @@ const Chat = () => {
   };
 
   const onSendMessage = () => {
-    
-    handleSendMessage(
-      inputValue,
-      selectedImages,
-      setInputValue,
-      setSelectedImages
-    );
+    // 检查是否有内容可发送
+    if (inputValue.trim() || selectedImages.length > 0) {
+      handleSendMessage(
+        inputValue,
+        selectedImages,
+        setInputValue,
+        setSelectedImages
+      );
+    } else {
+      message.warning('请输入消息内容或选择图片');
+    }
   };
 
   return (

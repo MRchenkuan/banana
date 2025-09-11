@@ -22,9 +22,4 @@ router.post('/callback',
   authController.handleOAuthCallback.bind(authController)
 );
 
-// 二维码登录相关路由
-router.post('/qr-login', authController.generateQRLogin.bind(authController));
-router.get('/qr-status/:scene', authController.getQRLoginStatus.bind(authController));
-router.post('/qr-confirm', authController.confirmQRLogin.bind(authController));
-
 module.exports = router;

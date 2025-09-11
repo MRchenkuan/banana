@@ -1,7 +1,7 @@
 {
   "name": "banana-chat",
   "version": "1.0.0",
-  "description": "Banana AI Chat Application",
+  "description": "Banana AI Application",
   "scripts": {
     "dev": "docker compose up -d mysql && concurrently \"npm run backend:dev\" \"npm run frontend:dev\"",
     "dev:docker": "docker compose up",

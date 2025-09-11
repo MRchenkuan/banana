@@ -6,158 +6,219 @@ const useMessageSender = ({
   setLoading,
   currentSessionId,
   setCurrentSessionId,
-  sessions,
   setSessions,
   setMessages,
-  updateBalance
+  updateBalance,
+  clearCurrentSessionCache, // 新增参数
+  validateAndCleanSession   // 新增参数
 }) => {
+  let messageIdCounter = 0;
+
+  const generateUniqueId = () => {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+  };
+
   const sendTextMessage = async (messageText, sessionId) => {
-    const newMessage = {
-      id: Date.now(),
-      type: 'text',
-      content: messageText,
-      timestamp: new Date(),
-      role: 'user'
-    };
-    
-    setMessages(prev => [...prev, newMessage]);
-    
-    // 创建思考中的临时消息
-    const thinkingMessageId = Date.now() + 1;
-    const thinkingMessage = {
-      id: thinkingMessageId,
-      type: 'thinking',
-      content: '正在思考中...',
-      timestamp: new Date(),
-      role: 'assistant',
-      isThinking: true
-    };
-    
-    setMessages(prev => [...prev, thinkingMessage]);
-    
+    // 直接调用API，不再添加消息（消息已在handleSendMessage中添加）
     await api.chat.sendTextMessage(
       messageText,
       sessionId,
       {
-        setMessages,
+        setMessages: (updater) => setMessages(updater, sessionId),
         updateBalance,
         setSessions,
-        thinkingMessageId,
-        messageId: thinkingMessageId + 1,
-        sessionId,
-        setLoading  // 添加这一行
-      }
-    );
-  };
-
-  const sendImageMessage = async (messageText, images, sessionId) => {
-    // 为每张图片创建临时URL和markdown
-    const imageMarkdowns = images.map((img, index) => {
-      const imageUrl = URL.createObjectURL(img);
-      const fileName = img.name || `图片${index + 1}`;
-      const markdown = `![${fileName}](${imageUrl})`;
-      return markdown;
-    });
-    
-    // 组合用户文本和图片markdown
-    let fullContent = '';
-    if (imageMarkdowns.length > 0) {
-      fullContent += imageMarkdowns.join('\n\n') + '\n\n';
-    }
-    fullContent += messageText;
-    
-    console.log('Full content with markdown:', fullContent);
-    
-    // 创建用户消息
-    const newMessage = {
-      id: Date.now(),
-      type: 'text',
-      content: fullContent,
-      timestamp: new Date(),
-      role: 'user'
-    };
-    
-    setMessages(prev => [...prev, newMessage]);
-    
-    // 其余逻辑保持不变
-    const thinkingMessageId = Date.now() + 1;
-    const thinkingMessage = {
-      id: thinkingMessageId,
-      type: 'thinking',
-      content: `正在分析${images.length}张图片...`,
-      timestamp: new Date(),
-      role: 'assistant',
-      isThinking: true
-    };
-    
-    setMessages(prev => [...prev, thinkingMessage]);
-    
-    await api.chat.sendImageMessage(
-      messageText,
-      images,
-      sessionId,
-      {
-        setMessages,
-        updateBalance,
-        setSessions,
-        thinkingMessageId,
-        messageId: thinkingMessageId + 1,
+        thinkingMessageId: thinkingMessage.id, // 需要从参数传入
+        messageId: generateUniqueId(),
         sessionId,
         setLoading
       }
     );
   };
 
-  const handleSendMessage = async (inputValue, selectedImages, setInputValue, setSelectedImages) => {
-    
-    if (loading) {
-      return;
-    }
-    
-    if (selectedImages.length > 0 && !inputValue.trim()) {
-      message.warning('请输入对图片的分析要求或描述');
-      return;
-    }
-    
-    if (!inputValue.trim() && selectedImages.length === 0) {
-      return;
-    }
-
-    let sessionId = currentSessionId;
-    if (!sessionId) {
-      try {
-        
-        // 将 api.createSession() 改为 api.session.createSession()
-        const response = await api.session.createSession();
-        sessionId = response.data.id;
-        setCurrentSessionId(sessionId);
-        setSessions(prev => [response.data, ...prev]);
-      } catch (error) {
-        message.error('创建会话失败');
-        return;
+  const sendImageMessage = async (messageText, images, sessionId) => {
+    // 直接调用API，不再添加消息（消息已在handleSendMessage中添加）
+    await api.chat.sendImageMessage(
+      messageText,
+      images,
+      sessionId,
+      {
+        setMessages: (updater) => setMessages(updater, sessionId),
+        updateBalance,
+        setSessions,
+        thinkingMessageId: thinkingMessage.id, // 需要从参数传入
+        messageId: generateUniqueId(),
+        sessionId,
+        setLoading
       }
-    }
-  
-    const messageText = inputValue.trim();
-    const images = [...selectedImages];
-    
-    setInputValue('');
-    setSelectedImages([]);
-    setLoading(true);
-  
-    try {
-      if (images.length > 0) {
-        await sendImageMessage(messageText, images, sessionId); // 传递所有图片
-      } else {
-        await sendTextMessage(messageText, sessionId);
-      }
-    } catch (error) {
-      console.error('发送消息失败:', error);
-      message.error(error.response?.data?.error || '发送消息失败，请重试');
-      setLoading(false);
-    }
+    );
   };
 
+  const handleSendMessage = async (messageText, messageImages, setInputValue, setSelectedImages) => {
+    if (loading) return;
+    
+    setLoading(true);
+    
+    // 立即清空输入（移到这里）
+    const tempMessageText = messageText; // 保存消息文本的副本用于发送
+    const tempMessageImages = [...messageImages]; // 保存图片的副本用于发送
+    setInputValue('');
+    setSelectedImages([]);
+    
+    try {
+      let sessionId = currentSessionId;
+      
+      // 立即创建用户消息和思考消息
+      const newMessage = {
+        id: generateUniqueId(),
+        type: 'text',
+        content: tempMessageText, // 使用副本
+        timestamp: new Date(),
+        role: 'user'
+      };
+      
+      const thinkingMessage = {
+        id: generateUniqueId(),
+        type: 'thinking',
+        content: tempMessageImages && tempMessageImages.length > 0 
+          ? `正在分析${tempMessageImages.length}张图片...` 
+          : '正在思考中...',
+        timestamp: new Date(),
+        role: 'assistant',
+        isThinking: true
+      };
+      
+      // 无论是否有sessionId，都先立即添加消息到当前显示列表
+      setMessages(prev => [...prev, newMessage, thinkingMessage]);
+      
+      if (!sessionId) {
+        // 创建新会话
+        const response = await api.session.createSession();
+        sessionId = response.data.id;
+        
+        const newSession = {
+          id: sessionId,
+          title: response.data.title,
+          lastMessageAt: response.data.lastMessageAt,
+          messageCount: 0,
+          createdAt: response.data.createdAt
+        };
+        setSessions(prev => [newSession, ...prev]);
+        
+        // 先将消息迁移到正式会话缓存中，避免被覆盖
+        setMessages(prev => [...prev, newMessage, thinkingMessage], sessionId);
+        
+        // 然后再更新会话ID，此时缓存中已有消息，不会被覆盖
+        setCurrentSessionId(sessionId);
+      }
+      // 移除else分支中的会话验证逻辑，直接发送消息
+      // 如果会话真的失效，API调用时会返回错误，在catch中处理
+      
+      // 发送消息到后端
+      try {
+        if (messageImages && messageImages.length > 0) {
+          await api.chat.sendImageMessage(
+            messageText,
+            messageImages,
+            sessionId,
+            {
+              setMessages: (updater) => setMessages(updater, sessionId),
+              updateBalance,
+              setSessions,
+              thinkingMessageId: thinkingMessage.id,
+              messageId: generateUniqueId(),
+              sessionId,
+              setLoading
+            }
+          );
+        } else {
+          await api.chat.sendTextMessage(
+            messageText,
+            sessionId,
+            {
+              setMessages: (updater) => setMessages(updater, sessionId),
+              updateBalance,
+              setSessions,
+              thinkingMessageId: thinkingMessage.id,
+              messageId: generateUniqueId(),
+              sessionId,
+              setLoading
+            }
+          );
+        }
+      } catch (apiError) {
+        // 检查是否为会话相关错误
+        const isSessionError = 
+          apiError.message?.includes('会话不存在') || 
+          apiError.response?.data?.code === 'SESSION_NOT_FOUND' ||
+          apiError.message?.includes('foreign key constraint fails') ||
+          apiError.response?.status === 404;
+        
+        if (isSessionError) {
+          console.warn('检测到会话错误，重新创建会话');
+          
+          // 创建新会话并重新发送
+          const response = await api.session.createSession();
+          const newSessionId = response.data.id;
+          
+          const newSession = {
+            id: newSessionId,
+            title: response.data.title,
+            lastMessageAt: response.data.lastMessageAt,
+            messageCount: 0,
+            createdAt: response.data.createdAt
+          };
+          setSessions(prev => [newSession, ...prev.filter(s => s.id !== sessionId)]);
+          setCurrentSessionId(newSessionId);
+          
+          // 重新发送消息
+          if (messageImages && messageImages.length > 0) {
+            await api.chat.sendImageMessage(
+              messageText,
+              messageImages,
+              newSessionId,
+              {
+                setMessages: (updater) => setMessages(updater, newSessionId),
+                updateBalance,
+                setSessions,
+                thinkingMessageId: thinkingMessage.id,
+                messageId: generateUniqueId(),
+                sessionId: newSessionId,
+                setLoading
+              }
+            );
+          } else {
+            await api.chat.sendTextMessage(
+              messageText,
+              newSessionId,
+              {
+                setMessages: (updater) => setMessages(updater, newSessionId),
+                updateBalance,
+                setSessions,
+                thinkingMessageId: thinkingMessage.id,
+                messageId: generateUniqueId(),
+                sessionId: newSessionId,
+                setLoading
+              }
+            );
+          }
+          
+          message.success('已自动重新创建会话并发送消息');
+        } else {
+          throw apiError; // 重新抛出非会话相关错误
+        }
+      }
+      
+    } catch (error) {
+      console.error('发送消息失败:', error);
+      message.error('发送消息失败，请重试');
+    } finally {
+      setLoading(false);
+      // 移除这里的清空输入代码
+      // setInputValue('');
+      // setSelectedImages([]);
+    }
+};
+  
   return {
     handleSendMessage,
     sendTextMessage,

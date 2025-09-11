@@ -40,8 +40,11 @@ class HttpClient {
   handleResponseError(error) {
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
-      window.location.href = '/login';
-      message.error('登录已过期，请重新登录');
+      // 只在非登录页面时重定向
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+        message.error('登录已过期，请重新登录');
+      }
     } else if (error.response?.status === 402) {
       message.error('Token 余额不足，请充值后继续使用');
     } else if (error.response?.status >= 500) {
