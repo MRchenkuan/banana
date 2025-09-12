@@ -96,32 +96,6 @@ const LoginComponent = ({ onLoginSuccess, showWechatSDK = false, compact = false
 
   return (
     <div>
-      {/* 微信环境一键登录 */}
-      {isWechatEnv && showWechatSDK && (
-        <div style={{ marginBottom: '24px', textAlign: 'center' }}>
-          <Button
-            type="primary"
-            size="large"
-            loading={wechatLoading}
-            onClick={handleWechatSDKLogin}
-            disabled={!isSDKReady}
-            style={{
-              width: '100%',
-              height: '48px',
-              background: '#07c160',
-              borderColor: '#07c160',
-              fontSize: '16px',
-              marginBottom: '16px'
-            }}
-          >
-            {wechatLoading ? '正在授权...' : '🔐 微信一键登录'}
-          </Button>
-          <div style={{ textAlign: 'center', color: '#666', fontSize: '12px' }}>
-            {isSDKReady ? '点击按钮进行微信授权登录' : '正在初始化微信环境...'}
-          </div>
-        </div>
-      )}
-
       {/* 微信登录 */}
       <div style={cardStyle}>
         <div style={{ marginBottom: '32px' }}>

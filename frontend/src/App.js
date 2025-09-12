@@ -10,7 +10,6 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Chat from './pages/Chat';
-import Profile from './pages/Profile';
 import WechatCallback from './pages/WechatCallback';
 import './App.css';
 
@@ -81,14 +80,12 @@ function App() {
                       <Routes>
                         <Route index element={<Navigate to="/app/chat" replace />} />
                         <Route path="chat" element={<Chat />} />
-                        <Route path="profile" element={<Profile />} />
                       </Routes>
                     </Layout>
                   </ProtectedRoute>
                 } />
                 
                 <Route path="/chat" element={<Navigate to="/app/chat" replace />} />
-                <Route path="/profile" element={<Navigate to="/app/profile" replace />} />
               </Routes>
             </div>
           </Router>

@@ -348,7 +348,7 @@ const PaymentModal = ({ visible, onClose, defaultPackage = 'standard' }) => {
                   e.target.style.boxShadow = '0 8px 24px rgba(7, 193, 96, 0.3)';
                 }}
               >
-                💳 微信支付 ¥{selectedPkg?.amount}
+                微信支付 ¥{selectedPkg?.amount}
               </Button>
             </div>
 

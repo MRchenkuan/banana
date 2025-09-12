@@ -111,7 +111,7 @@ router.post('/login', async (req, res) => {
 router.get('/profile', authenticateToken, async (req, res) => {
   try {
     const user = await User.findByPk(req.user.userId, {
-      attributes: ['id', 'username', 'email', 'tokenBalance', 'createdAt']
+      attributes: ['id', 'username', 'email', 'tokenBalance', 'createdAt', 'wechatNickname', 'wechatAvatar']
     });
 
     if (!user) {
@@ -124,7 +124,9 @@ router.get('/profile', authenticateToken, async (req, res) => {
         username: user.username,
         email: user.email,
         tokenBalance: user.tokenBalance,
-        createdAt: user.createdAt
+        createdAt: user.createdAt,
+        wechatNickname: user.wechatNickname,
+        wechatAvatar: user.wechatAvatar
       }
     });
   } catch (error) {

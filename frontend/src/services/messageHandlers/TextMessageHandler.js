@@ -35,7 +35,8 @@ class TextMessageHandler extends BaseMessageHandler {
                 ...msg,
                 // id: messageId, // 移除这行，保持原始ID
                 type: "text",
-                content: content, // 替换为实际内容
+                // 检查消息内容是否包含处理状态的提示文案，如果是则替换，否则追加
+                content: msg.isThinking ? content : msg.content + content,
                 isThinking: false, // 移除thinking状态
                 isStreaming: true,
                 isNewMessage: true,

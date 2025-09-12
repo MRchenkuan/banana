@@ -137,6 +137,8 @@ class AbstractStreamHandler extends BaseStreamHandler {
       this.tokensUsed,
       message
     );
+  
+    await this.generateTitleIfNeeded();
 
     this.sendComplete({
       tokensUsed: result.tokensUsed,

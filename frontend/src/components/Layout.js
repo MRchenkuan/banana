@@ -48,13 +48,8 @@ const Layout = ({ children }) => {
     }
   }, [location.search]);
   
+  // 修改userMenuItems数组，移除个人中心选项
   const userMenuItems = [
-    {
-      key: 'profile',
-      icon: <UserOutlined />,
-      label: '个人中心',
-      onClick: () => navigate('/app/profile')
-    },
     {
       key: 'logout',
       icon: <LogoutOutlined />,
@@ -128,9 +123,16 @@ const Layout = ({ children }) => {
             placement="bottomRight"
             arrow
           >
-            <Space style={{ cursor: 'pointer' }}>
-              <Avatar icon={<UserOutlined />} style={{ backgroundColor: theme.primary }} />
-              <Text style={{ color: '#ffffff' }}>{user?.username}</Text>
+            <Space style={{ cursor: 'pointer', alignItems: 'center',display:'flex' }}>
+              <Avatar 
+                icon={<UserOutlined />} 
+                src={user?.wechatAvatar} 
+                style={{ backgroundColor: theme.primary, display:'flex' }} 
+              />
+              <div>
+                <Text style={{ color: '#ffffff', display: 'block' }}>{user?.username}</Text>
+                <Text style={{ color: '#999999', fontSize: '12px', display: 'block' }}>用户ID: {user?.id}</Text>
+              </div>
             </Space>
           </Dropdown>
         </Space>

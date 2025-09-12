@@ -4,8 +4,18 @@ import { EyeOutlined, EyeInvisibleOutlined, ExpandAltOutlined, CompressOutlined 
 import { tokenMonitorEvents } from '../utils/tokenMonitorEvents';
 
 const TokenMonitor = ({ messages }) => {
-  const [isVisible, setIsVisible] = useState(true);
-  const [isExpanded, setIsExpanded] = useState(true); // 修改：默认展开
+  // 从localStorage读取初始状态，如果没有则默认为隐藏
+  const [isVisible, setIsVisible] = useState(() => {
+    const savedState = localStorage.getItem('tokenMonitorVisible');
+    return savedState !== null ? JSON.parse(savedState) : false;
+  });
+  
+  // 从localStorage读取展开状态，如果没有则默认为展开
+  const [isExpanded, setIsExpanded] = useState(() => {
+    const savedState = localStorage.getItem('tokenMonitorExpanded');
+    return savedState !== null ? JSON.parse(savedState) : true;
+  });
+  
   const [latestTokenData, setLatestTokenData] = useState(null);
   
   // 监听token事件更新
@@ -17,17 +27,37 @@ const TokenMonitor = ({ messages }) => {
     return unsubscribe;
   }, []);
   
+  // 当显示状态变化时，保存到localStorage
+  useEffect(() => {
+    localStorage.setItem('tokenMonitorVisible', JSON.stringify(isVisible));
+  }, [isVisible]);
+  
+  // 当展开状态变化时，保存到localStorage
+  useEffect(() => {
+    localStorage.setItem('tokenMonitorExpanded', JSON.stringify(isExpanded));
+  }, [isExpanded]);
+  
   // 格式化token数据显示
   const formatTokenData = (data) => {
     if (!data) return null;
     
     if (typeof data === 'object') {
+      // 语义化处理token数据
+      if (data.promptTokenCount !== undefined && data.candidatesTokenCount !== undefined) {
+        return {
+          formatted: true,
+          prompt: data.promptTokenCount,
+          completion: data.candidatesTokenCount,
+          total: data.totalTokenCount || (data.promptTokenCount + data.candidatesTokenCount)
+        };
+      }
       return JSON.stringify(data, null, 2);
     }
     return data;
   };
   
   const tokenData = latestTokenData?.totalTokensUsed;
+  const formattedData = formatTokenData(tokenData);
   
   if (!isVisible) {
     return (
@@ -90,7 +120,7 @@ const TokenMonitor = ({ messages }) => {
             color: 'rgba(255, 255, 255, 0.8)'
           }}
         >
-          <span>Token Monitor</span>
+          <span>Token 消耗监控</span>
           <div style={{ display: 'flex', gap: '4px' }}>
             <Button
               type="text"
@@ -136,7 +166,9 @@ const TokenMonitor = ({ messages }) => {
                 onClick={() => setIsExpanded(true)}
               >
                 <div style={{ color: '#1890ff', fontWeight: '500' }}>
-                  {typeof tokenData === 'object' ? (tokenData.total || tokenData.totalTokens || 'N/A') : tokenData} tokens
+                  {formattedData && formattedData.formatted 
+                    ? `${formattedData.total.toLocaleString()} tokens` 
+                    : `${(typeof tokenData === 'object' ? (tokenData.total || tokenData.totalTokens || 'N/A') : tokenData).toLocaleString()} tokens`}
                 </div>
                 <div style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.6)', marginTop: '2px' }}>
                   点击展开查看详情
@@ -147,24 +179,51 @@ const TokenMonitor = ({ messages }) => {
                 <div style={{ marginBottom: '8px', fontSize: '11px', color: 'rgba(255, 255, 255, 0.7)' }}>
                   最新Token消耗:
                 </div>
-                <pre
-                  style={{
-                    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-                    padding: '8px',
-                    borderRadius: '4px',
-                    fontSize: '10px',
-                    lineHeight: '1.4',
-                    color: '#fff',
-                    margin: 0,
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word',
-                    maxHeight: '200px',
-                    textAlign: 'left',
-                    overflowY: 'auto'
-                  }}
-                >
-                  {formatTokenData(tokenData)}
-                </pre>
+                {formattedData && formattedData.formatted ? (
+                  <div
+                    style={{
+                      backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                      padding: '12px',
+                      borderRadius: '4px',
+                      fontSize: '11px',
+                      lineHeight: '1.6',
+                      color: '#fff',
+                      margin: 0
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                      <span>输入消耗:</span>
+                      <span style={{ color: '#52c41a' }}>{formattedData.prompt.toLocaleString()} tokens</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                      <span>输出消耗:</span>
+                      <span style={{ color: '#1890ff' }}>{formattedData.completion.toLocaleString()} tokens</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '6px', marginTop: '2px' }}>
+                      <span style={{ fontWeight: 'bold' }}>总计消耗:</span>
+                      <span style={{ fontWeight: 'bold', color: '#f5a623' }}>{formattedData.total.toLocaleString()} tokens</span>
+                    </div>
+                  </div>
+                ) : (
+                  <pre
+                    style={{
+                      backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                      padding: '8px',
+                      borderRadius: '4px',
+                      fontSize: '10px',
+                      lineHeight: '1.4',
+                      color: '#fff',
+                      margin: 0,
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                      maxHeight: '200px',
+                      textAlign: 'left',
+                      overflowY: 'auto'
+                    }}
+                  >
+                    {formatTokenData(tokenData)}
+                  </pre>
+                )}
                 {latestTokenData?.timestamp && (
                   <div style={{ 
                     fontSize: '10px', 
