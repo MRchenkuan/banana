@@ -4,17 +4,18 @@ class WechatSignatureUtil {
   /**
    * 生成微信支付签名
    */
-  static generatePaySign(params, apiKey) {
+  static generatePaySign(params, key) {
     const sortedKeys = Object.keys(params)
-      .filter(k => params[k] !== '' && k !== 'sign')
+      .filter(k => params[k] !== '' && params[k] !== undefined && params[k] !== null && k !== 'sign')
       .sort();
     
     const stringA = sortedKeys
       .map(k => `${k}=${params[k]}`)
       .join('&');
     
-    const stringSignTemp = `${stringA}&key=${apiKey}`;
-    return WechatCryptoUtil.md5(stringSignTemp);
+    const stringSignTemp = `${stringA}&key=${key}`; // 添加key参数
+    
+    return WechatCryptoUtil.md5(stringSignTemp).toUpperCase(); // 转为大写
   }
   
   /**
@@ -28,12 +29,12 @@ class WechatSignatureUtil {
   /**
    * 验证微信回调签名
    */
-  static verifySign(params, apiKey) {
+  static verifySign(params) {
     const sign = params.sign;
     const paramsWithoutSign = { ...params };
     delete paramsWithoutSign.sign;
     
-    const calculatedSign = this.generatePaySign(paramsWithoutSign, apiKey);
+    const calculatedSign = this.generatePaySign(paramsWithoutSign);
     return sign === calculatedSign;
   }
 }

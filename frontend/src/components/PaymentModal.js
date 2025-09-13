@@ -24,59 +24,13 @@ import {
 } from '@ant-design/icons';
 import { useToken } from '../contexts/TokenContext';
 import api from '../services/api';
+import PaymentService from '../services/PaymentService';
 
 const { Title, Text } = Typography;
 
-// 充值套餐配置 - 橙色紫色渐变主题
-const PAYMENT_PACKAGES = [
-  {
-    id: 'basic',
-    name: '基础套餐',
-    amount: 10,
-    tokens: 100000,
-    description: '适合轻度使用',
-    icon: <StarOutlined />,
-    color: '#ff8c42', // 橙色
-    gradient: 'linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%)',
-    popular: false
-  },
-  {
-    id: 'standard',
-    name: '标准套餐',
-    amount: 30,
-    tokens: 350000,
-    description: '最受欢迎的选择',
-    icon: <CrownOutlined />,
-    color: '#a855f7', // 紫色
-    gradient: 'linear-gradient(135deg, #a855f7 0%, #9333ea 100%)',
-    popular: true
-  },
-  {
-    id: 'premium',
-    name: '高级套餐',
-    amount: 50,
-    tokens: 600000,
-    description: '高频使用用户',
-    icon: <RocketOutlined />,
-    color: '#f97316', // 深橙色
-    gradient: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
-    popular: false
-  },
-  {
-    id: 'enterprise',
-    name: '企业套餐',
-    amount: 100,
-    tokens: 1300000,
-    description: '企业级解决方案',
-    icon: <ThunderboltOutlined />,
-    color: '#8b5cf6', // 亮紫色
-    gradient: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-    popular: false
-  }
-];
-
-const PaymentModal = ({ visible, onClose, defaultPackage = 'standard' }) => {
-  const [selectedPackage, setSelectedPackage] = useState(defaultPackage);
+const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参数
+  const [packages, setPackages] = useState([]);
+  const [selectedPackage, setSelectedPackage] = useState(null);  // 初始值改为 null
   const [loading, setLoading] = useState(false);
   const [paymentModal, setPaymentModal] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState('');
@@ -129,14 +83,40 @@ const PaymentModal = ({ visible, onClose, defaultPackage = 'standard' }) => {
     };
   }, [paymentModal, paymentStatus]);
 
+  // 获取套餐列表
+  useEffect(() => {
+    const fetchPackages = async () => {
+      try {
+        const response = await api.payment.getPackages();
+        if (response.data.success) {
+          setPackages(response.data.data);
+        }
+      } catch (error) {
+        console.error('获取套餐列表失败:', error);
+        message.error('获取套餐列表失败');
+      }
+    };
+
+    if (visible) {
+      fetchPackages();
+    }
+  }, [visible]);
+
   const handlePayment = async () => {
-    const selectedPkg = PAYMENT_PACKAGES.find(pkg => pkg.id === selectedPackage);
-    if (!selectedPkg) return;
+    if (!packages || packages.length === 0) {
+      message.error('套餐列表为空，请稍后再试');
+      return;
+    }
+
+    const selectedPkg = packages.find(pkg => pkg.id === selectedPackage);
+    if (!selectedPkg) {
+      message.error('请选择有效的套餐');
+      return;
+    }
 
     setLoading(true);
     try {
-
-      const response = await api.payment.createPaymentOrder({ amount: selectedPkg.amount });
+      const response = await api.payment.createPaymentOrder(selectedPkg.id);
 
       if (response.data.success) {
         setOrderId(response.data.orderId);
@@ -145,7 +125,6 @@ const PaymentModal = ({ visible, onClose, defaultPackage = 'standard' }) => {
         setPaymentStatus('pending');
         setCountdown(300);
         
-        // 开始轮询支付状态
         startPaymentPolling(response.data.orderId);
       } else {
         message.error(response.data.message || '创建订单失败');
@@ -161,6 +140,23 @@ const PaymentModal = ({ visible, onClose, defaultPackage = 'standard' }) => {
   const startPaymentPolling = (orderId) => {
     pollIntervalRef.current = setInterval(async () => {
       try {
+        // 先主动调用更新订单状态接口
+        const updateResponse = await api.payment.updateOrderStatus(orderId);
+        
+        // 如果更新接口返回支付成功，直接处理成功逻辑
+        if (updateResponse.data.success && updateResponse.data.status === 'completed') {
+          setPaymentStatus('success');
+          clearInterval(pollIntervalRef.current);
+          message.success('支付成功！');
+          refreshTokens();
+          setTimeout(() => {
+            setPaymentModal(false);
+            onClose();
+          }, 2000);
+          return;
+        }
+        
+        // 如果更新接口未返回成功，继续查询订单状态
         const response = await api.payment.getOrderStatus(orderId);
         if (response.data.success) {
           const { status } = response.data;
@@ -204,8 +200,6 @@ const PaymentModal = ({ visible, onClose, defaultPackage = 'standard' }) => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const selectedPkg = PAYMENT_PACKAGES.find(pkg => pkg.id === selectedPackage);
-
   return (
     <>
       <Modal
@@ -227,91 +221,19 @@ const PaymentModal = ({ visible, onClose, defaultPackage = 'standard' }) => {
                 style={{ width: '100%' }}
               >
                 <Row gutter={[16, 16]}>
-                  {PAYMENT_PACKAGES.map(pkg => (
-                    <Col span={12} key={pkg.id}>
-                      <Radio.Button
-                        value={pkg.id}
-                        style={{
-                          width: '100%',
-                          height: 'auto',
-                          padding: 0,
-                          border: selectedPackage === pkg.id ? `2px solid ${pkg.color}` : '1px solid #d9d9d9'
-                        }}
+                  {packages.map(pkg => (
+                    <Col key={pkg.id} xs={24} sm={12} md={12} lg={6}>
+                      <Card
+                        hoverable
+                        className={`package-card ${selectedPackage === pkg.id ? 'selected' : ''}`}
+                        onClick={() => setSelectedPackage(pkg.id)}
                       >
-                        <Card
-                          size="small"
-                          style={{
-                            border: 'none',
-                            background: selectedPackage === pkg.id 
-                              ? `linear-gradient(135deg, ${pkg.color}15 0%, ${pkg.color}25 100%)` 
-                              : 'linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%)',
-                            borderRadius: '12px',
-                            transition: 'all 0.3s ease',
-                            boxShadow: selectedPackage === pkg.id 
-                              ? `0 8px 32px ${pkg.color}40` 
-                              : '0 4px 16px rgba(0,0,0,0.3)'
-                          }}
-                          bodyStyle={{ padding: '20px' }}
-                        >
-                          <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <Space>
-                                <div style={{ 
-                                  background: pkg.gradient,
-                                  borderRadius: '8px',
-                                  padding: '8px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center'
-                                }}>
-                                  <span style={{ color: '#ffffff', fontSize: '18px' }}>
-                                    {pkg.icon}
-                                  </span>
-                                </div>
-                                <Text strong style={{ color: '#ffffff' }}>{pkg.name}</Text>
-                              </Space>
-                              {pkg.popular && (
-                                <Tag 
-                                  style={{
-                                    background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%)',
-                                    border: 'none',
-                                    color: '#ffffff',
-                                    borderRadius: '20px',
-                                    padding: '4px 12px'
-                                  }}
-                                >
-                                  🔥 热门
-                                </Tag>
-                              )}
-                            </div>
-                            <div>
-                              <Text style={{ 
-                                fontSize: '28px', 
-                                fontWeight: 'bold', 
-                                background: pkg.gradient,
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent',
-                                backgroundClip: 'text'
-                              }}>
-                                ¥{pkg.amount}
-                              </Text>
-                              <Text style={{ 
-                                marginLeft: 8, 
-                                color: 'rgba(255,255,255,0.7)',
-                                fontSize: '14px'
-                              }}>
-                                {(pkg.tokens / 10000).toFixed(0)}万 Tokens
-                              </Text>
-                            </div>
-                            <Text style={{ 
-                              fontSize: '12px',
-                              color: 'rgba(255,255,255,0.6)'
-                            }}>
-                              {pkg.description}
-                            </Text>
-                          </Space>
-                        </Card>
-                      </Radio.Button>
+                        <div className="package-icon">{getIconForPackage(pkg.id)}</div>
+                        <Title level={4}>{pkg.name}</Title>
+                        <Text className="package-price">¥{pkg.amount}</Text>
+                        <div className="package-tokens">{pkg.tokens} Tokens</div>
+                        <Text type="secondary">{pkg.description}</Text>
+                      </Card>
                     </Col>
                   ))}
                 </Row>
@@ -348,7 +270,7 @@ const PaymentModal = ({ visible, onClose, defaultPackage = 'standard' }) => {
                   e.target.style.boxShadow = '0 8px 24px rgba(7, 193, 96, 0.3)';
                 }}
               >
-                微信支付 ¥{selectedPkg?.amount}
+                微信支付 {selectedPackage ? `¥${packages.find(pkg => pkg.id === selectedPackage)?.amount || '--'}` : '请先选择套餐'}
               </Button>
             </div>
 
@@ -377,7 +299,7 @@ const PaymentModal = ({ visible, onClose, defaultPackage = 'standard' }) => {
               <div>
                 <Text>请使用微信扫描二维码完成支付</Text>
                 <br />
-                <Text type="secondary">支付金额: ¥{selectedPkg?.amount}</Text>
+                <Text type="secondary">支付金额: ¥{packages.find(pkg => pkg.id === selectedPackage)?.amount || '--'}</Text>
               </div>
               
               {qrCodeUrl && (
@@ -442,6 +364,17 @@ const PaymentModal = ({ visible, onClose, defaultPackage = 'standard' }) => {
       </Modal>
     </>
   );
+};
+
+// 根据套餐ID返回对应图标
+const getIconForPackage = (packageId) => {
+  const icons = {
+    'basic': <StarOutlined />,
+    'standard': <CrownOutlined />,
+    'premium': <RocketOutlined />,
+    'enterprise': <ThunderboltOutlined />
+  };
+  return icons[packageId] || <StarOutlined />;
 };
 
 export default PaymentModal;

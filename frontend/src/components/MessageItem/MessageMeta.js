@@ -17,6 +17,27 @@ const MessageMeta = ({ message, messageState, elapsedTime }) => {
   
   if (!shouldShowMeta) return null;
   
+  // 获取token消耗数据
+  const getTokenCount = () => {
+    // 如果已收到complete消息（tokensUsed存在），则直接使用tokensUsed
+    if (message.tokensUsed !== undefined) {
+      return message.tokensUsed;
+    }
+    
+    // 如果正在流式传输中（estimatedTokens存在），则使用estimatedTokens
+    if (message.estimatedTokens !== undefined) {
+      return message.estimatedTokens;
+    }
+    
+    // 如果有totalTokensUsed.promptTokenCount，则使用它
+    if (message?.totalTokensUsed?.promptTokenCount) {
+      return message.totalTokensUsed.promptTokenCount;
+    }
+    
+    // 默认值
+    return 1;
+  };
+  
   return (
     <>
       <div
@@ -54,10 +75,10 @@ const MessageMeta = ({ message, messageState, elapsedTime }) => {
             </span>
           )}
           
-          {/* Token显示 */}
-          {!isThinking && (message.tokensUsed !== undefined || message.estimatedTokens) && (
+          {/* Token显示 - 修改为使用getTokenCount函数 */}
+          {!isThinking && (message.tokensUsed !== undefined || message.estimatedTokens || message?.totalTokensUsed?.promptTokenCount) && (
             <span>
-              { message?.totalTokensUsed?.promptTokenCount || 1 } ~t
+              {getTokenCount()} ~t
             </span>
           )}
         </div>

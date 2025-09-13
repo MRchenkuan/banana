@@ -1,5 +1,5 @@
-const { User, TokenUsage, ChatMessage } = require('../../models');
-const { sequelize } = require('../../config/database');
+const { User, TokenUsage, ChatMessage } = require("../../models");
+const { sequelize } = require("../../config/database");
 
 class TokenBillingService {
   /**
@@ -17,24 +17,28 @@ class TokenBillingService {
       userId,
       chatMessageId,
       usageMetadata,
-      userMessage = '',
-      aiResponse = ''
+      userMessage = "",
+      aiResponse = "",
     } = params;
 
     const transaction = await sequelize.transaction();
-    
+
     try {
       // 获取用户信息
       const user = await User.findByPk(userId, { transaction });
       if (!user) {
-        throw new Error('用户不存在');
+        throw new Error("用户不存在");
       }
 
       const balanceBefore = user.tokenBalance;
-      
+
       // 提取真实token数据，提供兜底机制
-      const tokenData = this._extractTokenData(usageMetadata, userMessage, aiResponse);
-      
+      const tokenData = this._extractTokenData(
+        usageMetadata,
+        userMessage,
+        aiResponse
+      );
+
       // 移除余额检查，允许余额为负
       // if (balanceBefore < tokenData.totalTokens) {
       //   await transaction.rollback();
@@ -52,29 +56,35 @@ class TokenBillingService {
       await user.update({ tokenBalance: balanceAfter }, { transaction });
 
       // 更新ChatMessage
-      await ChatMessage.update({
-        tokensUsed: tokenData.totalTokens,
-        inputTokens: tokenData.inputTokens,
-        outputTokens: tokenData.outputTokens,
-        tokenBalance: balanceBefore
-      }, {
-        where: { id: chatMessageId },
-        transaction
-      });
+      await ChatMessage.update(
+        {
+          tokensUsed: tokenData.totalTokens,
+          inputTokens: tokenData.inputTokens,
+          outputTokens: tokenData.outputTokens,
+          tokenBalance: balanceBefore,
+        },
+        {
+          where: { id: chatMessageId },
+          transaction,
+        }
+      );
 
       // 记录token使用
-      await TokenUsage.create({
-        userId,
-        chatMessageId,
-        tokensUsed: tokenData.totalTokens,
-        operation: 'chat',
-        balanceBefore,
-        balanceAfter,
-        inputTokens: tokenData.inputTokens,
-        outputTokens: tokenData.outputTokens,
-        dataSource: tokenData.dataSource, // 'real' | 'estimated'
-        usageMetadata: JSON.stringify(usageMetadata || {})
-      }, { transaction });
+      await TokenUsage.create(
+        {
+          userId,
+          chatMessageId,
+          tokensUsed: tokenData.totalTokens,
+          operation: "chat",
+          balanceBefore,
+          balanceAfter,
+          inputTokens: tokenData.inputTokens,
+          outputTokens: tokenData.outputTokens,
+          dataSource: tokenData.dataSource, // 'real' | 'estimated'
+          usageMetadata: JSON.stringify(usageMetadata || {}),
+        },
+        { transaction }
+      );
 
       await transaction.commit();
 
@@ -85,11 +95,11 @@ class TokenBillingService {
         outputTokens: tokenData.outputTokens,
         balanceBefore,
         balanceAfter,
-        dataSource: tokenData.dataSource
+        dataSource: tokenData.dataSource,
       };
     } catch (error) {
       await transaction.rollback();
-      console.error('Token计费错误:', error);
+      console.error("Token计费错误:", error);
       throw error;
     }
   }
@@ -100,26 +110,31 @@ class TokenBillingService {
    */
   static _extractTokenData(usageMetadata, userMessage, aiResponse) {
     // 优先使用真实数据
-    if (usageMetadata && usageMetadata.candidatesTokenCount && usageMetadata.promptTokenCount) {
+    if (
+      usageMetadata &&
+      usageMetadata.candidatesTokenCount &&
+      usageMetadata.promptTokenCount
+    ) {
       return {
         inputTokens: usageMetadata.promptTokenCount,
         outputTokens: usageMetadata.candidatesTokenCount,
-        totalTokens: usageMetadata.totalTokenCount || 
-                    (usageMetadata.promptTokenCount + usageMetadata.candidatesTokenCount),
-        dataSource: 'real'
+        totalTokens:
+          usageMetadata.totalTokenCount ||
+          usageMetadata.promptTokenCount + usageMetadata.candidatesTokenCount,
+        dataSource: "real",
       };
     }
-    
+
     // 兜底：使用估算
-    console.warn('使用兜底token估算机制');
+    console.warn("使用兜底token估算机制");
     const inputTokens = this._estimateTokens(userMessage);
     const outputTokens = this._estimateTokens(aiResponse);
-    
+
     return {
       inputTokens,
       outputTokens,
       totalTokens: inputTokens + outputTokens,
-      dataSource: 'estimated'
+      dataSource: "estimated",
     };
   }
 
@@ -138,13 +153,13 @@ class TokenBillingService {
   static async checkUserBalance(userId, estimatedTokens) {
     const user = await User.findByPk(userId);
     if (!user) {
-      throw new Error('用户不存在');
+      throw new Error("用户不存在");
     }
-    
+
     return {
       sufficient: user.tokenBalance >= estimatedTokens,
       balance: user.tokenBalance,
-      required: estimatedTokens
+      required: estimatedTokens,
     };
   }
 }

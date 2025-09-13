@@ -24,6 +24,15 @@ class WechatConfig {
     return authConfig.getConfig();
   }
   
+  /**
+   * 获取支付配置
+   * @returns {Object} 支付配置
+   * @returns {string} 支付配置.appId - 微信支付应用ID
+   * @returns {string} 支付配置.mchId - 微信支付商户号
+   * @returns {string} 支付配置.notifyUrl - 支付结果通知回调URL
+   * @returns {string} 支付配置.tradeType - 交易类型，默认为'NATIVE'(扫码支付)
+   * @returns {string} 支付配置.signType - 签名类型，默认为'MD5'
+   */
   static getPayConfig() {
     return payConfig.getConfig();
   }

@@ -3,16 +3,24 @@ class PaymentService {
     this.httpClient = httpClient;
   }
 
-  async createPaymentOrder(amount) {
-    return this.httpClient.post('/api/wechat/pay/create-order', { amount });
+  async getPackages() {
+    return this.httpClient.get('/payplan/list');
+  }
+
+  async createPaymentOrder(packageId) {
+    return this.httpClient.post('/wechat/pay/create-order', { packageId });
   }
 
   async simulatePaymentSuccess(orderId) {
-    return this.httpClient.post('/api/wechat/pay/simulate-success', { orderId });
+    return this.httpClient.post('/wechat/pay/simulate-success', { orderId });
   }
 
   async getOrderStatus(orderId) {
-    return this.httpClient.get(`/api/wechat/pay/order-status/${orderId}`);
+    return this.httpClient.get(`/wechat/pay/order-status/${orderId}`);
+  }
+
+  async updateOrderStatus(orderId) {
+    return this.httpClient.post(`/wechat/pay/update-order-status/${orderId}`);
   }
 }
 

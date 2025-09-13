@@ -33,8 +33,18 @@ const runSync = async () => {
     
     // 执行同步
     if (isForce) {
-      await sequelize.sync({ force: true });
-      console.log('✅ 数据库强制同步完成（所有表已重建）');
+      // 禁用外键检查
+      await sequelize.query('SET FOREIGN_KEY_CHECKS = 0');
+      console.log('🔄 已禁用外键检查');
+      
+      try {
+        await sequelize.sync({ force: true });
+        console.log('✅ 数据库强制同步完成（所有表已重建）');
+      } finally {
+        // 重新启用外键检查
+        await sequelize.query('SET FOREIGN_KEY_CHECKS = 1');
+        console.log('🔄 已重新启用外键检查');
+      }
     } else {
       await sequelize.sync({ alter: true });
       console.log('✅ 数据库同步完成');

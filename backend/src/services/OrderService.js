@@ -1,17 +1,20 @@
-const { v4: uuidv4 } = require('uuid');
 const Order = require('../models/Order');
 const { User } = require('../models');
-const WechatPayService = require('./WechatPayService');
+const WechatPayService = require('../wechat/services/pay.service');
+const TokenRechargeService = require('./bill/TokenRechargeService');
+const PACKAGE_CONFIG = require('../config/packageConfig');
 
 class OrderService {
   constructor() {
     this.wechatPay = new WechatPayService();
-    this.packageConfig = {
-      basic: { name: '基础套餐', tokens: 100000 },
-      standard: { name: '标准套餐', tokens: 350000 },
-      premium: { name: '高级套餐', tokens: 600000 },
-      enterprise: { name: '企业套餐', tokens: 1300000 }
-    };
+    this.packageConfig = {};
+    PACKAGE_CONFIG.packages.forEach(pkg => {
+      this.packageConfig[pkg.id] = {
+        name: pkg.name,
+        tokens: pkg.tokens,
+        amount: pkg.amount
+      };
+    });
   }
 
   // 生成订单号
@@ -22,7 +25,7 @@ class OrderService {
   }
 
   // 创建订单
-  async createOrder(userId, packageId, amount, clientIp, userAgent) {
+  async createOrder(userId, packageId, clientIp, userAgent) {
     try {
       const packageInfo = this.packageConfig[packageId];
       if (!packageInfo) {
@@ -32,53 +35,46 @@ class OrderService {
       const orderNo = this.generateOrderNo();
       const expiredAt = new Date(Date.now() + 30 * 60 * 1000); // 30分钟后过期
 
-      // 创建订单记录
+      // 先调用微信支付统一下单
+      const paymentResult = await this.wechatPay.createUnifiedOrder({
+        orderNo,
+        amount: packageInfo.amount,
+        description: `Banana AI - ${packageInfo.name}`,
+      });
+
+      if (!paymentResult.success) {
+        throw new Error(paymentResult.error || '创建微信支付订单失败');
+      }
+      
+      // 微信下单成功后，创建本地订单记录
       const order = await Order.create({
         userId,
         orderNo,
         packageId,
         packageName: packageInfo.name,
-        amount,
+        amount: packageInfo.amount,
         tokensPurchased: packageInfo.tokens,
         status: 'pending',
         paymentMethod: 'wechat',
         paymentChannel: 'native',
         clientIp,
         userAgent,
-        expiredAt
+        expiredAt,
+        prepayId: paymentResult.prepayId,
+        qrCodeUrl: paymentResult.codeUrl
       });
 
-      // 调用微信支付统一下单
-      const paymentResult = await this.wechatPay.createUnifiedOrder({
-        orderNo,
-        amount,
-        description: `Banana AI - ${packageInfo.name}`,
-        clientIp
-      });
-
-      if (paymentResult.success) {
-        // 更新订单支付信息
-        await order.update({
-          prepayId: paymentResult.prepayId,
-          qrCodeUrl: paymentResult.codeUrl
-        });
-
-        return {
-          success: true,
-          order: {
-            id: order.id,
-            orderNo: order.orderNo,
-            amount: order.amount,
-            tokensPurchased: order.tokensPurchased,
-            qrCodeUrl: order.qrCodeUrl,
-            expiredAt: order.expiredAt
-          }
-        };
-      } else {
-        // 支付创建失败，标记订单为失败
-        await order.update({ status: 'failed', remark: paymentResult.error });
-        throw new Error(paymentResult.error || '创建支付订单失败');
-      }
+      return {
+        success: true,
+        order: {
+          id: order.id,
+          orderNo: order.orderNo,
+          amount: order.amount,
+          tokensPurchased: order.tokensPurchased,
+          qrCodeUrl: order.qrCodeUrl,
+          expiredAt: order.expiredAt
+        }
+      };
     } catch (error) {
       console.error('创建订单失败:', error);
       throw error;
@@ -126,7 +122,8 @@ class OrderService {
           tokensPurchased: order.tokensPurchased,
           createdAt: order.createdAt,
           paidAt: order.paidAt,
-          expiredAt: order.expiredAt
+          expiredAt: order.expiredAt,
+          qrCodeUrl: order.qrCodeUrl
         }
       };
     } catch (error) {
@@ -138,16 +135,29 @@ class OrderService {
   // 处理支付成功
   async handlePaymentSuccess(order, transactionId) {
     try {
+      // 如果订单已经完成，直接返回成功（幂等性处理）
+      if (order.status === 'paid') {
+        return { 
+          success: true,
+          alreadyProcessed: true
+        };
+      }
+      
       // 更新订单状态
       await order.markAsPaid(transactionId);
 
-      // 增加用户Token余额
-      const user = await User.findByPk(order.userId);
-      if (user) {
-        await user.addTokens(order.tokensPurchased);
-      }
+      // 使用TokenRechargeService记录充值并更新余额
+      const rechargeResult = await TokenRechargeService.addTokensFromPayment({
+        userId: order.userId,
+        orderId: order.orderNo,
+        tokensPurchased: order.tokensPurchased
+      });
 
-      return { success: true };
+      return { 
+        success: true,
+        alreadyProcessed: false,
+        rechargeId: rechargeResult.rechargeId
+      };
     } catch (error) {
       console.error('处理支付成功失败:', error);
       throw error;
@@ -201,7 +211,8 @@ class OrderService {
           status: order.status,
           paymentMethod: order.paymentMethod,
           createdAt: order.createdAt,
-          paidAt: order.paidAt
+          paidAt: order.paidAt,
+          qrCodeUrl: order.qrCodeUrl
         })),
         pagination: {
           total: count,
@@ -244,6 +255,35 @@ class OrderService {
       return { success: true };
     } catch (error) {
       console.error('处理微信支付回调失败:', error);
+      throw error;
+    }
+  }
+  
+  // 模拟支付成功（仅开发环境）
+  async simulateSuccess(orderNo, userId) {
+    if (process.env.NODE_ENV !== 'development') {
+      throw new Error('此功能仅在开发环境可用');
+    }
+
+    try {
+      const order = await Order.findOne({
+        where: { orderNo, userId, status: 'pending' }
+      });
+
+      if (!order) {
+        throw new Error('订单不存在或已处理');
+      }
+
+      // 处理支付成功
+      await this.handlePaymentSuccess(order, `mock_${Date.now()}`);
+
+      return {
+        success: true,
+        message: '模拟支付成功',
+        tokensAdded: order.tokensPurchased
+      };
+    } catch (error) {
+      console.error('模拟支付错误:', error);
       throw error;
     }
   }

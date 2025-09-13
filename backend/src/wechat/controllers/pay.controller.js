@@ -1,10 +1,8 @@
-const WechatPayService = require('../services/pay.service');
-const { PaymentRecord, User } = require('../../utils/database');
-const { v4: uuidv4 } = require('uuid');
+const OrderService = require('../../services/OrderService');
 
 class WechatPayController {
   constructor() {
-    this.payService = new WechatPayService();
+    this.orderService = new OrderService();
   }
   
   /**
@@ -12,58 +10,26 @@ class WechatPayController {
    */
   async createOrder(req, res) {
     try {
-      const { amount = 10 } = req.body;
-      const tokensToAdd = amount * 1000;
-      const orderId = uuidv4().replace(/-/g, '');
+      const { packageId } = req.body;
       
-      // 创建支付记录
-      await PaymentRecord.create({
-        userId: req.user.userId,
-        orderId: orderId,
-        amount: amount,
-        tokensPurchased: tokensToAdd,
-        status: 'pending'
+      const result = await this.orderService.createOrder(
+        req.user.userId,
+        packageId,
+        req.ip || '127.0.0.1',
+        req.headers['user-agent']
+      );
+
+      res.json({
+        orderId: result.order.orderNo,
+        qrCodeUrl: result.order.qrCodeUrl,
+        amount: result.order.amount,
+        tokensToAdd: result.order.tokensPurchased,
+        packageName: result.order.packageName,
+        message: '支付订单创建成功，请扫码支付'
       });
-
-      // 调用微信统一下单
-      const result = await this.payService.createUnifiedOrder({
-        orderNo: orderId,
-        amount: amount,
-        description: `Banana AI - ${tokensToAdd} Tokens`,
-        clientIp: req.ip || '127.0.0.1'
-      });
-
-      if (result.success) {
-        // 更新订单记录
-        await PaymentRecord.update(
-          { transactionId: result.prepayId },
-          { where: { orderId: orderId } }
-        );
-
-        res.json({
-          orderId,
-          qrCodeUrl: result.codeUrl,
-          amount,
-          tokensToAdd,
-          message: '支付订单创建成功，请扫码支付'
-        });
-      } else {
-        // 开发环境模拟支付
-        if (process.env.NODE_ENV === 'development') {
-          res.json({
-            orderId,
-            qrCodeUrl: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=mock_payment_${orderId}`,
-            amount,
-            tokensToAdd,
-            message: '开发环境模拟支付订单创建成功'
-          });
-        } else {
-          throw new Error(result.error);
-        }
-      }
     } catch (error) {
       console.error('创建支付订单错误:', error);
-      res.status(500).json({ error: '创建支付订单失败' });
+      res.status(500).json({ error: error.message || '创建支付订单失败' });
     }
   }
   
@@ -72,9 +38,9 @@ class WechatPayController {
    */
   async handleNotify(req, res) {
     try {
-      const result = await this.payService.handlePaymentCallback(req.body);
+      await this.orderService.handleWechatNotify(req.body);
       res.set('Content-Type', 'application/xml');
-      res.send(result.response);
+      res.send('<xml><return_code><![CDATA[SUCCESS]]></return_code><return_msg><![CDATA[OK]]></return_msg></xml>');
     } catch (error) {
       console.error('微信支付回调处理错误:', error);
       res.set('Content-Type', 'application/xml');
@@ -88,45 +54,11 @@ class WechatPayController {
   async getOrderStatus(req, res) {
     try {
       const { orderId } = req.params;
-      
-      // 查询本地订单
-      const order = await PaymentRecord.findOne({
-        where: { orderId, userId: req.user.userId }
-      });
-
-      if (!order) {
-        return res.status(404).json({ error: '订单不存在' });
-      }
-
-      // 如果订单状态为pending，查询微信支付状态
-      if (order.status === 'pending') {
-        const wechatResult = await this.payService.queryOrder(orderId);
-        
-        if (wechatResult.success && wechatResult.tradeState === 'SUCCESS') {
-          // 更新本地订单状态
-          await order.update({
-            status: 'completed',
-            transactionId: wechatResult.transactionId
-          });
-          
-          // 更新用户token余额
-          await User.increment('tokenBalance', {
-            by: order.tokensPurchased,
-            where: { id: req.user.userId }
-          });
-        }
-      }
-
-      res.json({
-        orderId: order.orderId,
-        status: order.status,
-        amount: order.amount,
-        tokensPurchased: order.tokensPurchased,
-        createdAt: order.createdAt
-      });
+      const result = await this.orderService.queryOrderStatus(orderId, req.user.userId);
+      res.json(result.order);
     } catch (error) {
       console.error('查询订单状态错误:', error);
-      res.status(500).json({ error: '查询订单状态失败' });
+      res.status(500).json({ error: error.message || '查询订单状态失败' });
     }
   }
   
@@ -134,41 +66,35 @@ class WechatPayController {
    * 模拟支付成功（仅开发环境）
    */
   async simulateSuccess(req, res) {
-    if (process.env.NODE_ENV !== 'development') {
-      return res.status(403).json({ error: '此接口仅在开发环境可用' });
-    }
-
     try {
       const { orderId } = req.params;
-      
-      const order = await PaymentRecord.findOne({
-        where: { orderId, userId: req.user.userId, status: 'pending' }
-      });
-
-      if (!order) {
-        return res.status(404).json({ error: '订单不存在或已处理' });
-      }
-
-      // 更新订单状态
-      await order.update({
-        status: 'completed',
-        transactionId: `mock_${Date.now()}`
-      });
-
-      // 更新用户token余额
-      await User.increment('tokenBalance', {
-        by: order.tokensPurchased,
-        where: { id: req.user.userId }
-      });
-
-      res.json({
-        success: true,
-        message: '模拟支付成功',
-        tokensAdded: order.tokensPurchased
-      });
+      const result = await this.orderService.simulateSuccess(orderId, req.user.userId);
+      res.json(result);
     } catch (error) {
       console.error('模拟支付错误:', error);
-      res.status(500).json({ error: '模拟支付失败' });
+      res.status(500).json({ error: error.message || '模拟支付失败' });
+    }
+  }
+  
+  /**
+   * 前端主动更新订单状态
+   */
+  async updateOrderStatus(req, res) {
+    try {
+      const { orderId } = req.params;
+      const result = await this.orderService.queryOrderStatus(orderId, req.user.userId);
+      res.json({
+        success: true,
+        status: result.order.status,
+        tokensAdded: result.order.tokensPurchased,
+        message: result.order.status === 'paid' ? '订单已支付' : '订单状态更新成功'
+      });
+    } catch (error) {
+      console.error('更新订单状态错误:', error);
+      res.status(500).json({ 
+        success: false,
+        error: error.message || '更新订单状态失败' 
+      });
     }
   }
 }

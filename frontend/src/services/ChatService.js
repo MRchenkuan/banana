@@ -10,13 +10,24 @@ class ChatService {
     return this.httpClient.get(`/chat/history?page=${page}&limit=${limit}`);
   }
 
+
+  /**
+   * 发送文本消息
+   * @param {string} message - 消息内容
+   * @param {string} sessionId - 会话ID
+   * @param {object} context - 请求上下文
+   * @returns {Promise} - 流响应
+   */
   async sendTextMessage(message, sessionId, context) {
-    const requestData = { message, sessionId };
-    return this.streamHandler.sendStreamRequest(
-      '/chat/text-stream',
-      requestData,
-      context
-    );
+    return this.sendImageMessage(message, [], sessionId, context);
+
+    // 纯文本消息 - 不大可能用
+    // const requestData = { message, sessionId };
+    // return this.streamHandler.sendStreamRequest(
+    //   '/chat/text-stream',
+    //   requestData,
+    //   context
+    // );
   }
 
   async sendImageMessage(message, imageFiles, sessionId, context) {
@@ -35,22 +46,6 @@ class ChatService {
     if (sessionId) {
       formData.append('sessionId', sessionId);
     }
-
-    console.log('发送图片消息 - 请求数据:', {
-      message: message ? '存在' : '缺失',
-      imageFiles: Array.isArray(imageFiles) ? 
-        imageFiles.map(file => ({
-          name: file.name,
-          type: file.type,
-          size: file.size
-        })) : 
-        imageFiles ? {
-          name: imageFiles.name,
-          type: imageFiles.type,
-          size: imageFiles.size
-        } : '缺失',
-      sessionId: sessionId ? '存在' : '缺失'
-    });
 
     return this.streamHandler.sendStreamRequest(
       '/chat/image-stream',

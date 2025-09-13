@@ -2,6 +2,7 @@ import React from 'react';
 import { Avatar } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
 import { theme } from '../../constants/theme';
+import { useAuth } from '../../contexts/AuthContext';
 
 export const AssistantAvatar = ({ messageState }) => {
   const { isError, isInterrupted, isPending, isThinking } = messageState;
@@ -26,14 +27,21 @@ export const AssistantAvatar = ({ messageState }) => {
 };
 
 export const UserAvatar = () => {
+  const { user } = useAuth();
+  
   return (
     <Avatar
-      icon={<UserOutlined />}
       style={{
         backgroundColor: theme.primary,
         marginLeft: '12px',
-        flexShrink: 0
+        flexShrink: 0,
+        fontSize: '14px',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center'
       }}
+      src={user?.wechatAvatar} // 优先使用微信头像
+      icon={!user?.wechatAvatar && <UserOutlined />} // 如果没有微信头像则显示默认图标
     />
   );
 };

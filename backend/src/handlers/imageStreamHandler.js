@@ -22,47 +22,57 @@ class ImageStreamHandler extends AbstractStreamHandler {
 
   async validateInput() {
     const { message, sessionId } = this.req.body;
-    const files = this.req.files;
+    const files = this.req.files || [];
     
     // 1. 基础验证
-    if (!message || !sessionId || !files || files.length === 0) {
-      throw new Error('缺少必要参数: message, sessionId, 或 images');
+    if (!message || !sessionId) {
+      throw new Error('缺少必要参数: message, sessionId');
     }
     
-    // 2. 数量限制
+    // 2. 数量限制 (仅当有文件时验证)
     if (files.length > 2) {
       throw new Error('最多支持上传2张图片');
     }
     
-    // 3. 文件格式验证
-    for (const file of files) {
-      if (!file.path) {
-        throw new Error('文件数据无效');
+    // 3. 文件格式验证 (仅当有文件时验证)
+    if (files.length > 0) {
+      for (const file of files) {
+        if (!file.path) {
+          throw new Error('文件数据无效');
+        }
+        ChatValidation.validateImageMessage(message, file.originalname);
       }
-      ChatValidation.validateImageMessage(message, file.originalname);
+      
+      // 4. 设置处理后的图片数据
+      this.req.body.images = files.map(file => ({
+        path: file.path,
+        originalname: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size
+      }));
+    } else {
+      // 如果没有图片，设置为空数组
+      this.req.body.images = [];
     }
-    
-    // 4. 设置处理后的图片数据
-    this.req.body.images = files.map(file => ({
-      path: file.path,
-      originalname: file.originalname,
-      mimetype: file.mimetype,
-      size: file.size
-    }));
   }
 
   async getStreamData() {
     const { message, sessionId, images = [] } = this.req.body;
-
-    await this.sendProcessing(`正在分析${images.length}张图片中...`);
-
+  
+    // 根据是否有图片显示不同的处理消息
+    if (images.length > 0) {
+      await this.sendProcessing(`正在分析${images.length}张图片中...`);
+    } else {
+      await this.sendProcessing('正在生成回复...');
+    }
+  
     const stream = ImageStreamService.processImageStream({
       message, // 原始用户消息
       sessionId,
       images,
       user: this.user
     });
-
+  
     return { stream };
   }
 

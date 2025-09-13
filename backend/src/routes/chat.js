@@ -14,9 +14,9 @@ const preValidateImageTokens = async (req, res, next) => {
     const { message } = req.body;
     const imageCount = req.files ? req.files.length : 0;
     
-    if (imageCount === 0) {
-      return res.status(400).json({ error: '请上传至少一张图片' });
-    }
+    // if (imageCount === 0) {
+    //   return res.status(400).json({ error: '请上传至少一张图片' });
+    // }
     
     if (imageCount > 2) {
       return res.status(400).json({ error: '最多支持上传2张图片' });
@@ -24,7 +24,7 @@ const preValidateImageTokens = async (req, res, next) => {
     
     // 估算token消耗
     const baseTokens = TokenManager.estimateTokens(message || '');
-    const imageTokens = imageCount * 150; // 每张图片150 tokens
+    const imageTokens = imageCount * 1500; // 每张图片150 tokens
     const estimatedTokens = baseTokens + imageTokens;
     
     // 检查余额

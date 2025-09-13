@@ -28,4 +28,10 @@ router.post('/simulate-success/:orderId',
   payController.simulateSuccess.bind(payController)
 );
 
+// 前端主动更新订单状态
+router.post('/update-order-status/:orderId',
+  authenticateToken,
+  payController.updateOrderStatus.bind(payController)
+);
+
 module.exports = router;

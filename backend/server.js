@@ -24,6 +24,7 @@ const chatRoutes = require('./src/routes/chat');
 const userRoutes = require('./src/routes/user');
 const sessionsRoutes = require('./src/routes/sessions');
 const WechatModule = require('./src/wechat');
+const payplanRoutes = require('./src/routes/payplan');
 
 // 注册路由
 app.use('/api/auth', authRoutes);
@@ -31,6 +32,7 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/sessions', sessionsRoutes);
 app.use('/api/wechat', WechatModule.init());
+app.use('/api/payplan', payplanRoutes);
 
 // 健康检查
 app.get('/api/health', (req, res) => {

@@ -25,12 +25,12 @@ class AbstractStreamHandler extends BaseStreamHandler {
    */
   async handle() {
     try {
-      // 1. 验证阶段 - 纯验证逻辑
-      await this.validate();
-      
-      // 2. 初始化阶段 - 纯基础设施初始化
+      // 1. 初始化阶段 - 纯基础设施初始化
       await this.initialize();
       
+      // 2. 验证阶段 - 纯验证逻辑
+      await this.validate();
+
       // 3. 预处理阶段 - 纯数据处理和记录创建
       await this.prepare();
       
@@ -77,6 +77,33 @@ class AbstractStreamHandler extends BaseStreamHandler {
     // 3. 初始化计时器
     this.startTime = Date.now();
     
+    // 4. 预创建聊天消息（从prepare方法移动过来）
+    const { sessionId } = this.req.body;
+    if (sessionId) {
+      try {
+        // 验证会话存在性
+        const { Session } = require('../models');
+        const session = await Session.findOne({
+          where: {
+            id: sessionId,
+            userId: this.req.user.userId, // 修复：使用正确的用户ID
+            isActive: true
+          }
+        });
+        
+        if (session) {
+          // 创建初始聊天消息
+          const message = this.req.body.message || '';
+          await this.chatManager.createChatMessage({
+            sessionId,
+            message: message, // 先用原始消息创建，后续在prepare中更新
+          });
+        }
+      } catch (error) {
+        console.error('预创建聊天消息失败:', error);
+        // 不抛出异常，让验证阶段处理
+      }
+    }
   }
 
   /**
@@ -90,15 +117,20 @@ class AbstractStreamHandler extends BaseStreamHandler {
     const { message, sessionId } = this.req.body;
     const images = this.req.files;
   
-    // 使用 initialize 中已获取的用户信息，而不是 req.user
+    // 处理用户图片
     const userImageMarkdown = await this._saveUserImages(images, this.user);
   
     // 将用户消息和图片Markdown合并
-    const fullUserMessage = (userImageMarkdown ? userImageMarkdown + '\n\n' : '')+message;
-    await this.chatManager.createChatMessage({
-      sessionId,
-      message: fullUserMessage,
-    });
+    if (userImageMarkdown) {
+      const fullUserMessage = userImageMarkdown + '\n\n' + message;
+      
+      // 更新已创建的消息内容
+      if (this.chatManager && this.chatManager.chatMessage) {
+        await this.chatManager.chatMessage.update({
+          userMessage: fullUserMessage
+        });
+      }
+    }
   }
 
 
@@ -108,17 +140,22 @@ class AbstractStreamHandler extends BaseStreamHandler {
   async processStream() {
     try {
       const { stream } = await this.getStreamData();
-      
+
       for await (const chunk of stream) {
+        const {type, content, tokenUsed, metadata} = chunk;
+        const {estimatedChunkTokens, promptTokenCount, totalTokenCount, promptTokensDetails, candidatesTokenCount} = tokenUsed || {};
+        
         if (chunk.type === 'text') {
-          this.partialResponse += chunk.content;
-          this.fullResponse += chunk.content;
-          this.tokensUsed += chunk.tokens || 0;
+          this.partialResponse += content;
+          this.fullResponse += content;
+          this.tokensUsed = totalTokenCount;
           
           await this.sendMessageChunk(chunk);
-        } else if (chunk.type === 'usage_final') {
+        }
+        
+        if (chunk.type === 'usage_final') {
           // 保存真实的usage数据
-          this.chatManager.setUsageMetadata(chunk.usageMetadata);
+          this.chatManager.setUsageMetadata(metadata);
         }
       }
       
@@ -132,21 +169,40 @@ class AbstractStreamHandler extends BaseStreamHandler {
   async handleStreamComplete() {
     const message = this.req.body.message || '';
     
-    const result = await this.chatManager.saveCompletedData(
-      this.fullResponse,
-      this.tokensUsed,
-      message
-    );
-  
-    await this.generateTitleIfNeeded();
+    let result = {
+      tokensUsed: 0,
+      inputTokens: 0,
+      outputTokens: 0,
+      remainingBalance: this.balanceBefore,
+      dataSource: ''
+    };
 
-    this.sendComplete({
-      tokensUsed: result.tokensUsed,
-      inputTokens: result.inputTokens,
-      outputTokens: result.outputTokens,
-      remainingBalance: result.remainingBalance,
-      dataSource: result.dataSource
-    });
+    try {
+      // 生成标题
+      await this.generateTitleIfNeeded();
+
+      // 保存完成数据
+      if (this.chatManager && this.chatManager.chatMessage) {
+        result = await this.chatManager.saveCompletedData(
+          this.fullResponse,
+          this.tokensUsed,
+          message
+        );
+      }
+    } catch (error) {
+      console.error('处理流完成时出错:', error);
+      this.handleError(error);
+      // 不抛出异常，继续发送完成消息
+    } finally {
+      // 发送完成消息
+      this.sendComplete({
+        tokensUsed: result.tokensUsed,
+        inputTokens: result.inputTokens,
+        outputTokens: result.outputTokens,
+        remainingBalance: result.remainingBalance,
+        dataSource: result.dataSource
+      });
+    }
   }
 
   /**

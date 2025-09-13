@@ -50,7 +50,6 @@ services:
       # 微信支付配置
       - WECHAT_PAY_APP_ID=your-wechat-pay-app-id
       - WECHAT_PAY_MCH_ID=your-merchant-id
-      - WECHAT_PAY_API_KEY=your-wechat-pay-api-key
       - WECHAT_PAY_NOTIFY_URL=http://localhost:3001/api/payment/notify
       
       # 微信登录配置
