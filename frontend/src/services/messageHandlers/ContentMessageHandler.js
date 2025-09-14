@@ -19,8 +19,20 @@ class ContentMessageHandler extends BaseMessageHandler {
     
     // 直接从stream数据中提取totalTokensUsed并发送到monitor
     if (data.metadata?.totalTokensUsed) {
+      // 检查数据结构并适配为TokenMonitor期望的格式
+      const tokenData = data.metadata.totalTokensUsed;
+      let formattedTokenData = tokenData;
+      
+      // 如果是新的数据结构，进行适配
+      if (tokenData && typeof tokenData === 'object') {
+        // 确保有正确的字段
+        if (tokenData.usageMetadata) {
+          formattedTokenData = tokenData.usageMetadata;
+        }
+      }
+      
       tokenMonitorEvents.publish({
-        totalTokensUsed: data.metadata.totalTokensUsed,
+        totalTokensUsed: formattedTokenData,
         timestamp: new Date(),
         messageType: data.messageType || data.type || 'text'
       });

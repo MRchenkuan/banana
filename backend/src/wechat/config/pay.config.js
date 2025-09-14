@@ -12,7 +12,7 @@ class WechatPayConfig {
     return {
       appId: process.env.WECHAT_PAY_APP_ID,
       mchId: process.env.WECHAT_PAY_MCH_ID,
-      apiKey: process.env.WECHAT_PAY_API_KEY||'fdsafdsafdsafd', // 添加API密钥
+      apiKey: process.env.WECHAT_PAY_API_KEY, // 添加这一行
       notifyUrl: process.env.WECHAT_PAY_NOTIFY_URL || 'http://localhost:3001/api/wechat/pay/notify',
       tradeType: 'NATIVE', // 扫码支付
       signType: 'MD5'
@@ -21,7 +21,7 @@ class WechatPayConfig {
   
   static validate() {
     const config = this.getConfig();
-    const required = ['appId', 'mchId', 'notifyUrl']; // 添加apiKey为必需项
+    const required = ['appId', 'mchId', 'notifyUrl', 'apiKey']; // 添加apiKey为必需项
     const missing = required.filter(key => !config[key]);
     
     return {

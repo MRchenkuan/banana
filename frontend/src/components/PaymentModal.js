@@ -17,6 +17,7 @@ import {
 } from 'antd';
 import {
   WechatOutlined,
+  AlipayOutlined,
   CrownOutlined,
   RocketOutlined,
   StarOutlined,
@@ -31,6 +32,7 @@ const { Title, Text } = Typography;
 const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参数
   const [packages, setPackages] = useState([]);
   const [selectedPackage, setSelectedPackage] = useState(null);  // 初始值改为 null
+  const [paymentMethod, setPaymentMethod] = useState('wechat'); // 添加这一行
   const [loading, setLoading] = useState(false);
   const [paymentModal, setPaymentModal] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState('');
@@ -102,6 +104,7 @@ const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参�
     }
   }, [visible]);
 
+  // 修改handlePayment方法以支持不同支付方式
   const handlePayment = async () => {
     if (!packages || packages.length === 0) {
       message.error('套餐列表为空，请稍后再试');
@@ -116,7 +119,13 @@ const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参�
 
     setLoading(true);
     try {
-      const response = await api.payment.createPaymentOrder(selectedPkg.id);
+      // 根据选择的支付方式调用不同的API
+      let response;
+      if (paymentMethod === 'alipay') {
+        response = await api.payment.createAlipayPaymentOrder(selectedPkg.id);
+      } else {
+        response = await api.payment.createWechatPaymentOrder(selectedPkg.id);
+      }
 
       if (response.data.success) {
         setOrderId(response.data.orderId);
@@ -137,11 +146,12 @@ const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参�
     }
   };
 
+  // 修改startPaymentPolling方法以支持不同支付方式
   const startPaymentPolling = (orderId) => {
     pollIntervalRef.current = setInterval(async () => {
       try {
         // 先主动调用更新订单状态接口
-        const updateResponse = await api.payment.updateOrderStatus(orderId);
+        const updateResponse = await api.payment.updateOrderStatus(orderId, paymentMethod);
         
         // 如果更新接口返回支付成功，直接处理成功逻辑
         if (updateResponse.data.success && updateResponse.data.status === 'completed') {
@@ -157,7 +167,7 @@ const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参�
         }
         
         // 如果更新接口未返回成功，继续查询订单状态
-        const response = await api.payment.getOrderStatus(orderId);
+        const response = await api.payment.getOrderStatus(orderId, paymentMethod);
         if (response.data.success) {
           const { status } = response.data;
           if (status === 'paid') {
@@ -181,11 +191,12 @@ const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参�
     }, 3000);
   };
 
+  // 获取支付历史记录
   const fetchPaymentHistory = async () => {
     try {
       const response = await api.payment.getPaymentHistory();
       if (response.data.success) {
-        setPaymentHistory(response.data.payments);
+        setPaymentHistory(response.data.data);
         setHistoryVisible(true);
       }
     } catch (error) {
@@ -194,12 +205,14 @@ const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参�
     }
   };
 
+  // 格式化时间
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // 在渲染部分添加支付方式选择
   return (
     <>
       <Modal
@@ -241,36 +254,63 @@ const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参�
             </div>
 
             <Divider />
+            
+            {/* 支付方式选择 */}
+            <div>
+              <Title level={4}>选择支付方式</Title>
+              <Radio.Group
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+                style={{ marginBottom: '20px' }}
+              >
+                <Radio.Button value="wechat">
+                  <WechatOutlined style={{ marginRight: '8px', color: '#07c160' }} />
+                  微信支付
+                </Radio.Button>
+                <Radio.Button value="alipay">
+                  <AlipayOutlined style={{ marginRight: '8px', color: '#1677ff' }} />
+                  支付宝
+                </Radio.Button>
+              </Radio.Group>
+            </div>
 
             {/* 支付按钮 */}
             <div style={{ textAlign: 'center' }}>
               <Button
                 type="primary"
                 size="large"
-                icon={<WechatOutlined />}
+                icon={paymentMethod === 'wechat' ? <WechatOutlined /> : <AlipayOutlined />}
                 loading={loading}
                 onClick={handlePayment}
                 style={{
-                  background: 'linear-gradient(135deg, #07c160 0%, #05a050 100%)',
+                  background: paymentMethod === 'wechat' 
+                    ? 'linear-gradient(135deg, #07c160 0%, #05a050 100%)'
+                    : 'linear-gradient(135deg, #1677ff 0%, #0e5fd9 100%)',
                   borderColor: 'transparent',
                   height: '56px',
                   fontSize: '16px',
                   borderRadius: '16px',
                   minWidth: '240px',
-                  boxShadow: '0 8px 24px rgba(7, 193, 96, 0.3)',
+                  boxShadow: paymentMethod === 'wechat'
+                    ? '0 8px 24px rgba(7, 193, 96, 0.3)'
+                    : '0 8px 24px rgba(22, 119, 255, 0.3)',
                   transition: 'all 0.3s ease',
                   fontWeight: '600'
                 }}
                 onMouseEnter={(e) => {
                   e.target.style.transform = 'translateY(-2px)';
-                  e.target.style.boxShadow = '0 12px 32px rgba(7, 193, 96, 0.4)';
+                  e.target.style.boxShadow = paymentMethod === 'wechat'
+                    ? '0 12px 32px rgba(7, 193, 96, 0.4)'
+                    : '0 12px 32px rgba(22, 119, 255, 0.4)';
                 }}
                 onMouseLeave={(e) => {
                   e.target.style.transform = 'translateY(0)';
-                  e.target.style.boxShadow = '0 8px 24px rgba(7, 193, 96, 0.3)';
+                  e.target.style.boxShadow = paymentMethod === 'wechat'
+                    ? '0 8px 24px rgba(7, 193, 96, 0.3)'
+                    : '0 8px 24px rgba(22, 119, 255, 0.3)';
                 }}
               >
-                微信支付 {selectedPackage ? `¥${packages.find(pkg => pkg.id === selectedPackage)?.amount || '--'}` : '请先选择套餐'}
+                {paymentMethod === 'wechat' ? '微信支付' : '支付宝支付'} {selectedPackage ? `¥${packages.find(pkg => pkg.id === selectedPackage)?.amount || '--'}` : '请先选择套餐'}
               </Button>
             </div>
 
@@ -286,7 +326,7 @@ const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参�
 
       {/* 支付二维码弹窗 */}
       <Modal
-        title="微信支付"
+        title={paymentMethod === 'wechat' ? "微信支付" : "支付宝支付"}
         open={paymentModal}
         onCancel={() => setPaymentModal(false)}
         footer={null}
@@ -297,7 +337,7 @@ const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参�
           {paymentStatus === 'pending' && (
             <Space direction="vertical" size="large">
               <div>
-                <Text>请使用微信扫描二维码完成支付</Text>
+                <Text>请使用{paymentMethod === 'wechat' ? '微信' : '支付宝'}扫描二维码完成支付</Text>
                 <br />
                 <Text type="secondary">支付金额: ¥{packages.find(pkg => pkg.id === selectedPackage)?.amount || '--'}</Text>
               </div>

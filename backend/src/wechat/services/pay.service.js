@@ -108,7 +108,8 @@ class WechatPayService {
       const data = this.xmlToObject(xmlData);
       
       // 验证签名
-      const isValidSign = WechatSignatureUtil.verifySign(data);
+      // 在handlePaymentCallback方法中
+      const isValidSign = WechatSignatureUtil.verifySign(data, this.config.apiKey);
       if (!isValidSign) {
         throw new Error('签名验证失败');
       }
@@ -143,7 +144,7 @@ class WechatPayService {
         nonce_str: WechatCryptoUtil.generateNonceStr()
       };
       
-      params.sign = WechatSignatureUtil.generatePaySign(params);
+      params.sign = WechatSignatureUtil.generatePaySign(params, this.config.apiKey);
       const xmlData = this.objectToXml(params);
       
       const result = await WechatHttpUtil.post(
@@ -206,7 +207,12 @@ class WechatPayService {
     
     return obj;
   }
-  
+  /**
+   * 验证微信支付回调签名
+   */
+  verifyNotifySign(notifyData) {
+    return WechatSignatureUtil.verifySign(notifyData, this.config.apiKey);
+  }
   /**
    * 更新订单状态（共享逻辑）
    * 用于处理微信支付回调和用户主动查询

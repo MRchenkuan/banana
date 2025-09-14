@@ -1,15 +1,19 @@
 const Order = require('../models/Order');
 const { User } = require('../models');
+// 在文件顶部添加支付宝服务引用
 const WechatPayService = require('../wechat/services/pay.service');
+const AlipayService = require('../alipay/services/pay.service'); // 添加这一行
 const TokenRechargeService = require('./bill/TokenRechargeService');
 const PACKAGE_CONFIG = require('../config/packageConfig');
 
 class OrderService {
   constructor() {
     this.wechatPay = new WechatPayService();
+    this.alipay = new AlipayService(); // 添加这一行
     this.packageConfig = {};
     PACKAGE_CONFIG.packages.forEach(pkg => {
       this.packageConfig[pkg.id] = {
+        id: pkg.id,
         name: pkg.name,
         tokens: pkg.tokens,
         amount: pkg.amount
@@ -23,30 +27,42 @@ class OrderService {
     const random = Math.random().toString(36).substring(2, 8);
     return `BN${timestamp}${random}`.toUpperCase();
   }
-
+  
   // 创建订单
-  async createOrder(userId, packageId, clientIp, userAgent) {
+  async createOrder(userId, packageId, clientIp, userAgent, paymentMethod = 'wechat') {
     try {
       const packageInfo = this.packageConfig[packageId];
       if (!packageInfo) {
         throw new Error('无效的套餐类型');
       }
-
+  
       const orderNo = this.generateOrderNo();
       const expiredAt = new Date(Date.now() + 30 * 60 * 1000); // 30分钟后过期
-
-      // 先调用微信支付统一下单
-      const paymentResult = await this.wechatPay.createUnifiedOrder({
-        orderNo,
-        amount: packageInfo.amount,
-        description: `Banana AI - ${packageInfo.name}`,
-      });
+  
+      // 根据支付方式选择不同的支付服务
+      let paymentResult;
+      if (paymentMethod === 'alipay') {
+        // 调用支付宝支付
+        paymentResult = await this.alipay.createUnifiedOrder({
+          orderNo,
+          amount: packageInfo.amount,
+          description: `BananaAi:${packageInfo.id}`
+        });
+      } else {
+        // 默认使用微信支付
+        paymentResult = await this.wechatPay.createUnifiedOrder({
+          orderNo,
+          amount: packageInfo.amount,
+          description: `BananaAi:${packageInfo.id}`,
+          clientIp
+        });
+      }
 
       if (!paymentResult.success) {
-        throw new Error(paymentResult.error || '创建微信支付订单失败');
+        throw new Error(paymentResult.error || `创建${paymentMethod === 'alipay' ? '支付宝' : '微信'}支付订单失败`);
       }
       
-      // 微信下单成功后，创建本地订单记录
+      // 支付下单成功后，创建本地订单记录
       const order = await Order.create({
         userId,
         orderNo,
@@ -55,13 +71,13 @@ class OrderService {
         amount: packageInfo.amount,
         tokensPurchased: packageInfo.tokens,
         status: 'pending',
-        paymentMethod: 'wechat',
-        paymentChannel: 'native',
+        paymentMethod, // 使用传入的支付方式
+        paymentChannel: paymentMethod === 'alipay' ? 'qrcode' : 'native',
         clientIp,
         userAgent,
         expiredAt,
         prepayId: paymentResult.prepayId,
-        qrCodeUrl: paymentResult.codeUrl
+        qrCodeUrl: paymentResult.qrCodeUrl
       });
 
       return {
@@ -80,7 +96,39 @@ class OrderService {
       throw error;
     }
   }
+  
+  // 添加处理支付宝回调的方法
+  async handleAlipayNotify(notifyData) {
+    try {
+      // 验证签名
+      if (!this.alipay.verifyNotifySign(notifyData)) {
+        throw new Error('签名验证失败');
+      }
 
+      const { out_trade_no: orderNo, trade_no: transactionId, trade_status } = notifyData;
+      
+      const order = await Order.findOne({ where: { orderNo } });
+      if (!order) {
+        throw new Error('订单不存在');
+      }
+
+      if (trade_status === 'TRADE_SUCCESS') {
+        // 支付成功
+        if (order.status === 'pending') {
+          await this.handlePaymentSuccess(order, transactionId);
+        }
+      } else {
+        // 支付失败
+        await order.update({ status: 'failed' });
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('处理支付宝支付回调失败:', error);
+      throw error;
+    }
+  }
+  
   // 查询订单状态
   async queryOrderStatus(orderNo, userId = null) {
     try {
@@ -231,6 +279,7 @@ class OrderService {
   async handleWechatNotify(notifyData) {
     try {
       // 验证签名
+      // 在handleWechatNotify方法中
       if (!this.wechatPay.verifyNotifySign(notifyData)) {
         throw new Error('签名验证失败');
       }

@@ -7,20 +7,33 @@ class PaymentService {
     return this.httpClient.get('/payplan/list');
   }
 
-  async createPaymentOrder(packageId) {
+  // 微信支付
+  async createWechatPaymentOrder(packageId) {
     return this.httpClient.post('/wechat/pay/create-order', { packageId });
+  }
+
+  // 支付宝支付 - 添加这个方法
+  async createAlipayPaymentOrder(packageId) {
+    return this.httpClient.post('/alipay/pay/create-order', { packageId });
   }
 
   async simulatePaymentSuccess(orderId) {
     return this.httpClient.post('/wechat/pay/simulate-success', { orderId });
   }
 
-  async getOrderStatus(orderId) {
-    return this.httpClient.get(`/wechat/pay/order-status/${orderId}`);
+  async getOrderStatus(orderId, paymentMethod = 'wechat') {
+    const baseUrl = paymentMethod === 'alipay' ? '/alipay' : '/wechat';
+    return this.httpClient.get(`${baseUrl}/pay/order-status/${orderId}`);
   }
 
-  async updateOrderStatus(orderId) {
-    return this.httpClient.post(`/wechat/pay/update-order-status/${orderId}`);
+  async updateOrderStatus(orderId, paymentMethod = 'wechat') {
+    const baseUrl = paymentMethod === 'alipay' ? '/alipay' : '/wechat';
+    return this.httpClient.post(`${baseUrl}/pay/update-order-status/${orderId}`);
+  }
+  
+  // 获取充值记录
+  async getPaymentHistory() {
+    return this.httpClient.get('/payment/history');
   }
 }
 

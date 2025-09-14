@@ -42,6 +42,11 @@ const TokenMonitor = ({ messages }) => {
     if (!data) return null;
     
     if (typeof data === 'object') {
+      // 处理新的数据结构
+      if (data.usageMetadata) {
+        data = data.usageMetadata;
+      }
+      
       // 语义化处理token数据
       if (data.promptTokenCount !== undefined && data.candidatesTokenCount !== undefined) {
         return {

@@ -48,8 +48,9 @@ services:
       - GEMINI_API_KEY=your-gemini-api-key
       
       # 微信支付配置
-      - WECHAT_PAY_APP_ID=your-wechat-pay-app-id
-      - WECHAT_PAY_MCH_ID=your-merchant-id
+      - WECHAT_PAY_APP_ID=wx5c828a9210a01945
+      - WECHAT_PAY_API_KEY=xh5ikQIAOebdANixewdMIEwaMIE9kuzc
+      - WECHAT_PAY_MCH_ID=1726726778
       - WECHAT_PAY_NOTIFY_URL=http://localhost:3001/api/payment/notify
       
       # 微信登录配置

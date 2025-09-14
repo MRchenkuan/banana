@@ -24,15 +24,18 @@ const chatRoutes = require('./src/routes/chat');
 const userRoutes = require('./src/routes/user');
 const sessionsRoutes = require('./src/routes/sessions');
 const WechatModule = require('./src/wechat');
+const AlipayModule = require('./src/alipay');
 const payplanRoutes = require('./src/routes/payplan');
-
+const paymentRoutes = require('./src/routes/payment');
 // 注册路由
 app.use('/api/auth', authRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/sessions', sessionsRoutes);
 app.use('/api/wechat', WechatModule.init());
+app.use('/api/alipay', AlipayModule.init());
 app.use('/api/payplan', payplanRoutes);
+app.use('/api/payment', paymentRoutes);
 
 // 健康检查
 app.get('/api/health', (req, res) => {
