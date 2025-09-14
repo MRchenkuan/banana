@@ -222,30 +222,35 @@ const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参�
         footer={null}
         width={800}
         destroyOnClose
+        className="payment-modal"
+        centered
       >
-        <div style={{ padding: '20px 0' }}>
-          <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <div style={{ padding: '10px 0' }}> {/* 减少上下内边距 */}
+          <Space direction="vertical" size="middle" style={{ width: '100%' }}> {/* 将size从large改为middle */}
             {/* 套餐选择 */}
             <div>
-              <Title level={4}>选择充值套餐</Title>
+              <Title level={3} style={{ textAlign: 'center', marginBottom: '12px', color: '#ffffff' }}> {/* 减少下边距 */}
+                选择充值套餐
+              </Title>
               <Radio.Group
                 value={selectedPackage}
                 onChange={(e) => setSelectedPackage(e.target.value)}
                 style={{ width: '100%' }}
               >
-                <Row gutter={[16, 16]}>
+                <Row gutter={[12, 12]} justify="center"> {/* 减少Row的gutter间距 */}
                   {packages.map(pkg => (
-                    <Col key={pkg.id} xs={24} sm={12} md={12} lg={6}>
+                    <Col key={pkg.id} xs={24} sm={12} md={8} lg={6}>
                       <Card
                         hoverable
                         className={`package-card ${selectedPackage === pkg.id ? 'selected' : ''}`}
                         onClick={() => setSelectedPackage(pkg.id)}
+                        bordered={false}
                       >
                         <div className="package-icon">{getIconForPackage(pkg.id)}</div>
                         <Title level={4}>{pkg.name}</Title>
                         <Text className="package-price">¥{pkg.amount}</Text>
-                        <div className="package-tokens">{pkg.tokens} Tokens</div>
-                        <Text type="secondary">{pkg.description}</Text>
+                        <div className="package-tokens">{pkg.tokens.toLocaleString()} Tokens</div>
+                        <Text type="secondary" style={{ fontSize: '12px', opacity: 0.8 }}>{pkg.description}</Text>
                       </Card>
                     </Col>
                   ))}
@@ -253,15 +258,15 @@ const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参�
               </Radio.Group>
             </div>
 
-            <Divider />
+            <Divider style={{ margin: '8px 0' }} /> {/* 减少分割线上下边距 */}
             
             {/* 支付方式选择 */}
             <div>
-              <Title level={4}>选择支付方式</Title>
+              <Title level={4} style={{ marginBottom: '8px' }}>选择支付方式</Title> {/* 减少下边距 */}
               <Radio.Group
                 value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value)}
-                style={{ marginBottom: '20px' }}
+                style={{ marginBottom: '12px' }}
               >
                 <Radio.Button value="wechat">
                   <WechatOutlined style={{ marginRight: '8px', color: '#07c160' }} />
@@ -275,7 +280,7 @@ const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参�
             </div>
 
             {/* 支付按钮 */}
-            <div style={{ textAlign: 'center' }}>
+            <div style={{ textAlign: 'center', marginTop: '8px' }}> {/* 减少上边距 */}
               <Button
                 type="primary"
                 size="large"
@@ -287,27 +292,27 @@ const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参�
                     ? 'linear-gradient(135deg, #07c160 0%, #05a050 100%)'
                     : 'linear-gradient(135deg, #1677ff 0%, #0e5fd9 100%)',
                   borderColor: 'transparent',
-                  height: '56px',
-                  fontSize: '16px',
+                  height: '50px', /* 减少按钮高度 */
+                  fontSize: '18px',
                   borderRadius: '16px',
-                  minWidth: '240px',
+                  minWidth: '280px',
                   boxShadow: paymentMethod === 'wechat'
-                    ? '0 8px 24px rgba(7, 193, 96, 0.3)'
-                    : '0 8px 24px rgba(22, 119, 255, 0.3)',
+                    ? '0 12px 28px rgba(7, 193, 96, 0.4)'
+                    : '0 12px 28px rgba(22, 119, 255, 0.4)',
                   transition: 'all 0.3s ease',
                   fontWeight: '600'
                 }}
                 onMouseEnter={(e) => {
-                  e.target.style.transform = 'translateY(-2px)';
+                  e.target.style.transform = 'translateY(-3px)';
                   e.target.style.boxShadow = paymentMethod === 'wechat'
-                    ? '0 12px 32px rgba(7, 193, 96, 0.4)'
-                    : '0 12px 32px rgba(22, 119, 255, 0.4)';
+                    ? '0 16px 36px rgba(7, 193, 96, 0.5)'
+                    : '0 16px 36px rgba(22, 119, 255, 0.5)';
                 }}
                 onMouseLeave={(e) => {
                   e.target.style.transform = 'translateY(0)';
                   e.target.style.boxShadow = paymentMethod === 'wechat'
-                    ? '0 8px 24px rgba(7, 193, 96, 0.3)'
-                    : '0 8px 24px rgba(22, 119, 255, 0.3)';
+                    ? '0 12px 28px rgba(7, 193, 96, 0.4)'
+                    : '0 12px 28px rgba(22, 119, 255, 0.4)';
                 }}
               >
                 {paymentMethod === 'wechat' ? '微信支付' : '支付宝支付'} {selectedPackage ? `¥${packages.find(pkg => pkg.id === selectedPackage)?.amount || '--'}` : '请先选择套餐'}
@@ -315,7 +320,7 @@ const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参�
             </div>
 
             {/* 充值记录按钮 */}
-            <div style={{ textAlign: 'center' }}>
+            <div style={{ textAlign: 'center', marginTop: '4px' }}> {/* 减少上边距 */}
               <Button type="link" onClick={fetchPaymentHistory}>
                 查看充值记录
               </Button>

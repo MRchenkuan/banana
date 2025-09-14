@@ -31,7 +31,8 @@ const validateOAuthParams = (req, res, next) => {
     redirectUri: Joi.string().uri().required().messages({
       'string.uri': 'redirectUri格式不正确',
       'any.required': 'redirectUri参数必填'
-    })
+    }),
+    isWechatBrowser: Joi.boolean().default(false)
   });
 
   const { error, value } = schema.validate(req.body);

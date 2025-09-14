@@ -136,44 +136,60 @@ const Chat = () => {
   
   // 改进的键盘事件处理
   const handleKeyPress = async (e) => {
+    // 只处理 Ctrl+V 或 Cmd+V 的图片粘贴，不阻止文本粘贴
     if (e.key === 'v' && (e.ctrlKey || e.metaKey)) {
-      e.preventDefault();
+      // 不再无条件阻止默认行为
       
       try {
+        // 检查浏览器是否支持 clipboard API
         if (navigator.clipboard && navigator.clipboard.read) {
-          const clipboardItems = await navigator.clipboard.read();
-          const imageFiles = [];
-          
-          for (const clipboardItem of clipboardItems) {
-            for (const type of clipboardItem.types) {
-              if (type.startsWith('image/')) {
-                const blob = await clipboardItem.getType(type);
-                const file = new File([blob], `pasted-image-${Date.now()}.${type.split('/')[1]}`, {
-                  type: type,
-                  lastModified: Date.now()
-                });
-                imageFiles.push(file);
+          try {
+            const clipboardItems = await navigator.clipboard.read();
+            const imageFiles = [];
+            let hasImageType = false;
+            
+            for (const clipboardItem of clipboardItems) {
+              for (const type of clipboardItem.types) {
+                if (type.startsWith('image/')) {
+                  hasImageType = true;
+                  const blob = await clipboardItem.getType(type);
+                  const file = new File([blob], `pasted-image-${Date.now()}.${type.split('/')[1]}`, {
+                    type: type,
+                    lastModified: Date.now()
+                  });
+                  imageFiles.push(file);
+                }
               }
             }
+            
+            // 只有在检测到图片时才阻止默认行为
+            if (hasImageType) {
+              e.preventDefault();
+              
+              if (imageFiles.length > 0) {
+                await handlePasteImages(imageFiles);
+              } else {
+                message.info('剪贴板中没有图片数据');
+              }
+            }
+            // 如果没有图片，让浏览器执行默认的文本粘贴行为
+          } catch (clipboardError) {
+            // 如果是权限错误，静默处理，让默认粘贴行为继续
+            if (clipboardError.name === 'NotAllowedError') {
+              console.log('剪贴板权限未授予，使用默认粘贴行为');
+              // 不显示错误提示，让默认粘贴行为继续
+            } else {
+              // 其他错误也静默处理，让默认粘贴行为继续
+              console.error('读取剪贴板失败:', clipboardError);
+            }
           }
-          
-          if (imageFiles.length > 0) {
-            await handlePasteImages(imageFiles);
-          } else {
-            message.info('剪贴板中没有图片数据');
-          }
-        } else {
-          message.warning('您的浏览器不支持剪贴板图片粘贴功能');
         }
+        // 如果浏览器不支持 clipboard API，不显示警告，让默认粘贴行为继续
       } catch (error) {
-        console.error('粘贴图片失败:', error);
-        if (error.name === 'NotAllowedError') {
-          message.error('请允许浏览器访问剪贴板权限');
-        } else {
-          message.error('粘贴图片失败，请重试或使用拖拽上传');
-        }
+        // 捕获任何其他错误，但不显示错误提示
+        console.error('粘贴处理失败:', error);
       }
-      return;
+      // 不返回，让事件继续传播
     }
     
     // Enter 键发送消息逻辑

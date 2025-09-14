@@ -162,16 +162,13 @@ const AIToolbar = ({ onToolClick, selectedImages = [], setInputValue, inputValue
 
   return (
     <>
-      <div style={{
+      <div className="ai-toolbar" style={{
         position: 'absolute',
         top: '-60px',
         right: '24px',
         zIndex: 10,
-        backgroundColor: '#262626',
         borderRadius: '8px',
-        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
         padding: '8px 12px',
-        border: '1px solid #434343'
       }}>
         <Space size="small">
           {tools.map((tool) => (
@@ -183,24 +180,24 @@ const AIToolbar = ({ onToolClick, selectedImages = [], setInputValue, inputValue
               onClick={() => handleToolClick(tool.key)}
               onMouseEnter={(e) => {
                 handleMouseEnter(tool, e);
-                e.target.style.backgroundColor = '#434343';
-                e.target.style.borderColor = '#595959';
+                e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+                e.target.style.borderColor = 'rgba(255, 255, 255, 0.3)';
                 e.target.style.color = '#ffffff';
                 const icon = e.target.querySelector('.anticon');
                 if (icon) icon.style.color = '#ffffff';
               }}
               onMouseLeave={(e) => {
                 handleMouseLeave();
-                e.target.style.backgroundColor = '#1f1f1f';
-                e.target.style.borderColor = '#434343';
+                e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)';
                 e.target.style.color = '#ffffff';
                 const icon = e.target.querySelector('.anticon');
                 if (icon) icon.style.color = '#ffffff';
               }}
               style={{
                 color: '#ffffff',
-                backgroundColor: '#1f1f1f',
-                borderColor: '#434343',
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                borderColor: 'rgba(255, 255, 255, 0.2)',
                 borderRadius: '16px',
                 fontSize: '12px',
                 height: '32px',

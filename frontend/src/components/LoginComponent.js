@@ -6,18 +6,19 @@ import api from '../services/api';
 
 const { Title, Text } = Typography;
 
+// 将函数移到组件外部，使其可以在整个文件中使用
+const checkWechatEnv = () => {
+  const ua = navigator.userAgent.toLowerCase();
+  return ua.includes('micromessenger');
+};
+
 const LoginComponent = ({ onLoginSuccess, showWechatSDK = false, compact = false, visible = true }) => {
   const [isWechatEnv, setIsWechatEnv] = useState(false);
   const [isSDKReady, setIsSDKReady] = useState(false);
   const [wechatLoading, setWechatLoading] = useState(false);
 
   useEffect(() => {
-    // 检测微信环境
-    const checkWechatEnv = () => {
-      const ua = navigator.userAgent.toLowerCase();
-      return ua.includes('micromessenger');
-    };
-    
+    // 使用外部定义的函数
     const wechatEnv = checkWechatEnv();
     setIsWechatEnv(wechatEnv);
     
@@ -55,18 +56,25 @@ const LoginComponent = ({ onLoginSuccess, showWechatSDK = false, compact = false
     try {
       setWechatLoading(true);
       
+      // 现在可以正确调用checkWechatEnv函数
+      const isWechatBrowser = checkWechatEnv();
+      
       // 构建回调地址
       const redirectUri = `${window.location.origin}/wechat-login-callback`;
       
+      // 无论在什么环境下都使用snsapi_login
+      const scope = 'snsapi_login';
+      
       // 调用后端接口获取授权URL
       const response = await api.post('/wechat/auth/oauth-url', {
-        scope: 'snsapi_login',
+        scope: scope,
         state: Date.now().toString(),
-        redirectUri: redirectUri
+        redirectUri: redirectUri,
+        isWechatBrowser: false // 强制使用开放平台扫码登录
       });
       
       if (response.data.authUrl) {
-        // 直接跳转到微信开放平台授权页面
+        // 直接跳转到微信授权页面
         window.location.href = response.data.authUrl;
       } else {
         throw new Error('获取授权URL失败');

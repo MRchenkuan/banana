@@ -32,13 +32,13 @@ class WechatAuthController {
    */
   generateOAuthUrl(req, res) {
     try {
-      const { scope, state, redirectUri } = req.body;
+      const { scope, state, redirectUri, isWechatBrowser } = req.body;
       
       if (!redirectUri) {
         return res.status(400).json({ error: 'redirectUri参数必填' });
       }
       
-      const authUrl = this.authService.generateOAuthUrl(scope, state, redirectUri);
+      const authUrl = this.authService.generateOAuthUrl(scope, state, redirectUri, isWechatBrowser);
       res.json({ authUrl });
     } catch (error) {
       console.error('生成授权URL失败:', error);

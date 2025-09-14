@@ -1,14 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Space, Spin, Button, Typography } from 'antd';
 import { LogoutOutlined, WalletOutlined } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToken } from '../../contexts/TokenContext';
+import PaymentModal from '../PaymentModal';
 
 const { Text } = Typography;
 
 const HomeNavbar = ({ sdkLoading }) => {
   const { isAuthenticated, user, logout } = useAuth();
   const { balance } = useToken();
+  const [paymentModalVisible, setPaymentModalVisible] = useState(false);
+  const [defaultPackage, setDefaultPackage] = useState('standard');
 
   const navbarStyle = {
     padding: '0 24px',
@@ -30,6 +33,12 @@ const HomeNavbar = ({ sdkLoading }) => {
     logout();
   };
 
+  const handleTokenClick = () => {
+    // 打开充值面板
+    setDefaultPackage('standard'); // 设置默认套餐
+    setPaymentModalVisible(true);
+  };
+
   return (
     <div style={navbarStyle}>
       <div style={logoStyle}>🍌 Banana AI</div>
@@ -42,13 +51,27 @@ const HomeNavbar = ({ sdkLoading }) => {
         {/* 用户已登录时显示token余额和退出按钮 */}
         {isAuthenticated && user && (
           <>
-            {/* Token 余额显示 */}
-            <Space align="center" style={{ 
-              background: 'rgba(255, 255, 255, 0.1)',
-              padding: '4px 12px',
-              borderRadius: '16px',
-              border: '1px solid rgba(255, 255, 255, 0.2)'
-            }}>
+            {/* Token 余额显示 - 添加点击事件和鼠标悬停效果 */}
+            <Space 
+              align="center" 
+              onClick={handleTokenClick}
+              style={{ 
+                background: 'rgba(255, 255, 255, 0.1)',
+                padding: '4px 12px',
+                borderRadius: '16px',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+              }}
+            >
               <WalletOutlined style={{ color: '#fff', fontSize: '14px' }} />
               <Text style={{ color: '#fff', fontSize: '14px', fontWeight: '500' }}>
                 {typeof balance === 'number' ? balance.toLocaleString() : '0'} Tokens
@@ -83,6 +106,12 @@ const HomeNavbar = ({ sdkLoading }) => {
           </>
         )}
       </Space>
+
+      {/* 添加支付弹窗组件 */}
+      <PaymentModal 
+        visible={paymentModalVisible} 
+        onClose={() => setPaymentModalVisible(false)} 
+      />
     </div>
   );
 };

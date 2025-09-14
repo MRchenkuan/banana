@@ -14,9 +14,7 @@ const LoginModal = ({ visible, onClose, onSwitchToRegister }) => {
       footer={null}
       width={480}
       centered
-      styles={{
-        body: { padding: '40px 32px' }
-      }}
+      className="login-modal"
       maskStyle={{
         backgroundColor: 'rgba(0, 0, 0, 0.6)'
       }}

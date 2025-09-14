@@ -10,7 +10,7 @@ class WechatSDK {
   async init() {
     try {
       // 获取微信 JS-SDK 配置
-      const response = await api.post('/wechat/js-config', {
+      const response = await api.post('/wechat/auth/js-config', {
         url: window.location.href.split('#')[0] // 当前页面URL
       });
       

@@ -204,3 +204,147 @@ body {
   align-items: center !important;
   justify-content: center !important;
 }
+
+.ant-modal-header {
+  background: transparent !important; /* 标题栏透明 */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.ant-modal-title {
+  color: rgba(255, 255, 255, 0.9) !important; /* 标题文字颜色 */
+}
+
+.ant-modal-close {
+  color: rgba(255, 255, 255, 0.7) !important; /* 关闭按钮颜色 */
+}
+
+/* 增强选中状态的高亮效果 */
+.package-card.selected {
+  border: 2px solid rgba(255, 255, 255, 0.8) !important;
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.7) 0%, rgba(124, 58, 237, 0.7) 100%) !important;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.3) !important; /* 增强光晕效果 */
+  transform: translateY(-3px) !important; /* 轻微上浮效果 */
+}
+
+/* 添加选中状态的脉冲动画 */
+@keyframes selected-pulse {
+  0% {
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(255, 255, 255, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+  }
+}
+
+.package-card.selected {
+  animation: selected-pulse 2s infinite ease-in-out;
+}
+
+/* 选中状态下的图标样式 */
+.package-card.selected .package-icon {
+  background: rgba(24, 144, 255, 0.3); /* 更明显的背景 */
+  color: #ffffff; /* 图标颜色变为白色 */
+}
+
+/* 选中状态下的价格和tokens样式 */
+.package-card.selected .package-price {
+  color: #ffffff !important; /* 价格颜色变为白色 */
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5); /* 添加发光效果 */
+}
+
+.package-card.selected .package-tokens {
+  color: #ffffff; /* Tokens数量颜色变为白色 */
+  text-shadow: 0 0 8px rgba(24, 144, 255, 0.7); /* 添加发光效果 */
+}
+
+/* 添加更丰富的渐变流动动画 */
+@keyframes gradient-flow {
+  0% {
+    background-position: 0% 50%;
+    background-size: 100% 100%
+    /* 移除background-image属性 */
+  }
+  25% {
+    background-position: 100% 0%;
+    background-size: 150% 150%;
+    /* 移除background-image属性 */
+  }
+  50% {
+    background-position: 100% 100%;
+    background-size: 100% 100%
+    /* 移除background-image属性 */
+  }
+  75% {
+    background-position: 0% 100%;
+    background-size: 150% 150%;
+    /* 移除background-image属性 */
+  }
+  100% {
+    background-position: 0% 50%;
+    background-size: 100% 100%
+    /* 移除background-image属性 */
+  }
+}
+
+/* 新增角度变化动画 */
+@keyframes gradient-angle {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(90deg); }
+  50% { transform: rotate(180deg); }
+  75% { transform: rotate(270deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* AIToolbar毛玻璃效果 */
+.ai-toolbar {
+  position: relative;
+  overflow: hidden;
+  background-color: transparent;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3) !important;
+}
+
+.ai-toolbar::before {
+  content: '';
+  position: absolute;
+  top: -200px;
+  left: -200px;
+  right: -200px;
+  bottom: -200px;
+  background-image: linear-gradient(135deg, rgba(217, 119, 6, 0.5) 0%, rgba(124, 58, 237, 0.5) 100%);
+  background-size: 200% 200%;
+  animation: 
+    gradient-flow 4s cubic-bezier(0.445, 0.05, 0.55, 0.95) infinite alternate,
+    gradient-angle 8s linear infinite;
+  z-index: -1;
+}
+
+/* 橙色到紫色渐变毛玻璃效果 - 特别为支付面板定制 */
+.payment-modal .ant-modal-content {
+  position: relative;
+  overflow: hidden;
+  background-color: transparent;
+  backdrop-filter: blur(15px) !important;
+  -webkit-backdrop-filter: blur(15px) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
+  border-radius: 16px !important;
+}
+
+.payment-modal .ant-modal-content::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  right: -50%;
+  bottom: -50%;
+  background-image: linear-gradient(135deg, rgba(217, 119, 6, 0.5) 0%, rgba(124, 58, 237, 0.5) 100%);
+  background-size: 200% 200%;
+  animation: 
+    gradient-flow 8s cubic-bezier(0.445, 0.05, 0.55, 0.95) infinite alternate,
+    gradient-angle 16s linear infinite;
+  z-index: -1;
+}

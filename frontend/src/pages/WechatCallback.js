@@ -22,6 +22,14 @@ const WechatCallback = () => {
       return;
     }
     
+    // 检查localStorage中是否已经处理过这个code
+    const processedCodes = JSON.parse(localStorage.getItem('processedWechatCodes') || '[]');
+    if (processedCodes.includes(code)) {
+      setError('授权码已被使用，请重新授权');
+      setStatus('error');
+      return;
+    }
+    
     if (code) {
       isProcessingRef.current = true;
       handleWechatLogin();
@@ -45,6 +53,16 @@ const WechatCallback = () => {
         // 登录成功，保存token
         await wechatLogin(response.data.token, response.data.user);
         setStatus('success');
+        
+        // 记录已处理的code，防止重复使用
+        const processedCodes = JSON.parse(localStorage.getItem('processedWechatCodes') || '[]');
+        processedCodes.push(code);
+        // 只保留最近的10个code，避免localStorage过大
+        if (processedCodes.length > 10) {
+          processedCodes.shift();
+        }
+        localStorage.setItem('processedWechatCodes', JSON.stringify(processedCodes));
+        
         // 延迟跳转，让用户看到成功提示
         setTimeout(() => {
           navigate('/');
@@ -54,7 +72,25 @@ const WechatCallback = () => {
       }
     } catch (error) {
       console.error('微信登录失败:', error);
-      setError(error.response?.data?.error || error.message || '登录失败');
+      
+      // 特殊处理code已使用的错误
+      if (error.response?.data?.error?.includes('code been used') || 
+          error.message?.includes('code been used')) {
+        setError('授权码已被使用，请重新授权');
+        
+        // 记录已处理的code，防止重复使用
+        const processedCodes = JSON.parse(localStorage.getItem('processedWechatCodes') || '[]');
+        if (!processedCodes.includes(code)) {
+          processedCodes.push(code);
+          if (processedCodes.length > 10) {
+            processedCodes.shift();
+          }
+          localStorage.setItem('processedWechatCodes', JSON.stringify(processedCodes));
+        }
+      } else {
+        setError(error.response?.data?.error || error.message || '登录失败');
+      }
+      
       setStatus('error');
     }
   };
@@ -112,7 +148,15 @@ const WechatCallback = () => {
         <Result
           status="error"
           title="登录失败"
-          subTitle="请重新登录"
+          subTitle={error || "请重新登录"}
+          extra={[
+            <Button type="primary" key="retry" onClick={() => {
+              // 重定向到登录页
+              navigate('/login');
+            }}>
+              返回登录
+            </Button>
+          ]}
         />
       </div>
     );

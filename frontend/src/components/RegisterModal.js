@@ -51,9 +51,7 @@ const RegisterModal = ({ visible, onClose, onSwitchToLogin }) => {
       footer={null}
       width={400}
       centered
-      styles={{
-        body: { padding: '24px' }
-      }}
+      className="register-modal"
     >
       <Form
         form={form}

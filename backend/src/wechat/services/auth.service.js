@@ -42,6 +42,39 @@ class WechatAuthService {
   }
   
   /**
+   * 获取JS-API票据
+   */
+  async getJSAPITicket() {
+    // 如果缓存中有有效的票据，直接返回
+    if (this.jsapiTicketCache.ticket && Date.now() < this.jsapiTicketCache.expiresAt) {
+      return this.jsapiTicketCache.ticket;
+    }
+    
+    // 获取access_token，这是获取jsapi_ticket的前提
+    const accessToken = await this.getAccessToken();
+    
+    // 请求jsapi_ticket
+    const url = 'https://api.weixin.qq.com/cgi-bin/ticket/getticket';
+    const params = {
+      access_token: accessToken,
+      type: 'jsapi'
+    };
+    
+    const result = await WechatHttpUtil.get(url, params);
+    
+    if (result.success && result.data.ticket) {
+      // 缓存票据，设置过期时间比微信返回的提前5分钟，避免临界点问题
+      this.jsapiTicketCache = {
+        ticket: result.data.ticket,
+        expiresAt: Date.now() + (result.data.expires_in - 300) * 1000
+      };
+      return result.data.ticket;
+    }
+    
+    throw new Error('获取JS-API票据失败: ' + (result.data?.errmsg || result.error));
+  }
+  
+  /**
    * 生成JS-SDK配置
    */
   async generateJSConfig(url) {
@@ -63,8 +96,9 @@ class WechatAuthService {
    * @param {string} scope - 授权范围
    * @param {string} state - 状态参数
    * @param {string} redirectUri - 前端传入的回调地址
+   * @param {boolean} isWechatBrowser - 是否在微信浏览器中
    */
-  generateOAuthUrl(scope = 'snsapi_login', state, redirectUri) {
+  generateOAuthUrl(scope = 'snsapi_login', state, redirectUri, isWechatBrowser = false) {
     if (!redirectUri) {
       throw new Error('redirectUri参数必填');
     }
@@ -72,8 +106,14 @@ class WechatAuthService {
     const appId = this.config.appId;
     const encodedRedirectUri = encodeURIComponent(redirectUri);
     
-    // 微信开放平台授权URL
-    return `https://open.weixin.qq.com/connect/qrconnect?appid=${appId}&redirect_uri=${encodedRedirectUri}&response_type=code&scope=${scope}&state=${state}#wechat_redirect`;
+    // 根据环境选择不同的授权URL
+    if (isWechatBrowser) {
+      // 微信内置浏览器使用公众号授权（静默授权或用户信息授权）
+      return `https://open.weixin.qq.com/connect/oauth2/authorize?appid=${appId}&redirect_uri=${encodedRedirectUri}&response_type=code&scope=${scope}&state=${state}#wechat_redirect`;
+    } else {
+      // 非微信浏览器使用开放平台扫码登录
+      return `https://open.weixin.qq.com/connect/qrconnect?appid=${appId}&redirect_uri=${encodedRedirectUri}&response_type=code&scope=snsapi_login&state=${state}#wechat_redirect`;
+    }
   }
 
   /**

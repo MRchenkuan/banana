@@ -99,26 +99,20 @@ const SessionSidebar = ({
           onClick={createNewSession}
           style={{ 
             width: '100%',
-            backgroundColor: theme.primary,
-            borderColor: theme.primary,
+            background: '#1e293b', // 深蓝灰色，与暗色主题协调
+            border: '1px solid #334155', // 添加微妙的边框
             color: '#ffffff',
             height: '44px',
             fontSize: '15px',
             fontWeight: '600',
-            boxShadow: `0 2px 8px ${theme.primaryShadow}`,
+            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.15)', // 减弱发光效果
             borderRadius: '8px'
           }}
           onMouseEnter={(e) => {
-            e.target.style.backgroundColor = theme.primaryHover;
-            e.target.style.borderColor = theme.primaryHover;
-            e.target.style.boxShadow = `0 4px 12px ${theme.primaryShadowHover}`;
-            e.target.style.transform = 'translateY(-1px)';
+            e.target.style.boxShadow = '0 3px 8px rgba(0, 0, 0, 0.2)'; // 减弱悬停时的发光效果
           }}
           onMouseLeave={(e) => {
-            e.target.style.backgroundColor = theme.primary;
-            e.target.style.borderColor = theme.primary;
-            e.target.style.boxShadow = `0 2px 8px ${theme.primaryShadow}`;
-            e.target.style.transform = 'translateY(0)';
+            e.target.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.15)'; // 减弱离开时的发光效果
           }}
         >
           新建对话

@@ -163,11 +163,13 @@ const MessageInput = ({
 
   // 处理粘贴事件
   const handlePaste = async (e) => {
-    // 检查是否有图片数据
+    // 检查是否有剪贴板数据
     const items = e.clipboardData?.items;
     if (!items) return;
     
     const imageFiles = [];
+    let hasImage = false;
+    let hasText = false;
     
     // 遍历剪贴板项目
     for (let i = 0; i < items.length; i++) {
@@ -175,8 +177,7 @@ const MessageInput = ({
       
       // 检查是否为图片类型
       if (item.type.startsWith('image/')) {
-        e.preventDefault(); // 阻止默认粘贴行为
-        
+        hasImage = true;
         const file = item.getAsFile();
         if (file) {
           // 重命名文件
@@ -191,6 +192,15 @@ const MessageInput = ({
           imageFiles.push(renamedFile);
         }
       }
+      // 检查是否为文本类型
+      else if (item.type === 'text/plain') {
+        hasText = true;
+      }
+    }
+    
+    // 只有在有图片且没有文本的情况下才阻止默认粘贴行为
+    if (hasImage && !hasText) {
+      e.preventDefault();
     }
     
     // 如果有图片文件，调用父组件的粘贴处理器
