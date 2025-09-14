@@ -164,11 +164,11 @@ const AIToolbar = ({ onToolClick, selectedImages = [], setInputValue, inputValue
     <>
       <div className="ai-toolbar" style={{
         position: 'absolute',
-        top: '-60px',
-        right: '24px',
+        top: '-50px',
+        right: '0',
         zIndex: 10,
         borderRadius: '8px',
-        padding: '8px 12px',
+        padding: '6px 8px',
       }}>
         <Space size="small">
           {tools.map((tool) => (

@@ -51,7 +51,7 @@ const MessageList = ({
           display: 'flex',
           flexDirection: 'column',
           backgroundColor: '#141414',
-          padding: '16px'
+          padding: '0 16px' // 将padding从'16px'改为'0'
         }}
       >
         {messages.length === 0 ? (

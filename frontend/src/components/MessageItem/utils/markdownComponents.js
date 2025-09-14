@@ -1,9 +1,10 @@
 import React from 'react';
-import { Image } from 'antd';
+import { Image, Button } from 'antd';
+import { RetweetOutlined, InboxOutlined, PlusCircleFilled, PlusCircleOutlined } from '@ant-design/icons';
 import { optimizeImage } from '../../../utils/imageOptimizer';
 import { createImageDragHandler, getDragImageStyle } from '../../../utils/imageDragUtils';
 
-export const getMarkdownComponents = () => ({
+export const getMarkdownComponents = (onReuploadImage) => ({
   p: ({ children }) => (
     <div style={{ 
       margin: '0 0 12px 0', // 增加下边距到 12px
@@ -43,7 +44,7 @@ export const getMarkdownComponents = () => ({
       {children}
     </h6>
   ),
-  // 图片组件 - 支持点击放大和拖拽
+  // 图片组件 - 支持点击放大、拖拽和重新上传
   img: ({ src, alt, ...props }) => {
     // 检查 src 是否为空或未定义
     if (!src) {
@@ -70,32 +71,63 @@ export const getMarkdownComponents = () => ({
     const imageSrc = src.startsWith('blob:') ? src : optimizeImage(src, 'chat');
     
     return (
-      <Image
-        src={imageSrc}
-        alt={alt}
-        style={{
-          maxWidth: '30vw',
-          maxHeight: '40vh',
-          height: 'auto',
-          borderRadius: '8px',
-          margin: '8px 0',
-          display: 'block',
-          ...getDragImageStyle() // 使用工具函数获取拖拽样式
-        }}
-        preview={{
-          mask: false,
-          src: src
-        }}
-        draggable={true}
-        onDragStart={createImageDragHandler(src)} // 使用工具函数创建拖拽处理器
-        onError={(e) => {
-          console.error('Image load error:', e);
-          console.error('Failed src:', imageSrc);
-          console.error('Original src:', src);
-          // 不显示错误消息，避免用户体验问题
-        }}
-        fallback="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmNWY1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuWbvueJh+WKoOi9veWksei0pTwvdGV4dD48L3N2Zz4="
-      />
+      <div style={{ position: 'relative', display: 'inline-block', margin: '8px 0' }}>
+        <Image
+          src={imageSrc}
+          alt={alt}
+          style={{
+            maxWidth: '30vw',
+            maxHeight: '40vh',
+            height: 'auto',
+            borderRadius: '8px',
+            display: 'block',
+            ...getDragImageStyle() // 使用工具函数获取拖拽样式
+          }}
+          preview={{
+            mask: false,
+            src: src
+          }}
+          draggable={true}
+          onDragStart={createImageDragHandler(src)} // 使用工具函数创建拖拽处理器
+          onError={(e) => {
+            console.error('Image load error:', e);
+            console.error('Failed src:', imageSrc);
+            console.error('Original src:', src);
+            // 不显示错误消息，避免用户体验问题
+          }}
+          fallback="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmNWY1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuWbvueJh+WKoOi9veWksei0pTwvdGV4dD48L3N2Zz4="
+        />
+        {/* 添加重新上传按钮 */}
+        {onReuploadImage && (
+          <Button
+            type="primary"
+            size="small"
+            icon={<PlusCircleOutlined />}
+            onClick={() => onReuploadImage(src)}
+            style={{
+              position: 'absolute',
+              bottom: '0',
+              right: '0',
+              transform: 'translate(-50%, -50%)',
+              width: '28px',
+              height: '28px',
+              borderRadius: '50%',
+              padding: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: 'rgba(255, 255, 255, 0.2)',
+              backdropFilter: 'blur(5px)',
+              WebkitBackdropFilter: 'blur(5px)', // Safari 支持
+              border: '1px solid rgba(255, 255, 255, 0.5)',
+              boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)',
+              zIndex: 10,
+              transition: 'all 0.3s ease'
+            }}
+            title="重新上传此图片"
+          />
+        )}
+      </div>
     );
   },
   // 链接组件

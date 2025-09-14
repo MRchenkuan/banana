@@ -15,6 +15,7 @@ import {
 } from '@ant-design/icons';
 import { compressImages } from '../utils/imageCompression';
 import { useImageUrls } from '../hooks/useImageUrls';
+import AIToolbar from './AIToolbar';  // 导入AIToolbar组件
 
 const { TextArea } = Input;
 const { Text } = Typography;
@@ -32,7 +33,9 @@ const MessageInput = ({
   onDragOver,
   onDragLeave,
   onDrop,
-  onPaste // 新增粘贴事件处理器
+  onPaste,
+  onToolClick,  // 添加工具点击处理函数
+  onImageUpload  // 添加工具栏图片上传处理函数
 }) => {
   const [compressing, setCompressing] = useState(false);
   const [compressionProgress, setCompressionProgress] = useState(0);
@@ -212,11 +215,11 @@ const MessageInput = ({
   return (
     <div
       style={{
-        margin: '0 24px 24px',
+        margin: '0 16px',
         backgroundColor: '#1f1f1f',
-        borderRadius: '12px',
+        borderRadius: '8px',
         boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
-        padding: '16px',
+        padding: '4px',
         boxSizing: 'border-box',
         border: isDragOver ? '2px dashed #1890ff' : '2px solid #434343',
         position: 'relative'
@@ -225,6 +228,14 @@ const MessageInput = ({
       onDragLeave={onDragLeave}
       onDrop={onDrop}
     >
+      <AIToolbar
+        onToolClick={onToolClick}
+        onImageUpload={onImageUpload}
+        setInputValue={setInputValue}
+        inputValue={inputValue}
+        selectedImages={selectedImages}
+      />
+      
       {/* 压缩进度提示 */}
       {compressing && (
         <div style={{ marginBottom: '12px' }}>

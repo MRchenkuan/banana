@@ -3,12 +3,12 @@ import { message } from "antd";
 import SessionSidebar from "../components/SessionSidebar";
 import MessageList from "../components/MessageList";
 import MessageInput from "../components/MessageInput";
-import AIToolbar from "../components/AIToolbar";
 import useChat from "../hooks/useChat";
 import useSessions from "../hooks/useSessions";
 import useMessageSender from "../hooks/useMessageSender";
 import useImageHandler from "../hooks/useImageHandler";
 import { compressImages } from "../utils/imageCompression";
+import { ChatProvider } from '../contexts/ChatContext';
 
 const Chat = () => {
   const [inputValue, setInputValue] = useState("");
@@ -226,53 +226,45 @@ const Chat = () => {
     }
   };
 
+  // 创建ChatContext的值
+  const chatContextValue = {
+    setSelectedImages,
+    setInputValue
+  };
+  
   return (
-    <div style={{ display: "flex", backgroundColor: "#141414" }}>
-      <SessionSidebar
-        sessions={sessions}
-        currentSessionId={currentSessionId}
-        sessionsLoading={sessionsLoading}
-        onSessionSwitch={handleSessionSwitch}
-        onSessionsUpdate={setSessions}
-      />
-
-      <div style={{
-        flex: 1,
-        display: "flex",
-        flexDirection: "column",
-        height: "calc(100vh - 70px)",
-        overflow: "hidden",
-      }}>
-        <div style={{
-          flex: 1,
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
-          minHeight: 0,
-        }}>
+    <ChatProvider value={chatContextValue}>
+      <div
+        className="chat-container"
+        style={{
+          height: 'calc(100vh - 75px)',
+          display: 'flex',
+          flexDirection: 'column',
+          backgroundColor: '#1a1a1a'
+        }}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        {/* 会话侧边栏 */}
+        <SessionSidebar
+          sessions={sessions}
+          currentSessionId={currentSessionId}
+          onSessionSwitch={handleSessionSwitch}
+          loading={sessionsLoading}
+        />
+        
+        {/* 主聊天区域 */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {/* 消息列表 */}
           <MessageList
             messages={messages}
-            loading={loading}
             currentSessionId={currentSessionId}
             messagesEndRef={messagesEndRef}
-            restoreScrollPosition={restoreScrollPosition} // 新增
+            restoreScrollPosition={restoreScrollPosition}
           />
-        </div>
-
-        <div
-          style={{
-            flexShrink: 0,
-            position: "relative",
-          }}
-        >
-          <AIToolbar
-            onToolClick={handleToolClick}
-            selectedImages={selectedImages}
-            setInputValue={setInputValue}
-            inputValue={inputValue}
-            onImageUpload={handleToolbarImageUpload}
-          />
-
+          
+          {/* 消息输入框 */}
           <MessageInput
             inputValue={inputValue}
             setInputValue={setInputValue}
@@ -285,11 +277,13 @@ const Chat = () => {
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            onPaste={handlePasteImages} // 添加粘贴事件处理器
+            onPaste={handlePasteImages}
+            onToolClick={handleToolClick}  // 添加工具点击处理函数
+            onImageUpload={handleToolbarImageUpload}  // 添加工具栏图片上传处理函数
           />
         </div>
       </div>
-    </div>
+    </ChatProvider>
   );
 };
 
