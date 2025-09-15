@@ -11,7 +11,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Chat from './pages/Chat';
 import WechatCallback from './pages/WechatCallback';
-import './App.css';
+import styles from './styles/pages/App.module.css';
+import './App.css'; // 如果还有其他全局样式
 
 import { switchTheme, theme as customTheme } from './constants/theme';
 

@@ -1,0 +1,24 @@
+:root {
+  /* 颜色变量 */
+  --bg-primary: #141414;
+  --bg-secondary: #1f1f1f;
+  --bg-tertiary: #262626;
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --border-color: #434343;
+  
+  /* 主题变量 */
+  --theme-primary: #1890ff;
+  --theme-user-message: #3b82f6;
+  --theme-thinking-bg: #1e3a5f;
+  
+  /* 链接颜色 */
+  --link-color: #61dafb;
+}
+
+/* 绿色主题变量 */
+:root.theme-green {
+  --theme-primary: #10b981;
+  --theme-user-message: #059669;
+  --theme-thinking-bg: #064e3b;
+}

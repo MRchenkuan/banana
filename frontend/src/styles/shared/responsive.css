@@ -1,0 +1,27 @@
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .ant-layout-sider {
+    position: fixed !important;
+    height: 100vh;
+    z-index: 999;
+  }
+  
+  .ant-layout-content {
+    margin-left: 0 !important;
+  }
+}
+
+/* 移动端适配 */
+@media (max-width: 576px) {
+  .ant-card {
+    margin: 8px;
+  }
+  
+  .ant-table {
+    font-size: 12px;
+  }
+  
+  .chat-message {
+    font-size: 14px;
+  }
+}

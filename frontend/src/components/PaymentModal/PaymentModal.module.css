@@ -1,0 +1,118 @@
+/* PaymentModal 组件样式 */
+.modalContent {
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  min-height: 400px;
+}
+
+/* 修复关闭按钮样式 */
+.modalContent :global(.ant-modal-close) {
+  top: 0;
+  right: 0;
+  transform: translate(-100%, 100%);
+}
+
+.modalContent :global(.ant-modal-close:hover) {
+  top: 0;
+  right: 0;
+  color: rgba(255, 255, 255, 1) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  transform: translate(-100%, 100%) !important;
+  animation: all 0.3s ease-in-out;
+}
+
+.modalContent :global(.ant-modal-close-x) {
+  font-size: 16px !important;
+  line-height: 1 !important;
+}
+
+/* 添加支付弹窗毛玻璃效果 */
+.paymentModal :global(.ant-modal-content) {
+  position: relative;
+  overflow: hidden;
+  background-color: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(15px) !important;
+  -webkit-backdrop-filter: blur(15px) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+}
+
+.paymentModal :global(.ant-modal-content)::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  right: -50%;
+  bottom: -50%;
+  background-image: linear-gradient(135deg, rgba(217, 119, 6, 0.5) 0%, rgba(124, 58, 237, 0.5) 100%);
+  background-size: 200% 200%;
+  animation: 
+   gradientFlow 8s cubic-bezier(0.445, 0.05, 0.55, 0.95) infinite alternate,
+   gradientAngle 6s linear infinite;
+  z-index: -1;
+}
+
+.paymentModal :global(.ant-modal-content)::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 16px;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.4) 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.05) 100%
+  );
+  opacity: 0.5;
+  z-index: 0;
+}
+
+
+/* 支付按钮样式 */
+.payButton {
+  background: linear-gradient(135deg, #1677ff 0%, #0e5fd9 100%) !important;
+  border-color: transparent !important;
+  height: 50px !important;
+  font-size: 18px !important;
+  border-radius: 16px !important;
+  min-width: 280px !important;
+  box-shadow: 0 12px 28px rgba(22, 119, 255, 0.4) !important;
+  transition: all 0.3s ease !important;
+  font-weight: 600 !important;
+}
+
+.payButton:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 16px 36px rgba(22, 119, 255, 0.5) !important;
+}
+
+/* 历史记录按钮样式 */
+.historyButton {
+  height: 44px !important;
+  margin: auto;
+  font-size: 16px !important;
+  border-radius: 12px !important;
+  min-width: 280px !important;
+  font-weight: 500 !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: #ffffff !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.historyButton:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+}
+

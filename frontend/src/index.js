@@ -1,9 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { ConfigProvider } from 'antd';
-import zhCN from 'antd/locale/zh_CN';
-import 'antd/dist/reset.css';
-import './index.css';
+import './styles/global/variables.css';
+import './styles/global/reset.css';
+import './styles/global/animations.css';
+import './styles/shared/antd-overrides.css';
+import './styles/shared/global-utilities.css';
 import App from './App';
 
 // 导入VConsole
@@ -31,7 +32,7 @@ if (isAccessFromMobileDevice) {
   console.log('VConsole已启用');
 }
 
-// 添加全局开关，方便在控制台手动启用或禁用VConsole
+// 手动切换VConsole的函数
 window.toggleVConsole = () => {
   if (vConsole) {
     vConsole.destroy();
@@ -46,8 +47,6 @@ window.toggleVConsole = () => {
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <ConfigProvider locale={zhCN}>
-      <App />
-    </ConfigProvider>
+    <App />
   </React.StrictMode>
 );

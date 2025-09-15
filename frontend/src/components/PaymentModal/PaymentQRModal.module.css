@@ -1,0 +1,25 @@
+/* 支付宝弹窗特殊z-index */
+.alipayModal :global(.ant-modal-content) {
+  background-color: #1890ff;
+  z-index: 2100 !important;
+}
+
+.paymentQrcodeModal :global(.ant-modal-content) {
+  z-index: 2100 !important;
+}
+
+.alipayModal :global(.ant-modal-mask) {
+  z-index: 2099 !important;
+}
+
+.paymentQrcodeModal :global(.ant-modal-mask) {
+  z-index: 2099 !important;
+}
+
+/* 支付二维码样式 */
+.paymentQr {
+  padding: 20px;
+  background: #1f1f1f;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}

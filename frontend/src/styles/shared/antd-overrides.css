@@ -1,0 +1,33 @@
+/* 修复头像显示问题 */
+.ant-avatar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Modal样式覆盖 */
+.ant-modal-header {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.ant-modal-title {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.ant-modal-close {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* 统计卡片样式 */
+.stats-card {
+  text-align: center;
+  padding: 20px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.stats-card .ant-statistic-content {
+  color: white;
+}

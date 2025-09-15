@@ -10,7 +10,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToken } from '../contexts/TokenContext';
 import SessionSidebar from './SessionSidebar';
-import PaymentModal from './PaymentModal';
+import PaymentModal from './PaymentModal/PaymentModal';
 import api from '../services/api';
 import { theme } from '../constants/theme';
 import useSessions from '../hooks/useSessions'; // 添加这一行

@@ -3,7 +3,7 @@ import { Space, Spin, Button, Typography } from 'antd';
 import { LogoutOutlined, WalletOutlined } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToken } from '../../contexts/TokenContext';
-import PaymentModal from '../PaymentModal';
+import PaymentModal from '../PaymentModal/PaymentModal';
 
 const { Text } = Typography;
 

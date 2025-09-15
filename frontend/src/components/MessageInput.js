@@ -15,7 +15,7 @@ import {
 } from '@ant-design/icons';
 import { compressImages } from '../utils/imageCompression';
 import { useImageUrls } from '../hooks/useImageUrls';
-import AIToolbar from './AIToolbar';  // 导入AIToolbar组件
+import AIToolbar from './AIToolbar/AIToolbar';  // 导入AIToolbar组件
 
 const { TextArea } = Input;
 const { Text } = Typography;

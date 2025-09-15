@@ -9,9 +9,10 @@ import {
   UserSwitchOutlined,
   SkinOutlined,
   ThunderboltOutlined,
-  PlusOutlined
 } from '@ant-design/icons';
-import { compressImages } from '../utils/imageCompression';
+import { compressImages } from '../../utils/imageCompression';
+import GlassPanel from '../GlassPanel';
+import styles from './AIToolbar.module.css';
 
 const AIToolbar = ({ onToolClick, selectedImages = [], setInputValue, inputValue = '', onImageUpload }) => {
   const [hoveredTool, setHoveredTool] = useState(null);
@@ -145,7 +146,7 @@ const AIToolbar = ({ onToolClick, selectedImages = [], setInputValue, inputValue
     }
   };
 
-  const handleMouseEnter = (tool, event) => {
+  const handleMouseEnter = (event, tool) => {
     const rect = event.target.getBoundingClientRect();
     const toolbarRect = event.target.closest('div').getBoundingClientRect();
     
@@ -162,14 +163,13 @@ const AIToolbar = ({ onToolClick, selectedImages = [], setInputValue, inputValue
 
   return (
     <>
-      <div className="ai-toolbar" style={{
-        position: 'absolute',
-        top: '-50px',
-        right: '0',
-        zIndex: 10,
-        borderRadius: '8px',
-        padding: '6px 8px',
-      }}>
+      <GlassPanel 
+        blur={15}
+        opacity={0.08}
+        gradientIntensity="hight"
+        borderRadius={8}
+        className={styles.aiToolbar}
+      >
         <Space size="small">
           {tools.map((tool) => (
             <Button
@@ -177,84 +177,35 @@ const AIToolbar = ({ onToolClick, selectedImages = [], setInputValue, inputValue
               type="default"
               size="small"
               icon={React.cloneElement(tool.icon, { style: { color: '#ffffff' } })}
+              className={styles.toolButton}
               onClick={() => handleToolClick(tool.key)}
-              onMouseEnter={(e) => {
-                handleMouseEnter(tool, e);
-                e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
-                e.target.style.borderColor = 'rgba(255, 255, 255, 0.3)';
-                e.target.style.color = '#ffffff';
-                const icon = e.target.querySelector('.anticon');
-                if (icon) icon.style.color = '#ffffff';
-              }}
-              onMouseLeave={(e) => {
-                handleMouseLeave();
-                e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-                e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-                e.target.style.color = '#ffffff';
-                const icon = e.target.querySelector('.anticon');
-                if (icon) icon.style.color = '#ffffff';
-              }}
-              style={{
-                color: '#ffffff',
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                borderColor: 'rgba(255, 255, 255, 0.2)',
-                borderRadius: '16px',
-                fontSize: '12px',
-                height: '32px',
-                padding: '4px 12px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                transition: 'all 0.2s ease'
-              }}
+              onMouseEnter={(e) => handleMouseEnter(e, tool)}
+              onMouseLeave={handleMouseLeave}
             >
               {tool.label}
             </Button>
           ))}
         </Space>
-      </div>
+      </GlassPanel>
 
       {/* 悬浮预览框 */}
       {hoveredTool && (
         <div
+          className={styles.previewPanel}
           style={{
-            position: 'fixed',
             left: hoverPosition.x - 110, // 预览框宽度的一半 (220/2 = 110)
             top: hoverPosition.y - 240, // 预览框高度 + 一些间距
-            zIndex: 1000,
-            backgroundColor: '#262626',
-            borderRadius: '8px',
-            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
-            padding: '12px',
-            border: '1px solid #434343',
-            maxWidth: '220px',
-            pointerEvents: 'none'
           }}
         >
           <img
             src={hoveredTool.previewImage}
             alt={hoveredTool.label}
-            style={{
-              width: '200px',
-              height: '150px',
-              objectFit: 'cover',
-              borderRadius: '6px',
-              marginBottom: '8px'
-            }}
+            className={styles.previewImage}
           />
-          <div style={{
-            fontSize: '14px',
-            fontWeight: 'bold',
-            color: '#ffffff',
-            marginBottom: '4px'
-          }}>
+          <div className={styles.previewTitle}>
             {hoveredTool.label}
           </div>
-          <div style={{
-            fontSize: '12px',
-            color: '#d9d9d9',
-            lineHeight: '1.4'
-          }}>
+          <div className={styles.previewDescription}>
             {hoveredTool.description}
           </div>
         </div>
