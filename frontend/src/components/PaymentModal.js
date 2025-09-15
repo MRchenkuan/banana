@@ -32,7 +32,7 @@ const { Title, Text } = Typography;
 const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参数
   const [packages, setPackages] = useState([]);
   const [selectedPackage, setSelectedPackage] = useState(null);  // 初始值改为 null
-  const [paymentMethod, setPaymentMethod] = useState('wechat'); // 添加这一行
+  const [paymentMethod, setPaymentMethod] = useState('alipay'); // 默认设置为支付宝
   const [loading, setLoading] = useState(false);
   const [paymentModal, setPaymentModal] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState('');
@@ -317,23 +317,15 @@ const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参�
 
             <Divider style={{ margin: '8px 0' }} /> {/* 减少分割线上下边距 */}
             
-            {/* 支付方式选择 */}
+            {/* 支付方式选择 - 只保留支付宝选项 */}
             <div>
               <Title level={4} style={{ marginBottom: '8px' }}>选择支付方式</Title> {/* 减少下边距 */}
-              <Radio.Group
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
-                style={{ marginBottom: '12px' }}
-              >
-                <Radio.Button value="wechat">
-                  <WechatOutlined style={{ marginRight: '8px', color: '#07c160' }} />
-                  微信支付
-                </Radio.Button>
-                <Radio.Button value="alipay">
-                  <AlipayOutlined style={{ marginRight: '8px', color: '#1677ff' }} />
+              {/* 直接设置支付方式为支付宝，不显示选择按钮 */}
+              <div style={{ marginBottom: '12px' }}>
+                <Tag icon={<AlipayOutlined />} color="#1677ff" style={{ padding: '5px 10px', fontSize: '14px' }}>
                   支付宝
-                </Radio.Button>
-              </Radio.Group>
+                </Tag>
+              </div>
             </div>
 
             {/* 支付按钮 */}
@@ -341,13 +333,11 @@ const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参�
               <Button
                 type="primary"
                 size="large"
-                icon={paymentMethod === 'wechat' ? <WechatOutlined /> : <AlipayOutlined />}
+                icon={<AlipayOutlined />}
                 loading={loading}
                 onClick={handlePayment}
                 style={{
-                  background: paymentMethod === 'wechat' 
-                    ? 'linear-gradient(135deg, #07c160 0%, #05a050 100%)'
-                    : 'linear-gradient(135deg, #1677ff 0%, #0e5fd9 100%)',
+                  background: 'linear-gradient(135deg, #1677ff 0%, #0e5fd9 100%)',
                   borderColor: 'transparent',
                   height: '50px', /* 减少按钮高度 */
                   fontSize: '18px',
@@ -406,8 +396,8 @@ const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参�
             <div style={{ margin: '10px 0' }}>
               <iframe 
                 src={alipayFormUrl}
-                width="800"
-                height="450"
+                width="250"
+                height="250"
                 frameBorder="0"
                 scrolling="no"
                 title="支付宝支付"

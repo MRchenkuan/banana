@@ -37,7 +37,7 @@ class AlipayService {
           total_amount: totalAmount,
           subject: description,
           product_code: 'FAST_INSTANT_TRADE_PAY',
-          qr_pay_mode: '2',
+          qr_pay_mode: '4',
           qrcode_width: 200
         },
       })
