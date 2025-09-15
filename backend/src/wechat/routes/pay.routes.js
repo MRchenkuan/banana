@@ -16,11 +16,6 @@ router.post('/notify',
   payController.handleNotify.bind(payController)
 );
 
-// 查询订单状态
-router.get('/order-status/:orderId',
-  authenticateToken,
-  payController.getOrderStatus.bind(payController)
-);
 
 // 模拟支付成功（仅开发环境）
 router.post('/simulate-success/:orderId',
@@ -28,10 +23,11 @@ router.post('/simulate-success/:orderId',
   payController.simulateSuccess.bind(payController)
 );
 
-// 前端主动更新订单状态
-router.post('/update-order-status/:orderId',
+
+// 查询和更新订单状态（合并接口）
+router.all('/order-status/:orderId',
   authenticateToken,
-  payController.updateOrderStatus.bind(payController)
+  payController.checkOrderStatus.bind(payController)
 );
 
 module.exports = router;

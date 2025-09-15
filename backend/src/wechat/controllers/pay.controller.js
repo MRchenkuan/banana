@@ -51,16 +51,38 @@ class WechatPayController {
   /**
    * 查询订单状态
    */
-  async getOrderStatus(req, res) {
+  /**
+   * 查询和更新订单状态（合并接口）
+   * 支持GET和POST请求
+   */
+  async checkOrderStatus(req, res) {
     try {
       const { orderId } = req.params;
       const result = await this.orderService.queryOrderStatus(orderId, req.user.userId);
-      res.json(result.order);
+      
+      // 根据请求方法返回不同格式的响应
+      if (req.method === 'GET') {
+        // 原getOrderStatus的返回格式
+        res.json(result.order);
+      } else {
+        // 原updateOrderStatus的返回格式
+        res.json({
+          success: true,
+          status: result.order.status,
+          tokensAdded: result.order.tokensPurchased,
+          message: result.order.status === 'paid' ? '订单已支付' : '订单状态更新成功'
+        });
+      }
     } catch (error) {
-      console.error('查询订单状态错误:', error);
-      res.status(500).json({ error: error.message || '查询订单状态失败' });
+      console.error('订单状态操作错误:', error);
+      res.status(500).json({ 
+        success: false,
+        error: error.message || '订单状态操作失败' 
+      });
     }
   }
+  
+  // 删除原来的getOrderStatus和updateOrderStatus方法
   
   /**
    * 模拟支付成功（仅开发环境）
@@ -73,28 +95,6 @@ class WechatPayController {
     } catch (error) {
       console.error('模拟支付错误:', error);
       res.status(500).json({ error: error.message || '模拟支付失败' });
-    }
-  }
-  
-  /**
-   * 前端主动更新订单状态
-   */
-  async updateOrderStatus(req, res) {
-    try {
-      const { orderId } = req.params;
-      const result = await this.orderService.queryOrderStatus(orderId, req.user.userId);
-      res.json({
-        success: true,
-        status: result.order.status,
-        tokensAdded: result.order.tokensPurchased,
-        message: result.order.status === 'paid' ? '订单已支付' : '订单状态更新成功'
-      });
-    } catch (error) {
-      console.error('更新订单状态错误:', error);
-      res.status(500).json({ 
-        success: false,
-        error: error.message || '更新订单状态失败' 
-      });
     }
   }
 }

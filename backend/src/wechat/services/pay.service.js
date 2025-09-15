@@ -135,7 +135,7 @@ class WechatPayService {
    * @param {string} orderNo - 订单号
    * @param {boolean} autoUpdate - 是否自动更新订单状态
    */
-  async queryOrder(orderNo, autoUpdate = false) {
+  async queryOrder(orderNo) {
     try {
       const params = {
         appid: this.config.appId,
@@ -154,11 +154,6 @@ class WechatPayService {
       );
       
       if (result.success && result.data.return_code === 'SUCCESS') {
-        // 如果支付成功且需要自动更新订单状态
-        if (autoUpdate && result.data.trade_state === 'SUCCESS') {
-          await this.updateOrderStatus(orderNo, result.data.transaction_id);
-        }
-        
         return {
           success: true,
           tradeState: result.data.trade_state,
@@ -168,10 +163,10 @@ class WechatPayService {
       
       return {
         success: false,
-        error: result.data.return_msg || '查询订单失败'
+        error: result.data?.return_msg || '查询订单失败'
       };
     } catch (error) {
-      console.error('查询订单失败:', error);
+      console.error('查询微信订单状态失败:', error);
       return {
         success: false,
         error: error.message

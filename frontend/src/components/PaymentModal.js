@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Modal,
   Radio,
@@ -13,7 +13,8 @@ import {
   QRCode,
   Spin,
   List,
-  Tag
+  Tag,
+  Result
 } from 'antd';
 import {
   WechatOutlined,
@@ -21,13 +22,29 @@ import {
   CrownOutlined,
   RocketOutlined,
   StarOutlined,
-  ThunderboltOutlined
+  ThunderboltOutlined,
+  CheckCircleFilled,
+  SyncOutlined
 } from '@ant-design/icons';
 import { useToken } from '../contexts/TokenContext';
 import api from '../services/api';
 import PaymentService from '../services/PaymentService';
 
 const { Title, Text } = Typography;
+
+
+// 添加节流函数
+const useThrottle = (fn, delay) => {
+  const lastCall = useRef(0);
+  
+  return useCallback((...args) => {
+    const now = Date.now();
+    if (now - lastCall.current >= delay) {
+      fn(...args);
+      lastCall.current = now;
+    }
+  }, [fn, delay]);
+};
 
 const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参数
   const [packages, setPackages] = useState([]);
@@ -44,8 +61,10 @@ const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参�
   // 添加支付宝iframe相关状态
   const [alipayIframeVisible, setAlipayIframeVisible] = useState(false);
   const [alipayFormUrl, setAlipayFormUrl] = useState('');
+  // 添加支付成功弹窗状态
+  const [successModalVisible, setSuccessModalVisible] = useState(false);
+  const [successTokens, setSuccessTokens] = useState(0);
   
-  const { refreshTokens } = useToken();
   const pollIntervalRef = useRef(null);
   const countdownIntervalRef = useRef(null);
 
@@ -108,6 +127,45 @@ const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参�
     }
   }, [visible]);
 
+  const handleRefreshOrderStatus = async (orderId, paymentMethod) => {
+    try {
+      message.loading('正在查询订单状态...', 1);
+      const response = await api.payment.updateOrderStatus(orderId, paymentMethod);
+      
+      if (response.data.success) {
+        const order = response.data;
+        // 根据订单状态显示不同的提示信息
+        switch (order.status) {
+          case 'paid':
+            message.success(`支付成功！已添加${order.tokensPurchased}个令牌到您的账户`);
+            break;
+          case 'pending':
+            message.info('更新订单状态：支付中');
+            break;
+          case 'failed':
+            message.error('更新订单状态：支付失败');
+            break;
+          case 'expired':
+            message.warning('更新订单状态：已过期');
+            break;
+          default:
+            message.info(`更新订单状态：${order.status}`);
+        }
+        // 刷新充值记录列表
+        fetchPaymentHistory();
+      } else {
+        message.error(response.data.error || '查询订单状态失败');
+      }
+    } catch (error) {
+      console.error('查询订单状态失败:', error);
+      message.error('查询订单状态失败，请稍后再试');
+    }
+  };
+
+  const throttledRefreshOrderStatus = useThrottle((orderId, paymentMethod) => {
+    handleRefreshOrderStatus(orderId, paymentMethod);
+   }, 2000); // 2秒内只能触发一次
+
   // 修改startPaymentPolling方法以支持iframe模式
   const startPaymentPolling = (orderId, method = 'wechat') => {
     // 设置轮询间隔为3秒
@@ -115,7 +173,17 @@ const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参�
     // 设置最大轮询时间为5分钟
     const maxPollTime = 5 * 60 * 1000;
     const startTime = Date.now();
+    // 添加失败计数器
+    let failureCount = 0;
+    const maxFailures = 5; // 最大连续失败次数
     
+    // 验证orderId是否有效
+    if (!orderId) {
+      message.error('订单ID无效，无法查询支付状态');
+      return;
+    }
+    
+    // 修改轮询逻辑，只使用一个接口
     pollIntervalRef.current = setInterval(async () => {
       try {
         // 检查是否超时
@@ -127,41 +195,60 @@ const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参�
           return;
         }
         
-        // 先主动调用更新订单状态接口
-        const updateResponse = await api.payment.updateOrderStatus(orderId, method);
-        
-        // 如果更新接口返回支付成功，直接处理成功逻辑
-        if (updateResponse.data.success && updateResponse.data.status === 'completed') {
-          setPaymentStatus('success');
-          clearInterval(pollIntervalRef.current);
-          message.success('支付成功！');
-          refreshTokens();
-          setTimeout(() => {
-            setAlipayIframeVisible(false); // 关闭iframe弹窗
-            setPaymentModal(false);
-            onClose();
-          }, 2000);
-          return;
-        }
-        
-        // 如果更新接口未返回成功，继续查询订单状态
+        // 只调用一个接口来更新和获取订单状态
         const response = await api.payment.getOrderStatus(orderId, method);
+        
+        // 重置失败计数
+        failureCount = 0;
+        
+        // 处理响应
         if (response.data.success) {
-          const { status } = response.data;
-          if (status === 'paid') {
-            setPaymentStatus('success');
+          const { status, tokensAdded } = response.data;
+          // 修改startPaymentPolling方法中的支付成功处理部分
+          // 在第150行左右，将以下代码：
+          
+          // 修改为：
+          
+          if (status === 'paid' || status === 'completed') {
+            // 立即停止轮询
             clearInterval(pollIntervalRef.current);
+            pollIntervalRef.current = null;
+            
+            // 立即关闭倒计时
+            if (countdownIntervalRef.current) {
+              clearInterval(countdownIntervalRef.current);
+              countdownIntervalRef.current = null;
+            }
+            
+            // 更新状态
+            setPaymentStatus('success');
+            
+            // 显示成功消息
             message.success('支付成功！');
-            refreshTokens();
+            
+            // 立即关闭支付弹窗和iframe
+            setAlipayIframeVisible(false);
+            setPaymentModal(false);
+            
+            // 使用短暂延迟确保UI更新完成后再关闭
             setTimeout(() => {
-              setAlipayIframeVisible(false); // 关闭iframe弹窗
-              setPaymentModal(false);
               onClose();
-            }, 2000);
+            }, 500);
           }
         }
       } catch (error) {
         console.error('查询支付状态失败:', error);
+        
+        // 增加失败计数
+        failureCount++;
+        
+        // 如果连续失败次数达到上限，停止轮询
+        if (failureCount >= maxFailures) {
+          clearInterval(pollIntervalRef.current);
+          message.error('查询支付状态失败，请稍后在个人中心查看订单状态');
+          setAlipayIframeVisible(false);
+          setPaymentModal(false);
+        }
       }
     }, pollInterval);
   };
@@ -208,34 +295,36 @@ const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参�
           setPaymentStatus('pending');
           setCountdown(300);
           
-          // 从返回的HTML中提取表单提交URL和参数
-          const tempDiv = document.createElement('div');
-          tempDiv.innerHTML = response.data.formHtml;
+          // 创建一个iframe元素
+          setAlipayFormUrl(''); // 先清空当前iframe的URL
+          setAlipayIframeVisible(true); // 显示iframe弹窗
           
-          const form = tempDiv.querySelector('form');
-          if (form) {
-            // 获取表单的action URL
-            const formAction = form.getAttribute('action');
-            
-            // 收集表单参数
-            const formData = new FormData(form);
-            const params = new URLSearchParams();
-            for (const [key, value] of formData.entries()) {
-              params.append(key, value);
-            }
-            
-            // 构建完整的URL（包含参数）
-            const fullUrl = `${formAction}?${params.toString()}`;
-            
-            // 设置iframe URL并显示iframe弹窗
-            setAlipayFormUrl(fullUrl);
-            setAlipayIframeVisible(true);
-            
-            // 开始轮询支付结果
-            startPaymentPolling(response.data.orderId, 'alipay');
-          } else {
-            message.error('支付表单加载失败');
-          }
+          // 创建一个新的HTML文档
+          const htmlContent = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <title>支付宝支付</title>
+          </head>
+          <body>
+            ${response.data.formHtml}
+            <script>
+              // 自动提交表单
+              document.forms[0].submit();
+            </script>
+          </body>
+          </html>
+          `;
+          
+          // 创建Blob URL
+          const blob = new Blob([htmlContent], { type: 'text/html' });
+          const blobUrl = URL.createObjectURL(blob);
+          
+          // 设置iframe的src为blob URL
+          setAlipayFormUrl(blobUrl);
+          // 开始轮询支付结果
+          startPaymentPolling(response.data.orderId, 'alipay');
         } else {
           message.error(response.data.message || '创建订单失败');
         }
@@ -367,11 +456,32 @@ const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参�
             </div>
 
             {/* 充值记录按钮 */}
-            <div style={{ textAlign: 'center', marginTop: '4px' }}> {/* 减少上边距 */}
-              <Button type="link" onClick={fetchPaymentHistory}>
-                查看充值记录
-              </Button>
-            </div>
+            <div style={{ textAlign: 'center', marginTop: '16px' }}>
+  <Button
+    type="default"
+    size="large"
+    onClick={fetchPaymentHistory}
+    style={{
+      height: '44px',
+      fontSize: '16px',
+      borderRadius: '12px',
+      minWidth: '280px',
+      fontWeight: '500',
+      background: 'rgba(255, 255, 255, 0.1)',
+      borderColor: 'rgba(255, 255, 255, 0.2)',
+      color: '#ffffff',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      margin: '0 auto'
+    }}
+  >
+    <span style={{ marginRight: '8px' }}>查看充值记录</span>
+    <svg viewBox="64 64 896 896" focusable="false" data-icon="history" width="1em" height="1em" fill="currentColor" aria-hidden="true">
+      <path d="M536.1 273H488c-4.4 0-8 3.6-8 8v275.3c0 2.6 1.2 5 3.3 6.5l165.3 120.7c3.6 2.6 8.6 1.9 11.2-1.7l28.6-39c2.7-3.7 1.9-8.7-1.7-11.2L544.1 528.5V281c0-4.4-3.6-8-8-8zm219.8 75.2l156.8 38.3c5 1.2 9.9-2.6 9.9-7.7l.8-161.5c0-6.7-7.7-10.5-12.9-6.3L752.9 334.1a8 8 0 003 14.1zm167.7 301.1l-56.7-19.5a8 8 0 00-10.1 4.8c-1.9 5.1-3.9 10.1-6 15.1-17.8 42.1-43.3 80-75.9 112.5a353 353 0 01-112.5 75.9 352.18 352.18 0 01-137.7 27.8c-47.8 0-94.1-9.3-137.7-27.8a353 353 0 01-112.5-75.9c-32.5-32.5-58-70.4-75.9-112.5A353.44 353.44 0 01171 512c0-47.8 9.3-94.2 27.8-137.8 17.8-42.1 43.3-80 75.9-112.5a353 353 0 01112.5-75.9C430.6 167.3 477 158 524.8 158s94.1 9.3 137.7 27.8A353 353 0 01775 261.7c10.2 10.3 19.8 21 28.6 32.3l59.8-46.8C784.7 146.6 662.2 81.9 524.6 82 285 82.1 92.6 276.7 95 516.4 97.4 751.9 288.9 942 524.8 942c185.5 0 343.5-117.6 403.7-282.3 1.5-4.2-.7-8.9-4.9-10.4z"></path>
+    </svg>
+  </Button>
+</div>
           </Space>
         </div>
       </Modal>
@@ -380,10 +490,31 @@ const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参�
       <Modal
         title="支付宝支付"
         open={alipayIframeVisible}
-        onCancel={() => setAlipayIframeVisible(false)}
+        onCancel={() => {
+          setAlipayIframeVisible(false);
+          // 停止轮询
+          if (pollIntervalRef.current) {
+            clearInterval(pollIntervalRef.current);
+            pollIntervalRef.current = null;
+          }
+          // 停止倒计时
+          if (countdownIntervalRef.current) {
+            clearInterval(countdownIntervalRef.current);
+            countdownIntervalRef.current = null;
+          }
+          // 销毁iframe内容，避免页面重复刷新
+          setAlipayFormUrl('');
+          // 如果有创建的Blob URL，需要释放
+          if (alipayFormUrl && alipayFormUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(alipayFormUrl);
+          }
+        }}
         footer={null}
         width={300}
         centered
+        className='alipay-modal'
+        style={{ zIndex: 1050 }}
+        destroyOnClose={true} // 确保Modal关闭时完全销毁内容
       >
         <div style={{ textAlign: 'center', padding: '10px 0' }}>
           <div>
@@ -396,8 +527,8 @@ const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参�
             <div style={{ margin: '10px 0' }}>
               <iframe 
                 src={alipayFormUrl}
-                width="250"
-                height="250"
+                width="200"
+                height="200"
                 frameBorder="0"
                 scrolling="no"
                 title="支付宝支付"
@@ -415,10 +546,24 @@ const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参�
       <Modal
         title={paymentMethod === 'wechat' ? "微信支付" : "支付宝支付"}
         open={paymentModal}
-        onCancel={() => setPaymentModal(false)}
+        onCancel={() => {
+          setPaymentModal(false);
+          // 停止轮询
+          if (pollIntervalRef.current) {
+            clearInterval(pollIntervalRef.current);
+            pollIntervalRef.current = null;
+          }
+          // 停止倒计时
+          if (countdownIntervalRef.current) {
+            clearInterval(countdownIntervalRef.current);
+            countdownIntervalRef.current = null;
+          }
+        }}
         footer={null}
         width={400}
         centered
+        className='payment-qrcode-modal'
+        style={{ zIndex: 1050 }}
       >
         <div style={{ textAlign: 'center', padding: '20px 0' }}>
           {paymentStatus === 'pending' && (
@@ -466,6 +611,49 @@ const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参�
         </div>
       </Modal>
 
+      {/* 支付成功弹窗 */}
+      <Modal
+        open={successModalVisible}
+        closable={false}
+        footer={null}
+        centered
+        width={400}
+        bodyStyle={{ 
+          padding: '30px 40px',
+          textAlign: 'center',
+          background: 'linear-gradient(to bottom, #f8f8f8, #ffffff)'
+        }}
+      >
+        <Result
+          icon={<CheckCircleFilled style={{ color: '#52c41a', fontSize: 70 }} />}
+          title="支付成功"
+          subTitle={`您的账户已成功充值 ${successTokens.toLocaleString()} 个Tokens`}
+          status="success"
+          style={{ padding: 0 }}
+          extra={[
+            <Button 
+              type="primary" 
+              key="console" 
+              onClick={() => {
+                setSuccessModalVisible(false);
+                onClose();
+              }}
+              style={{
+                marginTop: 20,
+                background: 'linear-gradient(135deg, #52c41a 0%, #389e0d 100%)',
+                borderColor: 'transparent',
+                height: '40px',
+                fontSize: '16px',
+                borderRadius: '8px',
+                boxShadow: '0 8px 16px rgba(82, 196, 26, 0.3)',
+              }}
+            >
+              开始使用
+            </Button>
+          ]}
+        />
+      </Modal>
+
       {/* 充值记录弹窗 */}
       <Modal
         title="充值记录"
@@ -477,14 +665,38 @@ const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参�
         <List
           dataSource={paymentHistory}
           renderItem={item => (
-            <List.Item>
+            <List.Item style={{ display: 'flex', justifyContent: 'space-between' }}>
               <List.Item.Meta
-                title={`${item.package} - ¥${item.amount}`}
-                description={`${(item.tokens / 10000).toFixed(0)}万 Tokens | ${new Date(item.createdAt).toLocaleString()}`}
+                style={{ flex: 1, marginRight: '24px' }}
+                title={
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <span style={{ fontWeight: 500 }}>{`${item.package} - ¥${item.amount}`}</span>
+                    <span style={{ color: '#8BC34A', marginLeft: '16px' }}>{`+ ${(item.tokens / 10000).toFixed(0)}万 Tokens`}</span>
+                  </div>
+                }
+                description={
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ color: '#666', fontSize: '13px' }}>{`订单编号: ${item.orderId}`}</span>
+                    <span style={{ color: '#999', fontSize: '13px', marginLeft: '16px' }}>{new Date(item.createdAt).toLocaleString()}</span>
+                  </div>
+                }
               />
-              <Tag color={item.status === 'paid' ? 'green' : item.status === 'pending' ? 'orange' : 'red'}>
-                {item.status === 'paid' ? '已完成' : item.status === 'pending' ? '待支付' : '已失败'}
-              </Tag>
+              <div>
+                {item.status === 'pending' && (
+                  <Button 
+                    type="primary" 
+                    size="small" 
+                    icon={<SyncOutlined />} 
+                    onClick={() => throttledRefreshOrderStatus(item.orderId, item.paymentMethod)}
+                    style={{ marginRight: '8px' }}
+                  >
+                    刷新
+                  </Button>
+                )}
+                <Tag color={item.status === 'paid' ? 'green' : item.status === 'pending' ? 'orange' : 'red'}>
+                  {item.status === 'paid' ? '已完成' : item.status === 'pending' ? '未支付' : '已失败'}
+                </Tag>
+              </div>
             </List.Item>
           )}
         />
@@ -505,3 +717,4 @@ const getIconForPackage = (packageId) => {
 };
 
 export default PaymentModal;
+

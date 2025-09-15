@@ -21,6 +21,7 @@ class PaymentService {
     return this.httpClient.post('/wechat/pay/simulate-success', { orderId });
   }
 
+  // 修改PaymentService.js中的方法
   async getOrderStatus(orderId, paymentMethod = 'wechat') {
     const baseUrl = paymentMethod === 'alipay' ? '/alipay' : '/wechat';
     return this.httpClient.get(`${baseUrl}/pay/order-status/${orderId}`);
@@ -28,7 +29,7 @@ class PaymentService {
 
   async updateOrderStatus(orderId, paymentMethod = 'wechat') {
     const baseUrl = paymentMethod === 'alipay' ? '/alipay' : '/wechat';
-    return this.httpClient.post(`${baseUrl}/pay/update-order-status/${orderId}`);
+    return this.httpClient.post(`${baseUrl}/pay/order-status/${orderId}`);
   }
   
   // 获取充值记录

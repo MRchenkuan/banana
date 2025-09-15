@@ -12,21 +12,21 @@ const PACKAGE_CONFIG = {
   packages: [
     {
       id: 'basic',
-      name: '基础套餐',
+      name: '中杯',
       tokens: 10000,
       amount: getPayMount(9.9),
       description: '适合轻度使用场景，包含10000 tokens'
     },
     {
       id: 'standard',
-      name: '标准套餐',
+      name: '大杯',
       tokens: 50000,
       amount: getPayMount(39.9),
       description: '适合日常使用场景，包含50000 tokens'
     },
     {
       id: 'premium',
-      name: '高级套餐',
+      name: '超大杯',
       tokens: 130000,
       amount: getPayMount(99.9),
       description: '适合重度使用场景，包含140000 tokens'

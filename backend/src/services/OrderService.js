@@ -122,7 +122,6 @@ class OrderService {
       }
 
       if (trade_status === 'TRADE_SUCCESS') {
-        // 支付成功
         if (order.status === 'pending') {
           await this.handlePaymentSuccess(order, transactionId);
         }
@@ -141,52 +140,123 @@ class OrderService {
   // 查询订单状态
   async queryOrderStatus(orderNo, userId = null) {
     try {
-      const whereCondition = { orderNo };
-      if (userId) {
-        whereCondition.userId = userId;
-      }
-
-      const order = await Order.findOne({ where: whereCondition });
-      if (!order) {
-        throw new Error('订单不存在');
-      }
-
-      // 如果订单状态为pending，查询微信支付状态
-      if (order.status === 'pending' && !order.isExpired()) {
-        const paymentResult = await this.wechatPay.queryOrder(orderNo);
-        
-        if (paymentResult.success) {
-          if (paymentResult.tradeState === 'SUCCESS') {
-            // 支付成功，更新订单状态并增加用户Token
-            await this.handlePaymentSuccess(order, paymentResult.transactionId);
-          } else if (paymentResult.tradeState === 'CLOSED' || paymentResult.tradeState === 'PAYERROR') {
-            // 支付失败
-            await order.update({ status: 'failed' });
-          }
+      // 查询订单
+      const order = await this._findOrder(orderNo, userId);
+      
+      // 处理待支付订单
+      if (order.status === 'pending') {
+        if (order.isExpired()) {
+          await this._markOrderAsExpired(order);
+        } else {
+          await this._checkPaymentStatus(order);
         }
-      } else if (order.status === 'pending' && order.isExpired()) {
-        // 订单已过期
-        await order.update({ status: 'expired' });
       }
-
+  
+      // 返回订单信息
       return {
         success: true,
-        order: {
-          id: order.id,
-          orderNo: order.orderNo,
-          status: order.status,
-          amount: order.amount,
-          tokensPurchased: order.tokensPurchased,
-          createdAt: order.createdAt,
-          paidAt: order.paidAt,
-          expiredAt: order.expiredAt,
-          qrCodeUrl: order.qrCodeUrl
-        }
+        order: this._formatOrderResponse(order)
       };
     } catch (error) {
       console.error('查询订单状态失败:', error);
       throw error;
     }
+  }
+  
+  // 检查支付状态
+  async _checkPaymentStatus(order) {
+    try {
+      // 统一调用支付查询接口
+      const paymentResult = await this._queryPaymentStatus(order);
+      
+      if (paymentResult.success) {
+        await this._processPaymentResult(order, paymentResult);
+      }
+    } catch (error) {
+      console.error(`查询${order.paymentMethod}支付状态失败:`, error);
+    }
+  }
+  
+  // 统一的支付查询接口
+  async _queryPaymentStatus(order) {
+    if (order.paymentMethod === 'wechat') {
+      return await this.wechatPay.queryOrder(order.orderNo);
+    } else if (order.paymentMethod === 'alipay') {
+      return await this.alipay.queryOrder(order.orderNo);
+    }
+    throw new Error(`不支持的支付方式: ${order.paymentMethod}`);
+  }
+  
+  // 处理支付结果
+  async _processPaymentResult(order, paymentResult) {
+    if (order.paymentMethod === 'wechat') {
+      await this._processWechatResult(order, paymentResult);
+    } else if (order.paymentMethod === 'alipay') {
+      await this._processAlipayResult(order, paymentResult);
+    }
+  }
+  
+  // 处理微信支付结果
+  async _processWechatResult(order, paymentResult) {
+    const statusMap = {
+      'SUCCESS': async () => await this.handlePaymentSuccess(order, paymentResult.transactionId),
+      'CLOSED': async () => await order.update({ status: 'failed' }),
+      'PAYERROR': async () => await order.update({ status: 'failed' }),
+      'REVOKED': async () => await order.update({ status: 'failed' })
+    };
+  
+    const handler = statusMap[paymentResult.tradeState];
+    if (handler) {
+      await handler();
+    }
+  }
+  
+  // 处理支付宝支付结果
+  async _processAlipayResult(order, paymentResult) {
+    const successStates = ['TRADE_SUCCESS', 'TRADE_FINISHED'];
+    const failedStates = ['TRADE_CLOSED', 'TRADE_CANCELED'];
+    
+    if (successStates.includes(paymentResult.tradeStatus)) {
+      await this.handlePaymentSuccess(order, paymentResult.tradeNo);
+    } else if (failedStates.includes(paymentResult.tradeStatus)) {
+      await order.update({ status: 'failed' });
+    }
+  }
+  
+  // 查找订单
+  async _findOrder(orderNo, userId = null) {
+    const whereCondition = { orderNo };
+    if (userId) {
+      whereCondition.userId = userId;
+    }
+  
+    const order = await Order.findOne({ where: whereCondition });
+    if (!order) {
+      throw new Error('订单不存在');
+    }
+    return order;
+  }
+  
+  // 标记订单为过期
+  async _markOrderAsExpired(order) {
+    await order.update({ status: 'expired' });
+    return order;
+  }
+  
+  // 格式化订单响应
+  _formatOrderResponse(order) {
+    return {
+      id: order.id,
+      orderNo: order.orderNo,
+      status: order.status,
+      amount: order.amount,
+      tokensPurchased: order.tokensPurchased,
+      createdAt: order.createdAt,
+      paidAt: order.paidAt,
+      expiredAt: order.expiredAt,
+      qrCodeUrl: order.qrCodeUrl,
+      paymentMethod: order.paymentMethod
+    };
   }
 
   // 处理支付成功
@@ -301,7 +371,6 @@ class OrderService {
       }
 
       if (result_code === 'SUCCESS') {
-        // 支付成功
         if (order.status === 'pending') {
           await this.handlePaymentSuccess(order, transactionId);
         }

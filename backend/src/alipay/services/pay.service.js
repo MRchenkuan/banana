@@ -12,8 +12,10 @@ class AlipayService {
       appId: this.config.appId,
       privateKey: this.config.privateKey,
       alipayPublicKey: this.config.publicKey,
-      // gateway: this.config.gatewayUrl,
-      // signType: 'RSA2',
+      gateway: this.config.gatewayUrl,
+      // signType: 'RSA2', // 确保使用RSA2
+      // charset: 'utf-8', // 添加字符集
+      // format: 'json', // 添加格式
       // appAuthToken: this.config.appAuthToken,
     });
   }
@@ -136,6 +138,42 @@ class AlipayService {
       };
     } catch (error) {
       console.error('更新订单状态失败:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+  
+  /**
+   * 查询支付宝订单状态
+   * @param {string} orderNo - 订单号
+   * @returns {Promise<Object>} 查询结果
+   */
+  async queryOrder(orderNo) {
+    try {
+      const result = await this.alipaySdk.exec('alipay.trade.query', {
+        bizContent: {
+          out_trade_no: orderNo
+        }
+      });
+      
+      if (result.code === '10000') {
+        return {
+          success: true,
+          tradeStatus: result.tradeStatus,
+          tradeNo: result.tradeNo,
+          buyerLogonId: result.buyerLogonId,
+          totalAmount: result.totalAmount
+        };
+      } else {
+        return {
+          success: false,
+          error: result.sub_msg || result.msg || '查询订单失败'
+        };
+      }
+    } catch (error) {
+      console.error('查询支付宝订单状态失败:', error);
       return {
         success: false,
         error: error.message
