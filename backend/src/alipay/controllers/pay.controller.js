@@ -17,17 +17,17 @@ class AlipayController {
         packageId,
         req.ip || '127.0.0.1',
         req.headers['user-agent'],
-        'alipay' // 指定支付方式为支付宝
+        'alipay', // 指定支付方式为支付宝
       );
 
       res.json({
         success: true,
         orderId: result.order.orderNo,
-        qrCodeUrl: result.order.qrCodeUrl,
+        formHtml: result.order.formHtml, // 返回表单HTML而不是二维码URL
         amount: result.order.amount,
         tokensToAdd: result.order.tokensPurchased,
         packageName: result.order.packageName,
-        message: '支付订单创建成功，请扫码支付'
+        message: '支付订单创建成功'
       });
     } catch (error) {
       console.error('创建支付宝支付订单错误:', error);

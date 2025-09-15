@@ -28,7 +28,15 @@ class OrderService {
     return `BN${timestamp}${random}`.toUpperCase();
   }
   
-  // 创建订单
+  /**
+   * 创建订单
+   * @param {number} userId - 用户ID
+   * @param {number} packageId - 套餐ID
+   * @param {string} clientIp - 客户端IP
+   * @param {string} userAgent - 用户代理
+   * @param {string} paymentMethod - 支付方式，'wechat'或'alipay'
+   * @returns {Promise<Object>} 创建订单结果
+   */
   async createOrder(userId, packageId, clientIp, userAgent, paymentMethod = 'wechat') {
     try {
       const packageInfo = this.packageConfig[packageId];
@@ -37,7 +45,7 @@ class OrderService {
       }
   
       const orderNo = this.generateOrderNo();
-      const expiredAt = new Date(Date.now() + 30 * 60 * 1000); // 30分钟后过期
+      const expiredAt = new Date(Date.now() + 5 * 60 * 1000); // 5分钟后过期，与前端轮询时间一致
   
       // 根据支付方式选择不同的支付服务
       let paymentResult;
@@ -46,7 +54,7 @@ class OrderService {
         paymentResult = await this.alipay.createUnifiedOrder({
           orderNo,
           amount: packageInfo.amount,
-          description: `BananaAi:${packageInfo.id}`
+          description: `BananaAi:${packageInfo.name}`,
         });
       } else {
         // 默认使用微信支付
@@ -72,7 +80,7 @@ class OrderService {
         tokensPurchased: packageInfo.tokens,
         status: 'pending',
         paymentMethod, // 使用传入的支付方式
-        paymentChannel: paymentMethod === 'alipay' ? 'qrcode' : 'native',
+        paymentChannel: paymentMethod === 'alipay' ? 'h5' : 'native', // 将'qrcode'改为'h5'
         clientIp,
         userAgent,
         expiredAt,
@@ -87,7 +95,8 @@ class OrderService {
           orderNo: order.orderNo,
           amount: order.amount,
           tokensPurchased: order.tokensPurchased,
-          qrCodeUrl: order.qrCodeUrl,
+          qrCodeUrl: paymentMethod === 'alipay' ? null : order.qrCodeUrl,
+          formHtml: paymentMethod === 'alipay' ? paymentResult.formHtml : null,
           expiredAt: order.expiredAt
         }
       };

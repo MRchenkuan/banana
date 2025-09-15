@@ -13,7 +13,7 @@ class PaymentService {
   }
 
   // 支付宝支付 - 添加这个方法
-  async createAlipayPaymentOrder(packageId) {
+  async createAlipayOrder(packageId) {
     return this.httpClient.post('/alipay/pay/create-order', { packageId });
   }
 

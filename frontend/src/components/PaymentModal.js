@@ -41,6 +41,9 @@ const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参�
   const [countdown, setCountdown] = useState(300);
   const [paymentHistory, setPaymentHistory] = useState([]);
   const [historyVisible, setHistoryVisible] = useState(false);
+  // 添加支付宝iframe相关状态
+  const [alipayIframeVisible, setAlipayIframeVisible] = useState(false);
+  const [alipayFormUrl, setAlipayFormUrl] = useState('');
   
   const { refreshTokens } = useToken();
   const pollIntervalRef = useRef(null);
@@ -60,11 +63,12 @@ const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参�
 
   // 倒计时
   useEffect(() => {
-    if (paymentModal && paymentStatus === 'pending') {
+    if ((paymentModal || alipayIframeVisible) && paymentStatus === 'pending') {
       countdownIntervalRef.current = setInterval(() => {
         setCountdown(prev => {
           if (prev <= 1) {
             setPaymentModal(false);
+            setAlipayIframeVisible(false);
             setPaymentStatus('timeout');
             message.error('支付超时，请重新发起支付');
             return 0;
@@ -83,7 +87,7 @@ const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参�
         clearInterval(countdownIntervalRef.current);
       }
     };
-  }, [paymentModal, paymentStatus]);
+  }, [paymentModal, alipayIframeVisible, paymentStatus]);
 
   // 获取套餐列表
   useEffect(() => {
@@ -104,54 +108,27 @@ const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参�
     }
   }, [visible]);
 
-  // 修改handlePayment方法以支持不同支付方式
-  const handlePayment = async () => {
-    if (!packages || packages.length === 0) {
-      message.error('套餐列表为空，请稍后再试');
-      return;
-    }
-
-    const selectedPkg = packages.find(pkg => pkg.id === selectedPackage);
-    if (!selectedPkg) {
-      message.error('请选择有效的套餐');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // 根据选择的支付方式调用不同的API
-      let response;
-      if (paymentMethod === 'alipay') {
-        response = await api.payment.createAlipayPaymentOrder(selectedPkg.id);
-      } else {
-        response = await api.payment.createWechatPaymentOrder(selectedPkg.id);
-      }
-
-      if (response.data.success) {
-        setOrderId(response.data.orderId);
-        setQrCodeUrl(response.data.qrCodeUrl);
-        setPaymentModal(true);
-        setPaymentStatus('pending');
-        setCountdown(300);
-        
-        startPaymentPolling(response.data.orderId);
-      } else {
-        message.error(response.data.message || '创建订单失败');
-      }
-    } catch (error) {
-      console.error('创建订单失败:', error);
-      message.error('创建订单失败，请重试');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 修改startPaymentPolling方法以支持不同支付方式
-  const startPaymentPolling = (orderId) => {
+  // 修改startPaymentPolling方法以支持iframe模式
+  const startPaymentPolling = (orderId, method = 'wechat') => {
+    // 设置轮询间隔为3秒
+    const pollInterval = 3000;
+    // 设置最大轮询时间为5分钟
+    const maxPollTime = 5 * 60 * 1000;
+    const startTime = Date.now();
+    
     pollIntervalRef.current = setInterval(async () => {
       try {
+        // 检查是否超时
+        if (Date.now() - startTime > maxPollTime) {
+          clearInterval(pollIntervalRef.current);
+          message.error('支付超时，请重新发起支付');
+          setAlipayIframeVisible(false); // 关闭iframe弹窗
+          setPaymentModal(false);
+          return;
+        }
+        
         // 先主动调用更新订单状态接口
-        const updateResponse = await api.payment.updateOrderStatus(orderId, paymentMethod);
+        const updateResponse = await api.payment.updateOrderStatus(orderId, method);
         
         // 如果更新接口返回支付成功，直接处理成功逻辑
         if (updateResponse.data.success && updateResponse.data.status === 'completed') {
@@ -160,6 +137,7 @@ const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参�
           message.success('支付成功！');
           refreshTokens();
           setTimeout(() => {
+            setAlipayIframeVisible(false); // 关闭iframe弹窗
             setPaymentModal(false);
             onClose();
           }, 2000);
@@ -167,7 +145,7 @@ const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参�
         }
         
         // 如果更新接口未返回成功，继续查询订单状态
-        const response = await api.payment.getOrderStatus(orderId, paymentMethod);
+        const response = await api.payment.getOrderStatus(orderId, method);
         if (response.data.success) {
           const { status } = response.data;
           if (status === 'paid') {
@@ -176,19 +154,98 @@ const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参�
             message.success('支付成功！');
             refreshTokens();
             setTimeout(() => {
+              setAlipayIframeVisible(false); // 关闭iframe弹窗
               setPaymentModal(false);
               onClose();
             }, 2000);
-          } else if (status === 'failed' || status === 'cancelled') {
-            setPaymentStatus('failed');
-            clearInterval(pollIntervalRef.current);
-            message.error('支付失败');
           }
         }
       } catch (error) {
-        console.error('检查支付状态失败:', error);
+        console.error('查询支付状态失败:', error);
       }
-    }, 3000);
+    }, pollInterval);
+  };
+
+  // 修改handlePayment方法以支持不同支付方式
+  const handlePayment = async () => {
+    setLoading(true);
+    try {
+      if (!packages || packages.length === 0) {
+        message.error('套餐列表为空，请稍后再试');
+        return;
+      }
+
+      const selectedPkg = packages.find(pkg => pkg.id === selectedPackage);
+      if (!selectedPkg) {
+        message.error('请选择有效的套餐');
+        return;
+      }
+      
+      // 根据选择的支付方式调用不同的API
+      let response;
+      if (paymentMethod === 'wechat') {
+        response = await api.payment.createWechatPaymentOrder(selectedPkg.id);
+        
+        if (response.data.success) {
+          setOrderId(response.data.orderId);
+          setQrCodeUrl(response.data.qrCodeUrl);
+          setPaymentModal(true);
+          setPaymentStatus('pending');
+          setCountdown(300);
+          
+          startPaymentPolling(response.data.orderId);
+        } else {
+          message.error(response.data.message || '创建订单失败');
+        }
+      } else if (paymentMethod === 'alipay') {
+        // 获取当前页面URL作为返回地址
+        
+        response = await api.payment.createAlipayOrder(selectedPkg.id);
+        
+        if (response.data.success) {
+          // 设置订单ID和支付状态
+          setOrderId(response.data.orderId);
+          setPaymentStatus('pending');
+          setCountdown(300);
+          
+          // 从返回的HTML中提取表单提交URL和参数
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = response.data.formHtml;
+          
+          const form = tempDiv.querySelector('form');
+          if (form) {
+            // 获取表单的action URL
+            const formAction = form.getAttribute('action');
+            
+            // 收集表单参数
+            const formData = new FormData(form);
+            const params = new URLSearchParams();
+            for (const [key, value] of formData.entries()) {
+              params.append(key, value);
+            }
+            
+            // 构建完整的URL（包含参数）
+            const fullUrl = `${formAction}?${params.toString()}`;
+            
+            // 设置iframe URL并显示iframe弹窗
+            setAlipayFormUrl(fullUrl);
+            setAlipayIframeVisible(true);
+            
+            // 开始轮询支付结果
+            startPaymentPolling(response.data.orderId, 'alipay');
+          } else {
+            message.error('支付表单加载失败');
+          }
+        } else {
+          message.error(response.data.message || '创建订单失败');
+        }
+      }
+    } catch (error) {
+      console.error('创建订单失败:', error);
+      message.error('创建订单失败，请重试');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // 获取支付历史记录
@@ -326,6 +383,41 @@ const PaymentModal = ({ visible, onClose }) => {  // 移除 defaultPackage 参�
               </Button>
             </div>
           </Space>
+        </div>
+      </Modal>
+
+      {/* 支付宝iframe弹窗 */}
+      <Modal
+        title="支付宝支付"
+        open={alipayIframeVisible}
+        onCancel={() => setAlipayIframeVisible(false)}
+        footer={null}
+        width={300}
+        centered
+      >
+        <div style={{ textAlign: 'center', padding: '10px 0' }}>
+          <div>
+            <Text>请在下方完成支付</Text>
+            <br />
+            <Text type="secondary">支付金额: ¥{packages.find(pkg => pkg.id === selectedPackage)?.amount || '--'}</Text>
+          </div>
+          
+          {alipayFormUrl && (
+            <div style={{ margin: '10px 0' }}>
+              <iframe 
+                src={alipayFormUrl}
+                width="800"
+                height="450"
+                frameBorder="0"
+                scrolling="no"
+                title="支付宝支付"
+              />
+            </div>
+          )}
+          
+          <div style={{ marginTop: '10px' }}>
+            <Text type="secondary">支付倒计时: {formatTime(countdown)}</Text>
+          </div>
         </div>
       </Modal>
 

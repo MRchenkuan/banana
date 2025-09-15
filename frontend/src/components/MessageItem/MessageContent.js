@@ -88,13 +88,14 @@ const MessageContent = ({ message, messageState, typewriterState, onReuploadImag
                     alignItems: 'center',
                     justifyContent: 'center',
                     backdropFilter: 'blur(5px)',
+                                  backgroundColor: 'rgba(95, 93, 93, 0.2)',
                     WebkitBackdropFilter: 'blur(5px)', // Safari 支持
                     border: '1px solid rgba(255, 255, 255, 0.5)',
                     boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)',
                     zIndex: 10,
                     transition: 'all 0.3s ease'
                   }}
-                  title="重新上传此图片"
+                  title="重新添加到输入框"
                 />
               </div>
             );

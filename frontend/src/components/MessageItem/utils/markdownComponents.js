@@ -116,7 +116,7 @@ export const getMarkdownComponents = (onReuploadImage) => ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              backgroundColor: 'rgba(255, 255, 255, 0.2)',
+              backgroundColor: 'rgba(95, 93, 93, 0.2)',
               backdropFilter: 'blur(5px)',
               WebkitBackdropFilter: 'blur(5px)', // Safari 支持
               border: '1px solid rgba(255, 255, 255, 0.5)',
@@ -124,7 +124,7 @@ export const getMarkdownComponents = (onReuploadImage) => ({
               zIndex: 10,
               transition: 'all 0.3s ease'
             }}
-            title="重新上传此图片"
+                  title="重新添加到输入框"
           />
         )}
       </div>

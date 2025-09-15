@@ -22,7 +22,6 @@ class AlipayConfig {
    * @returns {string} 支付配置.privateKey - 支付宝应用私钥
    * @returns {string} 支付配置.publicKey - 支付宝公钥
    * @returns {string} 支付配置.notifyUrl - 支付结果通知回调URL
-   * @returns {string} 支付配置.returnUrl - 支付完成后跳转URL
    * @returns {string} 支付配置.gatewayUrl - 支付宝网关URL
    */
   static getPayConfig() {
