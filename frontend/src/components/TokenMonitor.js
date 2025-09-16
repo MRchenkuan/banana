@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Card, Button } from 'antd';
 import { EyeOutlined, EyeInvisibleOutlined, ExpandAltOutlined, CompressOutlined } from '@ant-design/icons';
 import { tokenMonitorEvents } from '../utils/tokenMonitorEvents';
+import { formatTokensToK, formatTokenDataToK } from '../utils/tokenFormatter';
+import GlassPanel from './GlassPanel';
 
 const TokenMonitor = ({ messages }) => {
   // 从localStorage读取初始状态，如果没有则默认为隐藏
@@ -36,31 +38,25 @@ const TokenMonitor = ({ messages }) => {
   useEffect(() => {
     localStorage.setItem('tokenMonitorExpanded', JSON.stringify(isExpanded));
   }, [isExpanded]);
-  
+
   // 格式化token数据显示
   const formatTokenData = (data) => {
     if (!data) return null;
-    
     if (typeof data === 'object') {
-      // 处理新的数据结构
-      if (data.usageMetadata) {
-        data = data.usageMetadata;
-      }
-      
-      // 语义化处理token数据
-      if (data.promptTokenCount !== undefined && data.candidatesTokenCount !== undefined) {
+      // 语义化处token数据
+      if (data.input !== undefined && data.output !== undefined && data.total !== undefined) {
         return {
           formatted: true,
-          prompt: data.promptTokenCount,
-          completion: data.candidatesTokenCount,
-          total: data.totalTokenCount || (data.promptTokenCount + data.candidatesTokenCount)
+          prompt: data.input,
+          completion: data.output,
+          total: data.total
         };
       }
       return JSON.stringify(data, null, 2);
     }
     return data;
   };
-  
+
   const tokenData = latestTokenData?.totalTokensUsed;
   const formattedData = formatTokenData(tokenData);
   
@@ -99,19 +95,8 @@ const TokenMonitor = ({ messages }) => {
         transition: 'width 0.3s ease'
       }}
     >
-      <Card
-        size="small"
-        style={{
-          backgroundColor: 'rgba(20, 20, 20, 0.95)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          borderRadius: '8px',
-          backdropFilter: 'blur(8px)',
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
-        }}
-        bodyStyle={{
-          padding: '12px',
-          color: '#fff'
-        }}
+      <GlassPanel
+        colored={false}
       >
         {/* 标题栏 */}
         <div
@@ -119,7 +104,7 @@ const TokenMonitor = ({ messages }) => {
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            marginBottom: '8px',
+            margin: '8px',
             fontSize: '12px',
             fontWeight: '500',
             color: 'rgba(255, 255, 255, 0.8)'
@@ -166,14 +151,15 @@ const TokenMonitor = ({ messages }) => {
                   borderRadius: '4px',
                   backgroundColor: 'rgba(24, 144, 255, 0.1)',
                   border: '1px solid rgba(24, 144, 255, 0.3)',
-                  transition: 'all 0.2s ease'
+                  transition: 'all 0.2s ease',
+                  margin: '8px'
                 }}
                 onClick={() => setIsExpanded(true)}
               >
                 <div style={{ color: '#1890ff', fontWeight: '500' }}>
                   {formattedData && formattedData.formatted 
-                    ? `${formattedData.total.toLocaleString()} tokens` 
-                    : `${(typeof tokenData === 'object' ? (tokenData.total || tokenData.totalTokens || 'N/A') : tokenData).toLocaleString()} tokens`}
+                    ? formatTokensToK(formattedData.total)
+                    : formatTokensToK(typeof tokenData === 'object' ? (tokenData.total || tokenData.totalTokens || 0) : tokenData)}
                 </div>
                 <div style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.6)', marginTop: '2px' }}>
                   点击展开查看详情
@@ -193,20 +179,20 @@ const TokenMonitor = ({ messages }) => {
                       fontSize: '11px',
                       lineHeight: '1.6',
                       color: '#fff',
-                      margin: 0
+                      margin:"0 12px"
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                       <span>输入消耗:</span>
-                      <span style={{ color: '#52c41a' }}>{formattedData.prompt.toLocaleString()} tokens</span>
+                      <span style={{ color: '#52c41a' }}>{formatTokensToK(formattedData.prompt)}</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                       <span>输出消耗:</span>
-                      <span style={{ color: '#1890ff' }}>{formattedData.completion.toLocaleString()} tokens</span>
+                      <span style={{ color: '#1890ff' }}>{formatTokensToK(formattedData.completion)}</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '6px', marginTop: '2px' }}>
                       <span style={{ fontWeight: 'bold' }}>总计消耗:</span>
-                      <span style={{ fontWeight: 'bold', color: '#f5a623' }}>{formattedData.total.toLocaleString()} tokens</span>
+                      <span style={{ fontWeight: 'bold', color: '#f5a623' }}>{formatTokensToK(formattedData.total)}</span>
                     </div>
                   </div>
                 ) : (
@@ -233,8 +219,8 @@ const TokenMonitor = ({ messages }) => {
                   <div style={{ 
                     fontSize: '10px', 
                     color: 'rgba(255, 255, 255, 0.5)', 
-                    marginTop: '4px',
-                    textAlign: 'right'
+                    textAlign: 'right',
+                    margin: '6px 12px'
                   }}>
                     {latestTokenData.timestamp.toLocaleTimeString()}
                   </div>
@@ -256,7 +242,7 @@ const TokenMonitor = ({ messages }) => {
             开始对话后将显示Token信息
           </div>
         )}
-      </Card>
+      </GlassPanel>
     </div>
   );
 };

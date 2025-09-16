@@ -16,12 +16,8 @@ class TextStreamService {
     // 1. 输入验证
     ChatValidation.validateTextMessage(message);
     
-    // 2. Token预估和余额检查
-    const estimatedTokens = TokenManager.estimateTokens(message);
-    await TokenManager.checkBalance(user, estimatedTokens);
-    
     try {
-      // 3. 生成文本内容（直接yield）
+      // 2. 生成文本内容（直接yield）
       yield* this.generateTextContent(message, sessionId, user);
       
     } catch (error) {
@@ -34,51 +30,88 @@ class TextStreamService {
    * 生成文本内容（核心业务逻辑）
    */
   async * generateTextContent(message, sessionId, user) {
-    // 调用AI服务生成内容
-    const streamIterator = GeminiTextService.generateTextStream(message, sessionId);
-    
-    let totalTokensUsed = 0;
+    const tokenProcessor = this._createTokenProcessor(message);
     let fullTextResponse = '';
-    let finalUsageMetadata = null; // 保存最终的usage数据
     
-    // 处理AI返回的流式结果
-    for await (const chunk of streamIterator) {
-      const { text, usageMetadata } = chunk;
+    try {
+      // 调用AI服务生成内容
+      const streamIterator = GeminiTextService.generateTextStream(message, sessionId);
       
-      // 保存最新的usageMetadata（通常最后一个chunk包含完整数据）
-      if (usageMetadata) {
-        finalUsageMetadata = usageMetadata;
+      // 处理AI返回的流式结果
+      for await (const chunk of streamIterator) {
+        // 更新实际token使用量
+        tokenProcessor.updateActual(chunk.usageMetadata);
+        
+        // 处理文本内容
+        const textResult = this._processTextChunk(chunk, tokenProcessor);
+        if (textResult) {
+          fullTextResponse += textResult.content;
+          yield textResult;
+        }
       }
       
-      if (text) {
-        const textContent = chunk.text;
-        fullTextResponse += textContent;
-        
-        const estimatedTokens = TokenManager.estimateTokens(textContent);
-        totalTokensUsed += estimatedTokens;
-        
-        yield {
-          type: 'text',
-          content: textContent,
-          tokens: estimatedTokens,
-          metadata: { 
-            estimatedTokens,
-            totalTokensUsed: usageMetadata,
-            fullTextResponse: fullTextResponse,
-            usageMetadata,
-            // 添加最终的usage数据
-            finalUsageMetadata
-          }
-        };
-      }
+    } catch (error) {
+      console.error('文本生成错误:', error);
+      throw error;
+    } finally {
+      // 在流结束时返回完整的usage数据
+      yield {
+        type: 'usage_final',
+        content: fullTextResponse,
+        tokenUsed: tokenProcessor.getFinalStats(),
+      };
     }
-    
-    // 在流结束时返回完整的usage数据
-    yield {
-      type: 'usage_final',
-      usageMetadata: finalUsageMetadata,
-      fullResponse: fullTextResponse
+  }
+
+  /**
+   * 处理文本chunk
+   * @private
+   */
+  _processTextChunk(chunk, tokenProcessor) {
+    if (chunk.text) {
+      tokenProcessor.addOutputText(chunk.text);
+      return {
+        type: 'text',
+        content: chunk.text,
+        tokenUsed: tokenProcessor.getCurrentStats(),
+      };
+    }
+    return null;
+  }
+
+  /**
+   * Token统计处理器
+   * @private
+   */
+  _createTokenProcessor(message) {
+    const tokenStats = TokenManager.createStatsManager();
+
+    const processor = {
+      tokenStats,
+      estimateInput() {
+        // 预估输入文本token
+        tokenStats.addEstimatedInputText(message);
+      },
+      updateActual(tokenUsed) {
+        if (tokenUsed) {
+          tokenStats.updateActualTokens(tokenUsed);
+        }
+      },
+      addOutputText(text) {
+        tokenStats.addEstimatedOutputText(text);
+      },
+      getCurrentStats() {
+        return tokenStats.getCurrentStats();
+      },
+      getFinalStats() {
+        return tokenStats.getCurrentStats();
+      }
     };
+
+    // 立即执行输入预估
+    processor.estimateInput();
+    
+    return processor;
   }
 }
 

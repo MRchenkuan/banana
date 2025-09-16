@@ -1,4 +1,5 @@
 import BaseMessageHandler from './BaseMessageHandler';
+import { tokenMonitorEvents } from '../../utils/tokenMonitorEvents';
 
 /**
  * 完成消息处理器
@@ -7,8 +8,23 @@ class CompleteMessageHandler extends BaseMessageHandler {
   handle(data, metadata) {
     this.validate(data);
     
-    const { tokensUsed, remainingBalance, title } = data;
+    const { tokensUsed, inputTokens, outputTokens, remainingBalance, title } = data;
     const { messageId, thinkingMessageId, sessionId, onComplete, setLoading } = metadata;
+    
+    // 向TokenMonitor发送token数据
+    if (tokensUsed || inputTokens || outputTokens) {
+      const tokenData = {
+        total: tokensUsed || (inputTokens + outputTokens),
+        input: inputTokens,
+        output: outputTokens
+      };
+      
+      tokenMonitorEvents.publish({
+        totalTokensUsed: tokenData,
+        timestamp: new Date(),
+        messageType: 'complete'
+      });
+    }
     
     // 更新消息状态为完成
     this.context.setMessages((prev) => {

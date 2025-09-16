@@ -47,10 +47,7 @@ const ChatMessage = sequelize.define('ChatMessage', {
     allowNull: false,
     defaultValue: 'pending'
   },
-  partialResponse: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
+
   estimatedTokens: {
     type: DataTypes.INTEGER,
     allowNull: true,

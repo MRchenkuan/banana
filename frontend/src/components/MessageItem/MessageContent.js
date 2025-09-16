@@ -5,15 +5,19 @@ import ReactMarkdown from 'react-markdown';
 import { optimizeImage } from '../../utils/imageOptimizer';
 import { getMarkdownComponents } from './utils/markdownComponents';
 import { createImageDragHandler, getDragImageStyle } from '../../utils/imageDragUtils';
+import styles from './MessageContent.module.css';
 
 const MessageContent = ({ message, messageState, typewriterState, onReuploadImage }) => {
-  const { contentToShow } = typewriterState;
-  const { isThinking, isAssistant, isUser } = messageState;
+  const { contentToShow, isTyping } = typewriterState;
+  const { isThinking, isAssistant, isUser, isStreaming } = messageState;
+  
+  // 判断是否应该显示呼吸灯
+  const shouldShowBreathingDot = isAssistant && (isStreaming || isTyping) && !isThinking;
   
   // 思考状态直接显示内容，使用与助手消息相同的样式
   if (isThinking) {
     return (
-      <div style={{ position: 'relative', width: '100%' }}>
+      <div className={styles.messageContent}>
         <span>{contentToShow}</span>
       </div>
     );
@@ -37,25 +41,20 @@ const MessageContent = ({ message, messageState, typewriterState, onReuploadImag
       });
       
       return (
-        <div style={{ position: 'relative', width: '100%' }}>
+        <div className={styles.messageContent}>
           {/* 渲染图片 */}
           {images.map((imageData, index) => {
             // 使用稳定的key
             const imageKey = `${imageData.src}-${index}`;
             
             return (
-              <div key={imageKey} style={{ position: 'relative', display: 'inline-block', margin: '8px 0' }}>
+              <div key={imageKey} className={styles.imageContainer}>
                 <Image
                   src={imageData.src}
                   alt={`图片 ${index + 1}`}
+                  className={styles.messageImage}
                   style={{
-                    maxWidth: '30vw',
-                    maxHeight: '40vh',
-                    height: 'auto',
-                    borderRadius: '8px',
-                    display: 'block',
-                    objectFit: 'contain',
-                    ...getDragImageStyle() // 使用工具函数获取拖拽样式
+                    ...getDragImageStyle()
                   }}
                   preview={{
                     mask: false
@@ -65,44 +64,24 @@ const MessageContent = ({ message, messageState, typewriterState, onReuploadImag
                   onError={(e) => {
                     console.error('Image load error:', e);
                     console.error('Failed src:', imageData.src);
-                    // 不显示错误消息，避免用户体验问题
                   }}
-                  fallback="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmNWY1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuWbvueJh+WKoOi9veWksei0pTwvdGV4dD48L3N2Zz4="
+                  fallback="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmNWY1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIz..."
                 />
                 {/* 添加重新上传按钮 */}
                 <Button
                   type="text"
                   size="small"
-                  icon={<PlusCircleOutlined style={{ color: 'rgba(255, 255, 255, 0.85)' }} />}
+                  icon={<PlusCircleOutlined className={styles.reuploadIcon} />}
                   onClick={() => onReuploadImage && onReuploadImage(imageData.src)}
-                  style={{
-                    position: 'absolute',
-                    bottom: '0',
-                    left: '0',
-                    transform: 'translate(50%, -50%)',
-                    width: '28px',
-                    height: '28px',
-                    borderRadius: '50%',
-                    padding: 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backdropFilter: 'blur(5px)',
-                                  backgroundColor: 'rgba(95, 93, 93, 0.2)',
-                    WebkitBackdropFilter: 'blur(5px)', // Safari 支持
-                    border: '1px solid rgba(255, 255, 255, 0.5)',
-                    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)',
-                    zIndex: 10,
-                    transition: 'all 0.3s ease'
-                  }}
-                  title="重新添加到输入框"
+                  className={styles.reuploadButton}
+                  title="重新上传"
                 />
               </div>
             );
           })}
           {/* 渲染文本 */}
           {textContent && (
-            <div style={{ marginTop: images.length > 0 ? '8px' : '0' }}>
+            <div className={images.length > 0 ? styles.textContainerWithImages : styles.textContainerNoImages}>
               {textContent}
             </div>
           )}
@@ -112,7 +91,7 @@ const MessageContent = ({ message, messageState, typewriterState, onReuploadImag
     
     // 没有图片的用户消息，正常渲染
     return (
-      <div style={{ position: 'relative', width: '100%' }}>
+      <div className={styles.messageContent}>
         <ReactMarkdown components={getMarkdownComponents(onReuploadImage)}>
           {contentToShow}
         </ReactMarkdown>
@@ -120,21 +99,27 @@ const MessageContent = ({ message, messageState, typewriterState, onReuploadImag
     );
   }
   
-  // AI消息使用markdown渲染
+  // AI消息使用markdown渲染，并在流式输出时添加呼吸灯
   if (isAssistant) {
     return (
-      <div style={{ position: 'relative', width: '100%' }}>
+      <div className={styles.messageContent}>
         <ReactMarkdown components={getMarkdownComponents(onReuploadImage)}>
           {contentToShow}
         </ReactMarkdown>
+        {shouldShowBreathingDot && (
+          <span className={styles.breathingDot}></span>
+        )}
       </div>
     );
   }
   
   // 默认显示
   return (
-    <div style={{ whiteSpace: 'pre-wrap' }}>
+    <div className={styles.defaultContent}>
       {contentToShow}
+      {shouldShowBreathingDot && (
+        <span className={styles.breathingDot}></span>
+      )}
     </div>
   );
 };

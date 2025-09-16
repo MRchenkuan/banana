@@ -62,8 +62,8 @@ const MessageInput = ({
     }).slice(0, 4).map(file => file.originFileObj);
     
     if (validFiles.length === 0) return;
-    if (validFiles.length > 2) {
-      message.warning('最多只能上传2张图片');
+    if (validFiles.length > 3) {
+      message.warning('最多只能上传3张图片');
       return;
     }
     
@@ -300,14 +300,14 @@ const MessageInput = ({
             showUploadList={false}
             beforeUpload={() => false}
             onChange={handleImageUpload}
-            disabled={selectedImages.length >= 2 || compressing}
+            disabled={selectedImages.length >= 3 || compressing}
           >
             <Button 
               size="small"
               icon={<PictureOutlined />} 
-              disabled={selectedImages.length >= 2 || compressing}
+              disabled={selectedImages.length >= 3 || compressing}
               loading={compressing}
-              title={selectedImages.length >= 2 ? "最多上传4张图片" : "上传图片"}
+              title={selectedImages.length >= 3 ? "最多上传3张图片" : "上传图片"}
               style={{ 
                 opacity: 1,
                 backgroundColor: '#434343',

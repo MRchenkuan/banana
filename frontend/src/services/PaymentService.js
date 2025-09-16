@@ -34,7 +34,9 @@ class PaymentService {
   
   // 获取充值记录
   async getPaymentHistory() {
-    return this.httpClient.get('/payment/history');
+    // 添加时间戳参数防止缓存
+    const timestamp = Date.now();
+    return this.httpClient.get(`/payment/history?_t=${timestamp}`);
   }
 }
 

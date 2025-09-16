@@ -58,10 +58,12 @@ const PaymentHistory = ({ visible, onClose, onRefreshOrderStatus }) => {
       if (onRefreshOrderStatus) {
         await onRefreshOrderStatus(orderId, paymentMethod);
       }
+      
       // 刷新完成后重新获取历史记录列表
       await fetchPaymentHistory();
     } catch (error) {
       console.error('刷新订单状态失败:', error);
+      message.error('刷新订单状态失败');
     } finally {
       // 移除刷新中标记
       setRefreshingOrders(prev => {
@@ -114,6 +116,12 @@ const PaymentHistory = ({ visible, onClose, onRefreshOrderStatus }) => {
       centered
       style={{ zIndex: 1100 }}
       destroyOnClose
+      className="modal-scrollable"
+      bodyStyle={{
+        maxHeight: '80vh',
+        overflowY: 'auto',
+        padding: '16px 24px'
+      }}
     >
       <List
         loading={loading}

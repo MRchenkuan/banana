@@ -16,7 +16,6 @@
 
 /* Custom styles for the chat application - 暗色主题 */
 .chat-container {
-  max-width: 1200px;
   margin: 0 auto;
   background-color: #141414;
 }

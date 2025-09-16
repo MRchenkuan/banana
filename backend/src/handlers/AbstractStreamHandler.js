@@ -12,8 +12,11 @@ const RosService = require("../services/file_process/RosService");
  * 负责聊天相关的业务逻辑：用户验证、token管理、会话管理等
  */
 class AbstractStreamHandler extends BaseStreamHandler {
-  partialResponse = "";
   fullResponse = "";
+  /**
+   * 聊天管理器
+   * @type {ChatManager}
+   */
   chatManager = null;
   tokensUsed = 0;
   user = null;
@@ -142,20 +145,28 @@ class AbstractStreamHandler extends BaseStreamHandler {
       const { stream } = await this.getStreamData();
 
       for await (const chunk of stream) {
-        const {type, content, tokenUsed, metadata} = chunk;
-        const {estimatedChunkTokens, promptTokenCount, totalTokenCount, promptTokensDetails, candidatesTokenCount} = tokenUsed || {};
+        const {type, content, tokenUsed} = chunk;
+        const {actual, estimated } = tokenUsed||{};
         
-        if (chunk.type === 'text') {
-          this.partialResponse += content;
+        if(actual.total > estimated.total){ 
+          this.tokensUsed = actual
+        } else {
+          this.tokensUsed = estimated;
+        }
+
+        // 基本只有text 类型
+        if (type === 'text') {
           this.fullResponse += content;
-          this.tokensUsed = totalTokenCount;
-          
-          await this.sendMessageChunk(chunk);
+          await this.sendMessageChunk({
+            type,
+            content,
+            tokenUsed: this.tokensUsed
+          });
         }
         
-        if (chunk.type === 'usage_final') {
-          // 保存真实的usage数据
-          this.chatManager.setUsageMetadata(metadata);
+        if (type === 'usage_final') {
+          // chunk 读完时做的处理
+          this.fullResponse = content
         }
       }
       
@@ -166,9 +177,7 @@ class AbstractStreamHandler extends BaseStreamHandler {
     }
   }
 
-  async handleStreamComplete() {
-    const message = this.req.body.message || '';
-    
+  async handleStreamComplete() {    
     let result = {
       tokensUsed: 0,
       inputTokens: 0,
@@ -176,17 +185,19 @@ class AbstractStreamHandler extends BaseStreamHandler {
       remainingBalance: this.balanceBefore,
       dataSource: ''
     };
-
     try {
       // 生成标题
       await this.generateTitleIfNeeded();
+    } catch (error) {
+      console.error('生成标题时出错:', error);
+    }
 
+    try {
       // 保存完成数据
       if (this.chatManager && this.chatManager.chatMessage) {
         result = await this.chatManager.saveCompletedData(
           this.fullResponse,
           this.tokensUsed,
-          message
         );
       }
     } catch (error) {
@@ -199,8 +210,7 @@ class AbstractStreamHandler extends BaseStreamHandler {
         tokensUsed: result.tokensUsed,
         inputTokens: result.inputTokens,
         outputTokens: result.outputTokens,
-        remainingBalance: result.remainingBalance,
-        dataSource: result.dataSource
+        remainingBalance: result.balanceAfter,
       });
     }
   }
@@ -232,7 +242,7 @@ class AbstractStreamHandler extends BaseStreamHandler {
   async handleError(error) {
     // 业务层处理错误
     if (this.chatManager) {
-      await this.chatManager.handleError(error, this.partialResponse);
+      await this.chatManager.handleError(error);
     }
 
     // 流层发送错误响应

@@ -12,11 +12,16 @@
 .glassPanel::before {
   content: '';
   position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background-size: 200% 200%;
+  top: 0;
+  left: 0;
+  /* 使用 max() 函数确保覆盖最长边 */
+  width: max(200vh, 200vw);
+  height: max(200vh, 200vw);
+  /* 居中定位 */
+  background-size: 100% 100%;
+  transform: translate(-50%, -50%);
+  /* 旋转的中心点 */
+  transform-origin: 50% 50%;
   animation: gradientFlow 8s cubic-bezier(0.4, 0, 0.6, 1) infinite,
              gradientAngle 6s linear infinite;
   z-index: -1;
@@ -66,6 +71,23 @@
   animation: none;
 }
 
+/* 新增：完全透明模式 */
+.transparent {
+  background: transparent ;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(2px) !important;
+  -webkit-backdrop-filter: blur(2px) !important;
+}
+
+.transparent::before {
+  display: none !important;
+}
+
+/* 新增：无背景色模式 */
+.noColored::before {
+  background: none !important;
+}
+
 /* 动画关键帧 */
 @keyframes gradientFlow {
   0%, 100% {
@@ -80,9 +102,9 @@
 
 @keyframes gradientAngle {
   0% {
-    transform: rotate(0deg);
+    transform: translate(-50%, -50%) rotate(0deg);
   }
   100% {
-    transform: rotate(360deg);
+    transform: translate(-50%, -50%) rotate(360deg);
   }
 }

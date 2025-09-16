@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Empty } from 'antd';
-import MessageItem from './MessageItem';
+import MessageItem from './MessageItem/MessageItem';
 import TokenMonitor from './TokenMonitor';
 
 const MessageList = ({ 
@@ -51,7 +51,7 @@ const MessageList = ({
           display: 'flex',
           flexDirection: 'column',
           backgroundColor: '#141414',
-          padding: '0 16px' // 将padding从'16px'改为'0'
+          padding: '0px 16px 60px' // 将padding从'16px'改为'0'
         }}
       >
         {messages.length === 0 ? (

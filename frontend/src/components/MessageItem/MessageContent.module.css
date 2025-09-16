@@ -1,0 +1,99 @@
+.breathingDot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background-color: #1890ff;
+  border-radius: 50%;
+  margin-left: 4px;
+  animation: breathing 1.5s ease-in-out infinite;
+  vertical-align: middle;
+}
+
+@keyframes breathing {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+.messageContent {
+  position: relative;
+  width: 100%;
+}
+
+/* 图片容器样式 */
+.imageContainer {
+  position: relative;
+  display: inline-block;
+  margin: 8px 0;
+}
+
+/* 图片样式 */
+.messageImage {
+  max-width: 30vw;
+  max-height: 40vh;
+  height: auto;
+  border-radius: 8px;
+  display: block;
+  object-fit: contain;
+  cursor: grab;
+  transition: transform 0.2s ease;
+}
+
+.messageImage:active {
+  cursor: grabbing;
+}
+
+/* 重新上传按钮样式 */
+.reuploadButton {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  transform: translate(-50%, -50%);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(95, 93, 93, 0.2);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  transition: all 0.3s ease;
+}
+
+.reuploadButton:hover {
+  background-color: rgba(95, 93, 93, 0.3);
+  transform: translate(-50%, -50%) scale(1.05);
+}
+
+/* 重新上传按钮图标样式 */
+.reuploadIcon {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* 文本容器样式 */
+.textContainer {
+  margin-top: 8px;
+}
+
+.textContainerWithImages {
+  margin-top: 8px;
+}
+
+.textContainerNoImages {
+  margin-top: 0;
+}
+
+/* 默认内容样式 */
+.defaultContent {
+  white-space: pre-wrap;
+}

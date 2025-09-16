@@ -1,11 +1,10 @@
-const fs = require('fs');
-const path = require('path');
 const GeminiImageService = require('./gemini/GeminiImageService');
 const TokenManager = require('../utils/tokenManager');
-const ChatValidation = require('../utils/chatValidation');
 const fileManagementService = require('./file_process/FileManagementService');
 const rosService = require('./file_process/RosService');
 const MediaResource = require('../models/MediaResource');
+const fs = require('fs');
+const { v4: uuidv4 } = require('uuid');
 
 class ImageStreamService {
   
@@ -18,10 +17,50 @@ class ImageStreamService {
       throw error;
     }
   }
- 
+
+    /**
+   * 处理文本chunk
+   * @private
+   */
+  _processTextChunk(chunk, tokenProcessor) {
+    if (chunk.text) {
+      tokenProcessor.addOutputText(chunk.text);
+      return {
+        type: 'text',
+        content: chunk.text,
+        tokenUsed: tokenProcessor.getCurrentStats(),
+      };
+    }
+    return null;
+  }
 
   /**
-   * 按照官方样板代码生成图片内容
+   * 处理图片chunk
+   * @private
+   */
+  async _processImageChunk(chunk, tokenProcessor, user) {
+    const results = [];
+    
+    if (chunk?.candidates?.length > 0) {
+      for (const candidate of chunk.candidates) {
+        if (candidate?.content?.parts?.[0]?.inlineData) {
+          const imageBuffer = Buffer.from(candidate.content.parts[0].inlineData.data || '', 'base64');
+          const mimeType = candidate.content.parts[0].inlineData.mimeType;
+          
+          await tokenProcessor.addOutputImage(imageBuffer);
+          const imageResponse = await this._processImageCandidate(imageBuffer, mimeType, user, tokenProcessor);
+          
+          if (imageResponse) {
+            results.push(imageResponse);
+          }
+        }
+      }
+    }
+    
+    return results;
+  }
+
+  /**
    * @async
    * @generator
    * @param {string} message - 用户输入的消息文本
@@ -31,100 +70,63 @@ class ImageStreamService {
    * @throws {Error} 当图片生成过程中出现错误时抛出
    */
   async * generateImageContent(message, images, user) {
-    const tempFiles = images.map(image => image.path);
     
-    // 初始化token计数和响应文本
-    const tokenStats = {
-      promptTokenCount: 0,
-      totalTokenCount: 0,
-      promptTokensDetails: {},
-      candidatesTokenCount: 0,
-      estimatedTokenCount: 0
-    };
+    const tempFiles = images.map(image => image.path);
+    const tokenProcessor = this._createTokenProcessor(message, images);
     
     let fullTextResponse = '';
-    let fileIndex = 0;
     
     try {
       const response = GeminiImageService.generateImageFromImage(message, tempFiles);
       
+
       for await (const chunk of response) {
-        // 更新token统计信息
-        this._updateTokenStats(chunk, tokenStats);
-        if (chunk.text) {
-          const textResponse = this._processTextChunk(chunk.text, tokenStats);
-          fullTextResponse += textResponse.content;
-          yield textResponse;
+        
+        tokenProcessor.updateActual(chunk.usageMetadata);
+        
+        // 处理文本内容
+        const textResult = this._processTextChunk(chunk, tokenProcessor);
+        if (textResult) {
+          fullTextResponse += textResult.content;
+          yield textResult;
         }
         
         // 处理图片内容
-        if (chunk?.candidates?.length > 0) {
-          for (const candidate of chunk.candidates) {
-            if (candidate?.content?.parts?.[0]?.inlineData) {
-              const imageResponse = await this._processImageCandidate(
-                candidate.content.parts[0].inlineData,
-                fileIndex++,
-                user,
-                tokenStats
-              );
-              
-              if (imageResponse) {
-                fullTextResponse += imageResponse.content;
-                yield imageResponse;
-              }
-            }
-          }
+        const imageResults = await this._processImageChunk(chunk, tokenProcessor, user);
+        for (const imageResult of imageResults) {
+          fullTextResponse += imageResult.content;
+          yield imageResult;
         }
       }
+
     } catch (error) {
       console.error('图片生成错误:', error);
       throw error;
     } finally {
-      // 清理临时文件
       await this._cleanupTempFiles(tempFiles);
-      
-      // 发送最终使用统计
-      yield this._createFinalUsageResponse(fullTextResponse, tokenStats);
+      yield {
+        type: 'usage_final',
+        content: fullTextResponse,
+        tokenUsed: tokenProcessor.getFinalStats(),
+      }
     }
-  }
-  
-  /**
-   * 更新token统计信息
-   * @private
-   */
-  _updateTokenStats(chunk, tokenStats) {
-    const { usageMetadata } = chunk;
-    if (!usageMetadata) return;
-    
-    const {
-      candidatesTokenCount,
-      promptTokenCount,
-      promptTokensDetails,
-      totalTokenCount
-    } = usageMetadata;
-    
-    if (promptTokenCount) tokenStats.promptTokenCount = promptTokenCount;
-    if (totalTokenCount) tokenStats.totalTokenCount = totalTokenCount;
-    if (promptTokensDetails) tokenStats.promptTokensDetails = promptTokensDetails;
-    if (candidatesTokenCount) tokenStats.candidatesTokenCount = candidatesTokenCount;
   }
   
   /**
    * 处理图片候选项
    * @private
    */
-  async _processImageCandidate(inlineData, fileIndex, user, tokenStats) {
+  async _processImageCandidate(buffer, mimeType, user, tokenProcessor) {
     try {
-      const fileExtension = GeminiImageService.getExtByMimeType(inlineData.mimeType || 'image/png');
-      const buffer = Buffer.from(inlineData.data || '', 'base64');
+      const fileExtension = GeminiImageService.getExtByMimeType(mimeType || 'image/png');
       
-      const fileName = `ai-generated-${Date.now()}-${fileIndex}`;
+      const fileName = `ai-generated-${user?.id}-${uuidv4().replace(/-/g, '').substring(0, 16)}`;
       const fullFileName = `${fileName}.${fileExtension}`;
       const imageKey = rosService.generateImageKey(fullFileName, 'ai-generated', user?.id);
       
       // 上传到ROS
       const uploadResult = await rosService.uploadBuffer(buffer, imageKey, {
-        contentType: inlineData.mimeType || 'image/png'
+        contentType: mimeType || 'image/png'
       });
       
       // 保存媒体资源记录
@@ -133,7 +135,7 @@ class ImageStreamService {
         fileName: fullFileName,
         originalName: fullFileName,
         fileSize: uploadResult.size,
-        mimeType: inlineData.mimeType || 'image/png',
+        mimeType: mimeType || 'image/png',
         storageType: 'ros',
         storageKey: uploadResult.key,
         storageUrl: uploadResult.url,
@@ -142,66 +144,20 @@ class ImageStreamService {
       
       // 生成Markdown链接
       const markdownLink = `\n\n![AI生成图片](${uploadResult.url})\n\n`;
-      const estimatedChunkTokens = TokenManager.estimateImageTokens(buffer);
-      tokenStats.estimatedTokenCount += estimatedChunkTokens;
       
       return {
         type: 'text',
         content: markdownLink,
-        tokenUsed: {
-          estimatedChunkTokens,
-          promptTokenCount: tokenStats.promptTokenCount,
-          totalTokenCount: tokenStats.totalTokenCount,
-          candidatesTokenCount: tokenStats.candidatesTokenCount,
-        },
+        tokenUsed: tokenProcessor.getCurrentStats(), // 修复：使用传入的tokenProcessor
         metadata: { 
-          mediaResourceId: mediaResource.id
-        }
+          mediaResourceId: mediaResource.id,
+          uniqueId: uuidv4() // 添加唯一标识
+        },
       };
     } catch (error) {
       console.error('处理图片候选项失败:', error);
       return null;
     }
-  }
-  
-  /**
-   * 处理文本块
-   * @private
-   */
-  _processTextChunk(text, tokenStats) {
-    const estimatedChunkTokens = TokenManager.estimateTextTokens(text);
-    tokenStats.estimatedTokenCount += estimatedChunkTokens;
-    
-    return {
-      type: 'text',
-      content: text,
-      tokenUsed: {
-        estimatedChunkTokens,
-        promptTokenCount: tokenStats.promptTokenCount,
-        totalTokenCount: tokenStats.totalTokenCount,
-        candidatesTokenCount: tokenStats.candidatesTokenCount,
-      },
-      metadata: {}
-    };
-  }
-  
-  /**
-   * 创建最终使用统计响应
-   * @private
-   */
-  _createFinalUsageResponse(fullTextResponse, tokenStats) {
-    return {
-      type: 'usage_final',
-      content: fullTextResponse || '',
-      tokenUsed: {
-        estimatedTokenCount: tokenStats.estimatedTokenCount,
-        promptTokenCount: tokenStats.promptTokenCount,
-        totalTokenCount: tokenStats.totalTokenCount,
-        promptTokensDetails: tokenStats.promptTokensDetails,
-        candidatesTokenCount: tokenStats.candidatesTokenCount,
-      },
-      metadata: {}
-    };
   }
   
   /**
@@ -216,6 +172,48 @@ class ImageStreamService {
     } catch (error) {
       console.error('清理临时文件失败:', error);
     }
+  }
+
+
+    /**
+   * Token统计处理器
+   * @private
+   */
+  _createTokenProcessor(message, images) {
+    const tokenStats = TokenManager.createStatsManager();
+
+    const processor = {
+      tokenStats,
+      estimateInput: async() => {
+        // 预估输入文本token
+        tokenStats.addEstimatedInputText(message);
+        // 预估输入图片token
+        for (let i = 0; i < images.length; i++) {
+          // 读取图片文件为buffer
+          const imageBuffer = fs.readFileSync(images[i].path);
+          await tokenStats.addEstimatedInputImage(imageBuffer);
+        }
+      },
+      updateActual(tokenUsed) {
+        tokenStats.updateActualTokens(tokenUsed);
+      },
+      addOutputText(text) {
+        tokenStats.addEstimatedOutputText(text);
+      },
+      async addOutputImage(buffer) {
+        await tokenStats.addEstimatedOutputImage(buffer);
+      },
+      getCurrentStats() {
+        return tokenStats.getCurrentStats();
+      },
+      getFinalStats() {
+        return tokenStats.getCurrentStats();
+      }
+    };
+
+    processor.estimateInput();
+    
+    return processor
   }
 }
 

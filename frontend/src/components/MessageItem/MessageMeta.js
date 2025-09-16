@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatTokensToK } from '../../utils/tokenFormatter';
 
 const MessageMeta = ({ message, messageState, elapsedTime }) => {
   const { isThinking, isError, isInterrupted, isPending, isStreaming, isUser } = messageState;
@@ -21,17 +22,7 @@ const MessageMeta = ({ message, messageState, elapsedTime }) => {
   const getTokenCount = () => {
     // 如果已收到complete消息（tokensUsed存在），则直接使用tokensUsed
     if (message.tokensUsed !== undefined) {
-      return message.tokensUsed;
-    }
-    
-    // 如果正在流式传输中（estimatedTokens存在），则使用estimatedTokens
-    if (message.estimatedTokens !== undefined) {
-      return message.estimatedTokens;
-    }
-    
-    // 如果有totalTokensUsed.promptTokenCount，则使用它
-    if (message?.totalTokensUsed?.promptTokenCount) {
-      return message.totalTokensUsed.promptTokenCount;
+      return message.tokensUsed.total;
     }
     
     // 默认值
@@ -75,10 +66,10 @@ const MessageMeta = ({ message, messageState, elapsedTime }) => {
             </span>
           )}
           
-          {/* Token显示 - 修改为使用getTokenCount函数 */}
+          {/* Token显示 - 修改为k单位 */}
           {!isThinking && (message.tokensUsed !== undefined || message.estimatedTokens || message?.totalTokensUsed?.promptTokenCount) && (
             <span>
-              {getTokenCount()} ~t
+              {formatTokensToK(getTokenCount())}
             </span>
           )}
         </div>

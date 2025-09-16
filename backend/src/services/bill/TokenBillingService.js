@@ -7,7 +7,7 @@ class TokenBillingService {
    * @param {Object} params - 计费参数
    * @param {number} params.userId - 用户ID
    * @param {number} params.chatMessageId - 消息ID
-   * @param {Object} params.usageMetadata - 真实的token使用数据
+   * @param {Object} params.tokenUsed - 真实的token使用数据
    * @param {string} params.userMessage - 用户消息（兜底用）
    * @param {string} params.aiResponse - AI响应（兜底用）
    * @returns {Promise<Object>} 计费结果
@@ -16,136 +16,72 @@ class TokenBillingService {
     const {
       userId,
       chatMessageId,
-      usageMetadata,
-      userMessage = "",
-      aiResponse = "",
+      tokenUsed,
     } = params;
 
-    const transaction = await sequelize.transaction();
-
+    // 第一阶段：优先确保token扣除
+    const tokenTransaction = await sequelize.transaction();
+    let balanceBefore, balanceAfter, tokenConsumed;
+    
     try {
-      // 获取用户信息
-      const user = await User.findByPk(userId, { transaction });
+      // 获取用户信息并锁定行
+      const user = await User.findByPk(userId, { 
+        transaction: tokenTransaction,
+        lock: true // 行级锁，防止并发问题
+      });
       if (!user) {
         throw new Error("用户不存在");
       }
 
-      const balanceBefore = user.tokenBalance;
+      balanceBefore = user.tokenBalance;
+      tokenConsumed = tokenUsed.total;
+      balanceAfter = balanceBefore - tokenConsumed;
 
-      // 提取真实token数据，提供兜底机制
-      const tokenData = this._extractTokenData(
-        usageMetadata,
-        userMessage,
-        aiResponse
-      );
-
-      // 移除余额检查，允许余额为负
-      // if (balanceBefore < tokenData.totalTokens) {
-      //   await transaction.rollback();
-      //   return {
-      //     success: false,
-      //     error: 'insufficient_balance',
-      //     message: 'Token余额不足, 当前余额: ' + balanceBefore,
-      //     required: tokenData.totalTokens,
-      //     available: balanceBefore
-      //   };
-      // }
-
-      // 扣除tokens
-      const balanceAfter = balanceBefore - tokenData.totalTokens;
-      await user.update({ tokenBalance: balanceAfter }, { transaction });
-
-      // 更新ChatMessage
-      await ChatMessage.update(
-        {
-          tokensUsed: tokenData.totalTokens,
-          inputTokens: tokenData.inputTokens,
-          outputTokens: tokenData.outputTokens,
-          tokenBalance: balanceBefore,
-        },
-        {
-          where: { id: chatMessageId },
-          transaction,
-        }
-      );
-
-      // 记录token使用
-      await TokenUsage.create(
-        {
-          userId,
-          chatMessageId,
-          tokensUsed: tokenData.totalTokens,
-          operation: "chat",
-          balanceBefore,
-          balanceAfter,
-          inputTokens: tokenData.inputTokens,
-          outputTokens: tokenData.outputTokens,
-          dataSource: tokenData.dataSource, // 'real' | 'estimated'
-          usageMetadata: JSON.stringify(usageMetadata || {}),
-        },
-        { transaction }
-      );
-
-      await transaction.commit();
-
-      return {
-        success: true,
-        tokensUsed: tokenData.totalTokens,
-        inputTokens: tokenData.inputTokens,
-        outputTokens: tokenData.outputTokens,
-        balanceBefore,
-        balanceAfter,
-        dataSource: tokenData.dataSource,
-      };
+      // 立即扣除token并提交
+      await user.update({ tokenBalance: balanceAfter }, { transaction: tokenTransaction });
+      await tokenTransaction.commit();
+      
+      console.log(`Token扣除成功: 用户${userId}, 消耗${tokenConsumed}, 余额${balanceAfter}`);
+      
     } catch (error) {
-      await transaction.rollback();
-      console.error("Token计费错误:", error);
+      await tokenTransaction.rollback();
+      console.error("Token扣除失败:", error);
       throw error;
     }
-  }
 
-  /**
-   * 提取token数据，提供兜底机制
-   * @private
-   */
-  static _extractTokenData(usageMetadata, userMessage, aiResponse) {
-    // 优先使用真实数据
-    if (
-      usageMetadata &&
-      usageMetadata.candidatesTokenCount &&
-      usageMetadata.promptTokenCount
-    ) {
-      return {
-        inputTokens: usageMetadata.promptTokenCount,
-        outputTokens: usageMetadata.candidatesTokenCount,
-        totalTokens:
-          usageMetadata.totalTokenCount ||
-          usageMetadata.promptTokenCount + usageMetadata.candidatesTokenCount,
-        dataSource: "real",
-      };
-    }
+    // 第二阶段：更新其他相关记录（非关键操作）    
+    // 更新ChatMessage
+    await ChatMessage.update({
+      tokensUsed: tokenConsumed,
+      inputTokens: tokenUsed.input,
+      outputTokens: tokenUsed.output,
+      tokenBalance: balanceAfter,
+    },{
+        where: { id: chatMessageId },
+    });
 
-    // 兜底：使用估算
-    console.warn("使用兜底token估算机制");
-    const inputTokens = this._estimateTokens(userMessage);
-    const outputTokens = this._estimateTokens(aiResponse);
+    // 记录token使用历史
+    await TokenUsage.create({
+      userId,
+      chatMessageId,
+      tokensUsed: tokenConsumed,
+      operation: "chat",
+      balanceBefore,
+      balanceAfter,
+      inputTokens: tokenUsed.input,
+      outputTokens: tokenUsed.output,
+    });
 
     return {
-      inputTokens,
-      outputTokens,
-      totalTokens: inputTokens + outputTokens,
-      dataSource: "estimated",
+      success: true,
+      tokensUsed: tokenConsumed,
+      inputTokens: tokenUsed.input,
+      outputTokens: tokenUsed.output,
+      balanceBefore,
+      balanceAfter,
     };
   }
 
-  /**
-   * 估算token数量（兜底机制）
-   * @private
-   */
-  static _estimateTokens(text) {
-    if (!text) return 0;
-    return Math.ceil(text.length * 0.75);
-  }
 
   /**
    * 预检查用户余额

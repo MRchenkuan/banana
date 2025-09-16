@@ -8,7 +8,6 @@ class ChatManager {
     this.userId = userId;
     this.balanceBefore = balanceBefore;
     this.chatMessage = null;
-    this.usageMetadata = null; // 保存真实的usage数据
   }
 
   /**
@@ -36,7 +35,6 @@ class ChatManager {
       aiResponse: '',
       tokensUsed: 0,
       streamStatus: STREAM_STATUS.PENDING,
-      partialResponse: ''
     });
     return this.chatMessage;
   }
@@ -51,16 +49,9 @@ class ChatManager {
   }
 
   /**
-   * 设置真实的usage数据
-   */
-  setUsageMetadata(usageMetadata) {
-    this.usageMetadata = usageMetadata;
-  }
-
-  /**
    * 保存完成的数据（使用新的计费服务）
    */
-  async saveCompletedData(fullResponse, estimatedTokens, userMessage = '') {
+  async saveCompletedData(fullResponse, tokenUsed) {
     if (!this.chatMessage) {
       throw new Error('ChatMessage未初始化');
     }
@@ -70,9 +61,7 @@ class ChatManager {
       const billingResult = await TokenBillingService.processMessageBilling({
         userId: this.userId,
         chatMessageId: this.chatMessage.id,
-        usageMetadata: this.usageMetadata,
-        userMessage: userMessage,
-        aiResponse: fullResponse
+        tokenUsed,
       });
 
       if (!billingResult.success) {
@@ -83,7 +72,6 @@ class ChatManager {
       await this.chatMessage.update({
         aiResponse: fullResponse,
         streamStatus: STREAM_STATUS.COMPLETED,
-        partialResponse: ''
       });
 
       // 更新用户对象的余额
@@ -94,12 +82,10 @@ class ChatManager {
       return {
         success: true,
         tokensUsed: billingResult.tokensUsed,
-        inputTokens: billingResult.inputTokens,
-        outputTokens: billingResult.outputTokens,
-        remainingBalance: billingResult.balanceAfter,
+        inputTokens: tokenUsed.input,
+        outputTokens: tokenUsed.output,
         balanceBefore: billingResult.balanceBefore,
         balanceAfter: billingResult.balanceAfter,
-        dataSource: billingResult.dataSource
       };
     } catch (error) {
       console.error('保存聊天数据失败:', error);
@@ -123,11 +109,11 @@ class ChatManager {
   /**
    * 处理错误状态
    */
-  async handleError(error, partialResponse = '') {
+  async handleError(error) {
     if (this.chatMessage) {
       await this.chatMessage.update({
         streamStatus: STREAM_STATUS.ERROR,
-        aiResponse: partialResponse || error.message || '处理失败'
+        aiResponse: error.message || '处理失败'
       });
     }
   }

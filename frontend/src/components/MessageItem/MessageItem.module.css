@@ -1,0 +1,87 @@
+.messageWrapper {
+  display: flex;
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.messageWrapperUser {
+  justify-content: flex-end;
+}
+
+.messageWrapperAssistant {
+  justify-content: flex-start;
+}
+
+.messageContainer {
+  position: relative;
+  padding: 12px 16px;
+  border-radius: 12px;
+  word-break: break-word;
+  line-height: 1.6;
+  overflow: visible;
+  box-sizing: border-box;
+}
+
+.messageContainerUser {
+  color: #fff;
+}
+
+.messageContainerTextUser {
+  max-width: 50%;
+}
+
+.messageContainerTextAssistant {
+  max-width: 50%;
+}
+
+.messageContainerImageUser {
+  max-width: 40%;
+}
+
+.messageContainerImageAssistant {
+  max-width: 40%;
+}
+
+@media (max-width: 768px) {
+  .messageContainerTextUser,
+  .messageContainerTextAssistant {
+    max-width: 85%;
+  }
+  
+  .messageContainerImageUser,
+  .messageContainerImageAssistant {
+    max-width: 60%;
+  }
+}
+
+.messageContent {
+  margin: 0;
+  color: #ffffff;
+  text-align: left;
+  display: flex;
+  align-items: center;
+}
+
+.regenerateButton {
+  position: absolute;
+  bottom: -12px;
+  right: 12px;
+  border-radius: 50% !important;
+  width: 28px !important;
+  height: 28px !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background-color: rgba(255, 255, 255, 0.7) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1) !important;
+  z-index: 10;
+  transition: all 0.3s ease !important;
+}
+
+.regenerateIcon {
+  color: rgba(24, 144, 255, 0.85);
+}

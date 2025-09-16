@@ -137,12 +137,12 @@ const useImageHandler = () => {
     const imageFiles = files.filter(file => file.type.startsWith('image/'));
     
     if (imageFiles.length > 0) {
-      if (selectedImages.length >= 2) {
-        message.warning('最多只能上传2张图片');
+      if (selectedImages.length >= 3) {
+        message.warning('最多只能上传3张图片');
         return;
       }
       
-      const newImages = imageFiles.slice(0, 2 - selectedImages.length);
+      const newImages = imageFiles.slice(0, 3 - selectedImages.length);
       
       const needCompression = newImages.some(file => file.size > 500 * 1024);
       
@@ -162,8 +162,8 @@ const useImageHandler = () => {
         setSelectedImages(prev => [...prev, ...newImages]);
       }
       
-      if (imageFiles.length > 2 - selectedImages.length) {
-        message.warning('最多只能上传2张图片');
+      if (imageFiles.length > 3 - selectedImages.length) {
+        message.warning('最多只能上传3张图片');
       }
     }
   };
@@ -173,11 +173,11 @@ const useImageHandler = () => {
       setSelectedImages([]);
     }
     
-    const newImages = imageFiles.slice(0, 2);
+    const newImages = imageFiles.slice(0, 3);
     setSelectedImages(newImages);
     
-    if (imageFiles.length > 2) {
-      message.warning('最多只能上传2张图片');
+    if (imageFiles.length > 3) {
+      message.warning('最多只能上传3张图片');
     }
   };
 

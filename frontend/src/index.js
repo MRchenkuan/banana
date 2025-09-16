@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import './index.css'; // 添加这行导入index.css
 import './styles/global/variables.css';
 import './styles/global/reset.css';
 import './styles/global/animations.css';
