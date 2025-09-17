@@ -1,0 +1,66 @@
+.hudContainer {
+  /* position: fixed;
+  bottom: 10px;
+  left: 10px;
+  z-index: 2000;
+  width: 260px;
+  max-width: calc(100vw - 40px); */
+
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  width: 600px;
+  max-width: calc(100vw - 40px);
+}
+
+.loadingPanel {
+  border-radius: 12px;
+}
+
+.announcementWrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.announcementItem {
+  border-radius: 12px;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  animation: slideIn 0.3s ease-out;
+}
+
+/* 公告出现动画 */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 响应式设计 */
+@media (max-width: 900px) {
+  .hudContainer {
+    width: calc(100vw - 40px);
+    left: 20px;
+    transform: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .hudContainer {
+    top: 70px;
+    width: calc(100vw - 20px);
+    left: 10px;
+  }
+}
+
+/* 暗色主题适配 */
+[data-theme='dark'] .announcementCard {
+  background: rgba(20, 20, 20, 0.95);
+  border-color: #434343;
+}

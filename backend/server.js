@@ -27,6 +27,7 @@ const WechatModule = require('./src/wechat');
 const AlipayModule = require('./src/alipay');
 const payplanRoutes = require('./src/routes/payplan');
 const paymentRoutes = require('./src/routes/payment');
+const announcementRoutes = require('./src/routes/announcement');
 // 注册路由
 app.use('/api/auth', authRoutes);
 app.use('/api/chat', chatRoutes);
@@ -36,6 +37,7 @@ app.use('/api/wechat', WechatModule.init());
 app.use('/api/alipay', AlipayModule.init());
 app.use('/api/payplan', payplanRoutes);
 app.use('/api/payment', paymentRoutes);
+app.use('/api/announcement', announcementRoutes);
 
 // 健康检查
 app.get('/api/health', (req, res) => {

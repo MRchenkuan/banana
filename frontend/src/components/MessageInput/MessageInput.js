@@ -135,7 +135,6 @@ const MessageInput = ({
   
   // 渲染单个图片预览
   const renderImagePreview = useCallback((image, index, arr) => {
-    debugger
     const fileKey = `${image.name}-${image.size}-${image.lastModified}-${index}`;
     const imageUrl = imageUrls[index];
     if (!imageUrl || !urlsReady) {

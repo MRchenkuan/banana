@@ -1,5 +1,5 @@
 const { sequelize, testConnection, syncDatabase } = require('../config/database');
-const { User, ChatMessage, TokenUsage, Order } = require('../models');
+const { User, ChatMessage, TokenUsage, Order, Announcement } = require('../models');
 
 // 初始化数据库
 const initDatabase = async () => {
@@ -38,5 +38,6 @@ module.exports = {
   User,
   ChatMessage,
   TokenUsage,
-  Order
+  Order,
+  Announcement
 };

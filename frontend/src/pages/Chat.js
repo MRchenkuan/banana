@@ -3,6 +3,7 @@ import { message } from "antd";
 import SessionSidebar from "../components/SessionSidebar";
 import MessageList from "../components/MessageList";
 import MessageInput from "../components/MessageInput/MessageInput";
+import AnnouncementHUD from "../components/AnnouncementHUD";
 import useChat from "../hooks/useChat";
 import useSessions from "../hooks/useSessions";
 import useMessageSender from "../hooks/useMessageSender";
@@ -246,6 +247,9 @@ const Chat = () => {
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
+        {/* 公告HUD组件 */}
+        <AnnouncementHUD />
+        
         {/* 会话侧边栏 */}
         <SessionSidebar
           sessions={sessions}
@@ -274,10 +278,6 @@ const Chat = () => {
             isDragOver={isDragOver}
             onSendMessage={onSendMessage}
             onKeyPress={handleKeyPress}
-            // 移除这三行，避免重复处理
-            // onDragOver={handleDragOver}
-            // onDragLeave={handleDragLeave}
-            // onDrop={handleDrop}
             onPaste={handlePasteImages}
             onToolClick={handleToolClick}
             onImageUpload={handleToolbarImageUpload}
