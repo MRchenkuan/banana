@@ -17,6 +17,7 @@ const GlassPanel = forwardRef(({
   const internalRef = useRef(null);
   const panelRef = ref || internalRef;
   const [pseudoSize, setPseudoSize] = useState({ width: 0, height: 0 });
+  const [isInitialized, setIsInitialized] = useState(false);
   
   // 计算伪类尺寸的函数
   const calculatePseudoSize = () => {
@@ -31,10 +32,31 @@ const GlassPanel = forwardRef(({
     // 添加一些余量确保完全覆盖
     const safeSize = Math.ceil(diagonal * 1.2);
     
-    setPseudoSize({
+    const newSize = {
       width: `${safeSize}px`,
       height: `${safeSize}px`
-    });
+    };
+    
+    setPseudoSize(newSize);
+    
+    // 移动端强制重绘修复
+    if (panelRef.current) {
+      // 触发重绘
+      const element = panelRef.current;
+      element.style.transform = 'translateZ(0)';
+      
+      // 使用requestAnimationFrame确保样式应用
+      requestAnimationFrame(() => {
+        element.style.transform = '';
+        
+        // 强制更新CSS变量
+        element.style.setProperty('--pseudo-width', newSize.width);
+        element.style.setProperty('--pseudo-height', newSize.height);
+        
+        // 标记为已初始化
+        setIsInitialized(true);
+      });
+    }
   };
   
   // 使用ResizeObserver监听尺寸变化
@@ -70,8 +92,18 @@ const GlassPanel = forwardRef(({
       calculatePseudoSize();
     }, 0);
     
-    return () => clearTimeout(timer);
-  }, [children]); // 当children变化时重新计算
+    // 移动端额外的延迟重绘
+    const mobileTimer = setTimeout(() => {
+      if (panelRef.current && !isInitialized) {
+        calculatePseudoSize();
+      }
+    }, 100);
+    
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(mobileTimer);
+    };
+  }, [children, isInitialized]); // 当children变化时重新计算
   
   const gradientClass = styles[`gradient-${gradientIntensity}`] || styles['gradient-medium'];
   const shadowClass = shadow ? styles.withShadow : '';

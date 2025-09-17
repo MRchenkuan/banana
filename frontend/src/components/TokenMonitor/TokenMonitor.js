@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from 'antd';
-import { EyeOutlined, EyeInvisibleOutlined, ExpandAltOutlined, CompressOutlined } from '@ant-design/icons';
+import { EyeOutlined, EyeInvisibleOutlined, ExpandAltOutlined, CompressOutlined, MoneyCollectOutlined } from '@ant-design/icons';
 import { tokenMonitorEvents } from '../../utils/tokenMonitorEvents';
 import { formatTokensToK, formatTokenDataToK } from '../../utils/tokenFormatter';
 import GlassPanel from '../GlassPanel';
@@ -66,7 +66,7 @@ const TokenMonitor = ({ messages }) => {
       <div className={styles.tokenMonitor}>
         <Button
           type="primary"
-          icon={<EyeOutlined />}
+          icon={<MoneyCollectOutlined />}
           onClick={() => setIsVisible(true)}
           className={styles.showButton}
         />

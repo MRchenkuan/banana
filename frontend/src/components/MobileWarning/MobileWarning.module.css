@@ -1,0 +1,181 @@
+.mobileWarningOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 9999;
+  min-height: 100vh;
+}
+
+.warningPanel {
+  max-width: 400px;
+  width: 100%;
+  padding: 40px 30px;
+  text-align: center;
+  animation: slideInUp 0.6s ease-out;
+}
+
+.content {
+  color: white;
+}
+
+.iconContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 30px;
+  font-size: 32px;
+}
+
+.mobileIcon {
+  color: #ff6b6b;
+  animation: pulse 2s infinite;
+}
+
+.arrowIcon {
+  font-size: 24px;
+  color: #ffd93d;
+  font-weight: bold;
+}
+
+.desktopIcon {
+  color: #4ecdc4;
+  animation: bounce 2s infinite;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: bold;
+  margin: 0 0 20px 0;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.description {
+  font-size: 16px;
+  line-height: 1.6;
+  margin-bottom: 30px;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.features {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.feature {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 25px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.featureIcon {
+  font-size: 18px;
+}
+
+.actionButton {
+  width: 100%;
+  height: 50px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 25px;
+  background: linear-gradient(45deg, #ff6b6b, #ffd93d);
+  border: none;
+  box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+  transition: all 0.3s ease;
+}
+
+.actionButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+  background: linear-gradient(45deg, #ff5252, #ffcc02);
+}
+
+.actionButton.copied {
+  background: linear-gradient(45deg, #4caf50, #8bc34a);
+  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+}
+
+.actionButton.copied:hover {
+  background: linear-gradient(45deg, #45a049, #7cb342);
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+}
+
+.hint {
+  margin-top: 20px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.4;
+}
+
+/* 动画效果 */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-10px);
+  }
+  60% {
+    transform: translateY(-5px);
+  }
+}
+
+/* 响应式设计 */
+@media (max-width: 480px) {
+  .warningPanel {
+    padding: 30px 20px;
+    margin: 10px;
+  }
+  
+  .title {
+    font-size: 24px;
+  }
+  
+  .description {
+    font-size: 14px;
+  }
+  
+  .iconContainer {
+    font-size: 28px;
+    gap: 12px;
+  }
+}

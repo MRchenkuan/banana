@@ -7,6 +7,11 @@
   background: rgba(255, 255, 255, var(--bg-opacity, 0.1));
   position: relative;
   overflow: hidden;
+  /* 移动端硬件加速 */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  /* 强制GPU渲染 */
+  will-change: transform;
 }
 
 .glassPanel::before {
@@ -14,11 +19,9 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  /* 使用JavaScript计算的动态尺寸 */
+  /* 使用JavaScript计算的动态尺寸，添加默认值 */
   width: var(--pseudo-width, 200%);
   height: var(--pseudo-height, 200%);
-  /* 居中定位 - 移除这行，在动画中处理 */
-  /* transform: translate(-50%, -50%); */
   background-size: 100% 100%;
   /* 设置旋转中心为元素中心 */
   transform-origin: 50% 50%;
@@ -27,15 +30,39 @@
   animation: gradientFlow 7s cubic-bezier(0.4, 0, 0.6, 1) infinite,
              gradientAngle 11s linear infinite;
   z-index: -1;
+  /* 移动端优化 */
+  -webkit-transform: translate(-50%, -50%) rotate(0deg);
+  -webkit-transform-origin: 50% 50%;
+  /* 强制GPU渲染 */
+  will-change: transform;
+  /* 防止闪烁 */
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 /* 动画关键帧保持不变，确保始终包含translate */
 @keyframes gradientAngle {
   0% {
     transform: translate(-50%, -50%) rotate(0deg);
+    -webkit-transform: translate(-50%, -50%) rotate(0deg);
   }
   100% {
     transform: translate(-50%, -50%) rotate(360deg);
+    -webkit-transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+/* 移动端特殊处理 */
+@media (max-width: 768px) {
+  .glassPanel {
+    /* 移动端减少模糊效果以提升性能 */
+    backdrop-filter: blur(calc(var(--blur-amount, 20px) * 0.7));
+    -webkit-backdrop-filter: blur(calc(var(--blur-amount, 20px) * 0.7));
+  }
+  
+  .glassPanel::before {
+    /* 移动端简化动画 */
+    animation-duration: 10s, 15s;
   }
 }
 

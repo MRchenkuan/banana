@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ConfigProvider, theme } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
@@ -11,44 +11,49 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Chat from './pages/Chat';
 import WechatCallback from './pages/WechatCallback';
+import MobileWarning from './components/MobileWarning';
+import UrlConfig from './utils/urlConfig';
 import styles from './styles/pages/App.module.css';
 import './App.css'; // 如果还有其他全局样式
 
+// 导入主题配置
 import { switchTheme, theme as customTheme } from './constants/theme';
 
-// 将 switchTheme 函数暴露到全局，方便在控制台调用
+// 暴露全局函数
 window.switchTheme = switchTheme;
 window.customTheme = customTheme;
 
-// 在App组件的开头添加
 function App() {
-  // 删除第14行和第79行的注释
-  React.useEffect(() => {
+  // 检测是否为移动设备
+  const isMobile = UrlConfig.isAccessFromMobileDevice();
+
+  useEffect(() => {
+    // 重写localStorage方法以添加日志
     const originalSetItem = localStorage.setItem;
+    const originalGetItem = localStorage.getItem;
     const originalRemoveItem = localStorage.removeItem;
-    const originalClear = localStorage.clear;
-    
+
     localStorage.setItem = function(key, value) {
-      console.log('📝 localStorage.setItem:', key, value);
+      console.log(`localStorage.setItem: ${key} = ${value}`);
       return originalSetItem.apply(this, arguments);
     };
-    
+
+    localStorage.getItem = function(key) {
+      const value = originalGetItem.apply(this, arguments);
+      console.log(`localStorage.getItem: ${key} = ${value}`);
+      return value;
+    };
+
     localStorage.removeItem = function(key) {
-      console.log('🗑️ localStorage.removeItem:', key);
+      console.log(`localStorage.removeItem: ${key}`);
       return originalRemoveItem.apply(this, arguments);
     };
-    
-    localStorage.clear = function() {
-      console.log('🧹 localStorage.clear called');
-      return originalClear.apply(this, arguments);
-    };
-    
-    return () => {
-      localStorage.setItem = originalSetItem;
-      localStorage.removeItem = originalRemoveItem;
-      localStorage.clear = originalClear;
-    };
   }, []);
+
+  // 如果是移动设备，显示提示页面
+  if (isMobile) {
+    return <MobileWarning />;
+  }
   
   return (
     <ConfigProvider 
