@@ -274,12 +274,13 @@ const Chat = () => {
             isDragOver={isDragOver}
             onSendMessage={onSendMessage}
             onKeyPress={handleKeyPress}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
+            // 移除这三行，避免重复处理
+            // onDragOver={handleDragOver}
+            // onDragLeave={handleDragLeave}
+            // onDrop={handleDrop}
             onPaste={handlePasteImages}
-            onToolClick={handleToolClick}  // 添加工具点击处理函数
-            onImageUpload={handleToolbarImageUpload}  // 添加工具栏图片上传处理函数
+            onToolClick={handleToolClick}
+            onImageUpload={handleToolbarImageUpload}
           />
         </div>
       </div>

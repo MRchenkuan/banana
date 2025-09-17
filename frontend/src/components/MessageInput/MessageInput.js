@@ -34,12 +34,13 @@ const MessageInput = ({
   selectedImages,
   setSelectedImages,
   loading,
-  isDragOver,
+  isDragOver,  // 保留这个用于显示拖拽状态
   onSendMessage,
   onKeyPress,
-  onDragOver,
-  onDragLeave,
-  onDrop,
+  // 移除这三个props，不再需要
+  // onDragOver,
+  // onDragLeave,
+  // onDrop,
   onPaste,
   onToolClick,
   onImageUpload
@@ -218,9 +219,10 @@ const MessageInput = ({
   return (
     <div
       className={`${styles.container} ${isDragOver ? styles.containerDragOver : ''}`}
-      onDragOver={onDragOver}
-      onDragLeave={onDragLeave}
-      onDrop={onDrop}
+      // 移除这三个拖拽事件处理器，避免重复处理
+      // onDragOver={onDragOver}
+      // onDragLeave={onDragLeave} 
+      // onDrop={onDrop}
     >
       <AIToolbar
         onToolClick={onToolClick}
@@ -239,7 +241,7 @@ const MessageInput = ({
           <Progress percent={compressionProgress} size="small" />
         </div>
       )}
-      
+
       {/* 多图片预览区域 */}
       {selectedImages.length > 0 && (
         <div className={styles.imagePreviewSection}>
