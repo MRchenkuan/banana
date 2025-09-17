@@ -1,12 +1,13 @@
-import { useMemo, useEffect, useRef } from 'react';
+import { useMemo, useEffect, useRef, useState } from 'react';
 
 export const useImageUrls = (images) => {
   const urlCacheRef = useRef(new Map());
+  const [urlsReady, setUrlsReady] = useState(false);
   
   const imageUrls = useMemo(() => {
     const cache = urlCacheRef.current;
     
-    return images.map(image => {
+    const urls = images.map(image => {
       // 如果已经是字符串URL（http/https/blob），直接返回
       if (typeof image === 'string') {
         return image;
@@ -18,7 +19,13 @@ export const useImageUrls = (images) => {
         const fileKey = `${image.name}-${image.size}-${image.lastModified}`;
         
         if (!cache.has(fileKey)) {
-          cache.set(fileKey, URL.createObjectURL(image));
+          try {
+            const url = URL.createObjectURL(image);
+            cache.set(fileKey, url);
+          } catch (error) {
+            console.error('创建图片URL失败:', error);
+            return null;
+          }
         }
         
         return cache.get(fileKey);
@@ -32,6 +39,11 @@ export const useImageUrls = (images) => {
       console.warn('未知的图片类型:', image);
       return null;
     }).filter(Boolean);
+    
+    // 延迟设置URL就绪状态，确保DOM渲染完成
+    setTimeout(() => setUrlsReady(true), 0);
+    
+    return urls;
   }, [images]);
   
   useEffect(() => {
@@ -53,5 +65,5 @@ export const useImageUrls = (images) => {
     };
   }, [images]);
   
-  return imageUrls;
+  return { imageUrls, urlsReady };
 };

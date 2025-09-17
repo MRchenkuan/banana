@@ -32,12 +32,12 @@ importers:
       dayjs:
         specifier: ^1.11.18
         version: 1.11.18
+      heic-to:
+        specifier: ^1.2.2
+        version: 1.2.2
       highlight.js:
         specifier: ^11.9.0
         version: 11.11.1
-      qrcode.react:
-        specifier: ^3.1.0
-        version: 3.2.0(react@18.3.1)
       react:
         specifier: ^18.2.0
         version: 18.3.1
@@ -3133,6 +3133,9 @@ packages:
     resolution: {integrity: sha512-F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw==}
     hasBin: true
 
+  heic-to@1.2.2:
+    resolution: {integrity: sha512-5mtSfSbyFL770ey+6TtU5RBs1JPW2313SjilndKbHBs3RcJ7n/Vlk6AAw8bksuM32vOQUd0whbgdzVKYQdiq2g==}
+
   highlight.js@11.11.1:
     resolution: {integrity: sha512-Xwwo44whKBVCYoliBQwaPvtd/2tYFkRQtXDWj1nackaV2JPXx3L0+Jvd8/qCJ2p+ML0/XVkJ2q+Mr+UVdpJK5w==}
     engines: {node: '>=12.0.0'}
@@ -4850,11 +4853,6 @@ packages:
       You or someone you depend on is using Q, the JavaScript Promise library that gave JavaScript developers strong feelings about promises. They can almost certainly migrate to the native JavaScript promise now. Thank you literally everyone for joining me in this bet against the odds. Be excellent to each other.
 
       (For a CapTP with native promises, see @endo/eventual-send and @endo/captp)
-
-  qrcode.react@3.2.0:
-    resolution: {integrity: sha512-YietHHltOHA4+l5na1srdaMx4sVSOjV9tamHs+mwiLWAMr6QVACRUw1Neax5CptFILcNoITctJY0Ipyn5enQ8g==}
-    peerDependencies:
-      react: ^16.8.0 || ^17.0.0 || ^18.0.0
 
   qs@6.13.0:
     resolution: {integrity: sha512-+38qI9SOr8tfZ4QmJNplMUxqjbe7LKvvZgWdExBOmd+egZTtjLB67Gu0HRX3u/XOq7UU2Nx6nsjvS16Z9uwfpg==}
@@ -10135,6 +10133,8 @@ snapshots:
 
   he@1.2.0: {}
 
+  heic-to@1.2.2: {}
+
   highlight.js@11.11.1: {}
 
   hoopy@0.1.4: {}
@@ -12227,10 +12227,6 @@ snapshots:
   punycode@2.3.1: {}
 
   q@1.5.1: {}
-
-  qrcode.react@3.2.0(react@18.3.1):
-    dependencies:
-      react: 18.3.1
 
   qs@6.13.0:
     dependencies:

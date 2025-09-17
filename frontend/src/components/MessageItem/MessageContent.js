@@ -36,7 +36,7 @@ const MessageContent = ({ message, messageState, typewriterState, onReuploadImag
       
       matches.forEach((match, index) => {
         const [fullMatch, alt, src] = match;
-        images.push({ alt, src, key: index });
+        images.push({ alt, src, key: index, isBlob: src.startsWith('blob:') });
         textContent = textContent.replace(fullMatch, '').trim();
       });
       
@@ -45,10 +45,11 @@ const MessageContent = ({ message, messageState, typewriterState, onReuploadImag
           {/* 渲染图片 */}
           {images.map((imageData, index) => {
             // 使用稳定的key
-            const imageKey = `${imageData.src}-${index}`;
+            const imageKey = `${message.id}-image-${index}-${imageData.url || imageData.src}`;
             
             return (
               <div key={imageKey} className={styles.imageContainer}>
+                {/* 移除图片内部的loading效果 */}
                 <Image
                   src={imageData.src}
                   alt={`图片 ${index + 1}`}
@@ -70,7 +71,6 @@ const MessageContent = ({ message, messageState, typewriterState, onReuploadImag
                 {/* 添加重新上传按钮 */}
                 <Button
                   type="text"
-                  size="small"
                   icon={<PlusCircleOutlined className={styles.reuploadIcon} />}
                   onClick={() => onReuploadImage && onReuploadImage(imageData.src)}
                   className={styles.reuploadButton}

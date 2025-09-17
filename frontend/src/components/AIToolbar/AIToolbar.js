@@ -166,7 +166,7 @@ const AIToolbar = ({ onToolClick, selectedImages = [], setInputValue, inputValue
       <GlassPanel 
         blur={15}
         opacity={0.08}
-        gradientIntensity="hight"
+        gradientIntensity="high"
         borderRadius={8}
         className={styles.aiToolbar}
       >

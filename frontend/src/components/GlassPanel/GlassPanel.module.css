@@ -12,19 +12,31 @@
 .glassPanel::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  /* 使用 max() 函数确保覆盖最长边 */
-  width: max(200vh, 200vw);
-  height: max(200vh, 200vw);
-  /* 居中定位 */
+  top: 50%;
+  left: 50%;
+  /* 使用JavaScript计算的动态尺寸 */
+  width: var(--pseudo-width, 200%);
+  height: var(--pseudo-height, 200%);
+  /* 居中定位 - 移除这行，在动画中处理 */
+  /* transform: translate(-50%, -50%); */
   background-size: 100% 100%;
-  transform: translate(-50%, -50%);
-  /* 旋转的中心点 */
+  /* 设置旋转中心为元素中心 */
   transform-origin: 50% 50%;
-  animation: gradientFlow 8s cubic-bezier(0.4, 0, 0.6, 1) infinite,
-             gradientAngle 6s linear infinite;
+  /* 初始状态也包含translate */
+  transform: translate(-50%, -50%) rotate(0deg);
+  animation: gradientFlow 7s cubic-bezier(0.4, 0, 0.6, 1) infinite,
+             gradientAngle 11s linear infinite;
   z-index: -1;
+}
+
+/* 动画关键帧保持不变，确保始终包含translate */
+@keyframes gradientAngle {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
 }
 
 /* 渐变强度变体 */
@@ -97,14 +109,5 @@
   50% {
     background-position: 100% 50%;
     background-size: 250% 250%;
-  }
-}
-
-@keyframes gradientAngle {
-  0% {
-    transform: translate(-50%, -50%) rotate(0deg);
-  }
-  100% {
-    transform: translate(-50%, -50%) rotate(360deg);
   }
 }

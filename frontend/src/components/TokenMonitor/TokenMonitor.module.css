@@ -1,0 +1,149 @@
+/* Token监控器容器 */
+.tokenMonitor {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  z-index: 1002;
+  transition: width 0.3s ease;
+}
+
+.tokenMonitorCollapsed {
+  width: 200px;
+}
+
+.tokenMonitorExpanded {
+  width: 320px;
+}
+
+/* 显示按钮 */
+.showButton {
+  background-color: rgba(24, 144, 255, 0.8);
+  border-color: rgba(24, 144, 255, 0.8);
+  backdrop-filter: blur(4px);
+}
+
+/* 标题栏 */
+.titleBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.titleBarButtons {
+  display: flex;
+  gap: 4px;
+}
+
+.titleBarButton {
+  color: rgba(255, 255, 255, 0.6);
+  padding: 2px 4px;
+  height: 20px;
+  width: 20px;
+}
+
+/* Token信息显示 */
+.tokenInfo {
+  margin-bottom: 8px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* 折叠状态的Token显示 */
+.collapsedTokenDisplay {
+  text-align: center;
+  padding: 8px 0;
+  cursor: pointer;
+  border-radius: 4px;
+  background-color: rgba(24, 144, 255, 0.1);
+  border: 1px solid rgba(24, 144, 255, 0.3);
+  transition: all 0.2s ease;
+  margin: 8px;
+}
+
+.collapsedTokenValue {
+  color: #1890ff;
+  font-weight: 500;
+}
+
+.collapsedTokenHint {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 2px;
+}
+
+/* 展开状态的Token详情 */
+.tokenDetails {
+  background-color: rgba(0, 0, 0, 0.3);
+  padding: 12px;
+  border-radius: 4px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: #fff;
+  margin: 0 12px;
+}
+
+.tokenRow {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.tokenRowTotal {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 6px;
+  margin-top: 2px;
+}
+
+.tokenRowTotal span {
+  font-weight: bold;
+}
+
+.inputTokens {
+  color: #52c41a;
+}
+
+.outputTokens {
+  color: #1890ff;
+}
+
+.totalTokens {
+  color: #f5a623;
+}
+
+/* 原始数据显示 */
+.rawTokenData {
+  background-color: rgba(0, 0, 0, 0.3);
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  line-height: 1.4;
+  color: #fff;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 200px;
+  text-align: left;
+  overflow-y: auto;
+}
+
+/* 时间戳 */
+.timestamp {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: right;
+  margin: 6px 12px;
+}
+
+/* 空状态 */
+.emptyState {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+  padding: 20px 0;
+}

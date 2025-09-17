@@ -43,8 +43,8 @@ const MessageItem = memo(({ message, index }) => {
           return [file];
         }
         
-        if (prev.length >= 3) {
-          antMessage.warning('最多只能上传3张图片，请先清除现有图片');
+        if (prev.length >= 2) {
+          antMessage.warning('最多只能上传2张图片，请先清除现有图片');
           return prev;
         }
         return [...prev, file];
@@ -110,7 +110,6 @@ const MessageItem = memo(({ message, index }) => {
       color: isUser ? '#fff' : theme.textPrimary
     };
   };
-  
   return (
     <div className={`${styles.messageWrapper} ${isUser ? styles.messageWrapperUser : styles.messageWrapperAssistant}`}>
       {isAssistant && <AssistantAvatar messageState={messageState} />}
@@ -143,6 +142,13 @@ const MessageItem = memo(({ message, index }) => {
             className={styles.regenerateButton}
             title="重新生成"
           />
+        )}
+        
+        {/* 添加上传loading图标到卡片外部 */}
+        {isUser && message.isUploading && (
+          <div className={styles.uploadingIndicator}>
+            <div className={styles.smallLoadingSpinner}></div>
+          </div>
         )}
       </div>
       

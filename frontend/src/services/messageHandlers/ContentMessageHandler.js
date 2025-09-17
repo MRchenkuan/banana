@@ -1,17 +1,15 @@
 import BaseMessageHandler from './BaseMessageHandler';
 import TextMessageHandler from './TextMessageHandler';
 import ImageMessageHandler from './ImageMessageHandler';
+import UserMessageUpdateHandler from './UserMessageUpdateHandler'; // 添加导入
 import { tokenMonitorEvents } from '../../utils/tokenMonitorEvents';
 
-/**
- * 统一内容消息处理器
- * 根据messageType字段分发到具体的处理器
- */
 class ContentMessageHandler extends BaseMessageHandler {
   constructor(context) {
     super(context);
     this.textHandler = new TextMessageHandler(context);
     this.imageHandler = new ImageMessageHandler(context);
+    this.userMessageUpdateHandler = new UserMessageUpdateHandler(context); // 添加实例
   }
 
   handle(data, metadata) {
@@ -46,6 +44,8 @@ class ContentMessageHandler extends BaseMessageHandler {
     switch (messageType) {
       case 'image':
         return this.imageHandler.handle(data, metadata);
+      case 'user_message_update': // 添加这个分支
+        return this.userMessageUpdateHandler.handle(data, metadata);
       case 'text':
       default:
         return this.textHandler.handle(data, metadata);

@@ -46,6 +46,11 @@ class ChatService {
     if (sessionId) {
       formData.append('sessionId', sessionId);
     }
+    
+    // 添加用户消息ID
+    if (context.userMessageId) {
+      formData.append('userMessageId', context.userMessageId);
+    }
 
     return this.streamHandler.sendStreamRequest(
       '/chat/image-stream',

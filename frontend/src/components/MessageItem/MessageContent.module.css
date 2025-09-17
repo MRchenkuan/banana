@@ -29,8 +29,24 @@
 .imageContainer {
   position: relative;
   display: inline-block;
-  margin: 8px 0;
+  margin: 4px;
 }
+
+
+.smallLoadingSpinner {
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  border-top: 1.5px solid #ffffff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 
 /* 图片样式 */
 .messageImage {
@@ -54,8 +70,8 @@
   bottom: 0;
   right: 0;
   transform: translate(-50%, -50%);
-  width: 28px;
-  height: 28px;
+  width: 28px!important;
+  height: 28px!important;
   border-radius: 50%;
   padding: 0;
   display: flex;

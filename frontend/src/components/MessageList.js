@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Empty } from 'antd';
 import MessageItem from './MessageItem/MessageItem';
-import TokenMonitor from './TokenMonitor';
+import TokenMonitor from './TokenMonitor/TokenMonitor';
 
 const MessageList = ({ 
   messages, 

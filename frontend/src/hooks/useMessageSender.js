@@ -9,8 +9,6 @@ const useMessageSender = ({
   setSessions,
   setMessages,
   updateBalance,
-  clearCurrentSessionCache, // 新增参数
-  validateAndCleanSession   // 新增参数
 }) => {
   let messageIdCounter = 0;
 
@@ -67,13 +65,29 @@ const useMessageSender = ({
     try {
       let sessionId = currentSessionId;
       
+      // 生成图片的blob URL markdown
+      let imageMarkdown = '';
+      if (tempMessageImages && tempMessageImages.length > 0) {
+        const imageMarkdownParts = tempMessageImages.map((image, index) => {
+          const blobUrl = URL.createObjectURL(image);
+          return `![${image.name}](${blobUrl})`;
+        });
+        imageMarkdown = imageMarkdownParts.join('\n');
+      }
+      
+      // 合并文本和图片markdown
+      const fullContent = imageMarkdown ? 
+        (imageMarkdown + (tempMessageText ? '\n\n' + tempMessageText : '')) : 
+        tempMessageText;
+      
       // 立即创建用户消息和思考消息
       const newMessage = {
         id: generateUniqueId(),
         type: 'text',
-        content: tempMessageText, // 使用副本
+        content: fullContent,
         timestamp: new Date(),
-        role: 'user'
+        role: 'user',
+        isUploading: tempMessageImages && tempMessageImages.length > 0
       };
       
       const thinkingMessage = {
@@ -126,6 +140,7 @@ const useMessageSender = ({
               setSessions,
               thinkingMessageId: thinkingMessage.id,
               messageId: generateUniqueId(),
+              userMessageId: newMessage.id, // 添加这一行
               sessionId,
               setLoading
             }
@@ -140,6 +155,7 @@ const useMessageSender = ({
               setSessions,
               thinkingMessageId: thinkingMessage.id,
               messageId: generateUniqueId(),
+              userMessageId: newMessage.id, // 添加这一行
               sessionId,
               setLoading
             }

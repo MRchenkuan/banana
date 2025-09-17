@@ -117,7 +117,7 @@ class AbstractStreamHandler extends BaseStreamHandler {
    * @throws {Error} 当预处理失败时抛出错误
    */
   async prepare() {
-    const { message, sessionId } = this.req.body;
+    const { message, sessionId, userMessageId } = this.req.body;
     const images = this.req.files;
   
     // 处理用户图片
@@ -133,6 +133,13 @@ class AbstractStreamHandler extends BaseStreamHandler {
           userMessage: fullUserMessage
         });
       }
+      
+      // 发送用户消息更新到前端
+      this.sendMessagge({
+        type: 'user_message_update',
+        content: fullUserMessage,
+        messageId: userMessageId
+      });
     }
   }
 

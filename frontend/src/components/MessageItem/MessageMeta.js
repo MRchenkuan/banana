@@ -14,7 +14,7 @@ const MessageMeta = ({ message, messageState, elapsedTime }) => {
   
   const shouldShowMeta = message.timestamp || 
                         getStatusText() || 
-                        (!isThinking && (message.tokensUsed !== undefined || message.estimatedTokens));
+                        (!isThinking && (message.tokensUsed !== undefined));
   
   if (!shouldShowMeta) return null;
   
@@ -22,13 +22,14 @@ const MessageMeta = ({ message, messageState, elapsedTime }) => {
   const getTokenCount = () => {
     // 如果已收到complete消息（tokensUsed存在），则直接使用tokensUsed
     if (message.tokensUsed !== undefined) {
-      return message.tokensUsed.total;
+      // tokensUsed是数字，直接返回
+      return message.tokensUsed
     }
+
     
     // 默认值
     return 1;
   };
-  
   return (
     <>
       <div
@@ -67,14 +68,13 @@ const MessageMeta = ({ message, messageState, elapsedTime }) => {
           )}
           
           {/* Token显示 - 修改为k单位 */}
-          {!isThinking && (message.tokensUsed !== undefined || message.estimatedTokens || message?.totalTokensUsed?.promptTokenCount) && (
+          {!isThinking && (message.tokensUsed !== undefined) && (
             <span>
               {formatTokensToK(getTokenCount())}
             </span>
           )}
         </div>
       </div>
-      
       {/* 计时器显示 - 修改条件，让所有AI消息都显示计时器 */}
       {!isUser && (elapsedTime > 0 || (!isThinking && !isStreaming && !isPending && !isError)) && (
         <div
@@ -92,7 +92,7 @@ const MessageMeta = ({ message, messageState, elapsedTime }) => {
             zIndex: 10
           }}
         >
-          {elapsedTime > 0 ? `${elapsedTime}s` : '0.0s'}
+          {elapsedTime > 0 ? `${elapsedTime}s` : ''}
         </div>
       )}
     </>

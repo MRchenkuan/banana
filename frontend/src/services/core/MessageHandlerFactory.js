@@ -5,6 +5,7 @@ import ProcessingMessageHandler from '../messageHandlers/ProcessingMessageHandle
 import CompleteMessageHandler from '../messageHandlers/CompleteMessageHandler';
 import ErrorMessageHandler from '../messageHandlers/ErrorMessageHandler';
 import TitleMessageHandler from '../messageHandlers/TitleMessageHandler';
+import UserMessageUpdateHandler from '../messageHandlers/UserMessageUpdateHandler';
 
 /**
  * 消息处理器工厂
@@ -19,12 +20,11 @@ class MessageHandlerFactory {
   }
 
   initializeHandlers() {
-    // 使用统一的ContentMessageHandler处理所有内容消息
-    this.handlers.set('message', new ContentMessageHandler(this.context));
-    this.handlers.set('processing', new ProcessingMessageHandler(this.context));
-    this.handlers.set('complete', new CompleteMessageHandler(this.context));
-    this.handlers.set('error', new ErrorMessageHandler(this.context));
-    this.handlers.set('set-session-title', new TitleMessageHandler(this.context));
+    this.registerHandler('message', new ContentMessageHandler(this.context));
+    this.registerHandler('processing', new ProcessingMessageHandler(this.context));
+    this.registerHandler('complete', new CompleteMessageHandler(this.context));
+    this.registerHandler('error', new ErrorMessageHandler(this.context));
+    this.registerHandler('title', new TitleMessageHandler(this.context));
   }
 
   /**

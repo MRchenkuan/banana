@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { message } from "antd";
 import SessionSidebar from "../components/SessionSidebar";
 import MessageList from "../components/MessageList";
-import MessageInput from "../components/MessageInput";
+import MessageInput from "../components/MessageInput/MessageInput";
 import useChat from "../hooks/useChat";
 import useSessions from "../hooks/useSessions";
 import useMessageSender from "../hooks/useMessageSender";
