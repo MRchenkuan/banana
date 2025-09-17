@@ -151,10 +151,13 @@ const MessageInput = ({
     return (
       <div key={fileKey} className={styles.imagePreview}>
         <div className={styles.imageWrapper}>
-          <img
+          <Image
             src={imageUrl}
             alt={`预览 ${index + 1}`}
             className={styles.imagePreviewImg}
+            preview={{
+              mask: '点击查看大图'
+            }}
             onError={(e) => {
               console.error('图片预览加载失败:', imageUrl);
               e.target.style.display = 'none';
