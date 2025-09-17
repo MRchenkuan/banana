@@ -17,8 +17,8 @@
 
 /* 显示按钮 */
 .showButton {
-  background-color: rgba(24, 144, 255, 0.8);
-  border-color: rgba(24, 144, 255, 0.8);
+  background-color: rgba(24, 255, 116, 0.8);
+  border-color: rgba(24, 255, 116, 0.8);
   backdrop-filter: blur(4px);
 }
 

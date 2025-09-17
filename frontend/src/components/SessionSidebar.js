@@ -49,7 +49,7 @@ const SessionSidebar = ({
         try {
           await api.session.deleteSession(sessionId);
           const updatedSessions = sessions.filter(s => s.id !== sessionId);
-          onSessionsUpdate(() => updatedSessions);
+          onSessionsUpdate(updatedSessions);
           
           // 规则2：在session列表被主动删除时，如果删除的是当前，则清理当前ID
           if (currentSessionId === sessionId) {

@@ -9,6 +9,7 @@ const MessageMeta = ({ message, messageState, elapsedTime }) => {
     if (isInterrupted) return '中断';
     if (isPending) return '等待中';
     if (isStreaming) return '输入中';
+    if (isThinking) return '思考中';
     return '';
   };
   

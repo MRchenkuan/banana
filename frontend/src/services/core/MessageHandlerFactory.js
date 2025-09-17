@@ -25,6 +25,7 @@ class MessageHandlerFactory {
     this.registerHandler('complete', new CompleteMessageHandler(this.context));
     this.registerHandler('error', new ErrorMessageHandler(this.context));
     this.registerHandler('title', new TitleMessageHandler(this.context));
+    this.registerHandler('set-session-title', new TitleMessageHandler(this.context));
   }
 
   /**
