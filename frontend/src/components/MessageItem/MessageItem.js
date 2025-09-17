@@ -40,14 +40,14 @@ const MessageItem = memo(({ message, index }) => {
       
       setSelectedImages(prev => {
         if (fromRegenerate) {
-          return [file];
+          return [file];  // 只有第一次调用时会清空并设置单个文件
         }
         
         if (prev.length >= 2) {
           antMessage.warning('最多只能上传2张图片，请先清除现有图片');
           return prev;
         }
-        return [...prev, file];
+        return [...prev, file];  // 后续调用会继续添加
       });
       
       antMessage.success('图片已添加到上传区域');
@@ -57,7 +57,7 @@ const MessageItem = memo(({ message, index }) => {
     }
   };
   
-  const handleRegenerate = () => {
+  const handleRegenerate = async () => {
     if (!isUser || !message.content) return;
     
     try {
@@ -66,14 +66,45 @@ const MessageItem = memo(({ message, index }) => {
       const matches = [...textContent.matchAll(imageRegex)];
       
       if (matches.length > 0) {
-        matches.forEach(match => {
+        // 先清空现有图片
+        setSelectedImages([]);
+        
+        // 批量处理所有图片
+        const imagePromises = matches.map(async (match) => {
           const [fullMatch, alt, src] = match;
           textContent = textContent.replace(fullMatch, '').trim();
           
-          handleReuploadImage(src, true).catch(err => {
-            console.error('重新上传图片失败:', err);
-          });
+          try {
+            const response = await fetch(src);
+            if (!response.ok) {
+              throw new Error(`获取图片失败: ${response.status}`);
+            }
+            
+            const blob = await response.blob();
+            const extension = blob.type.split('/')[1] || 'png';
+            const fileName = `reupload-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${extension}`;
+            return new File([blob], fileName, { type: blob.type });
+          } catch (error) {
+            console.error('重新上传图片失败:', error);
+            return null;
+          }
         });
+        
+        // 等待所有图片处理完成
+        const processedFiles = await Promise.all(imagePromises);
+        const validFiles = processedFiles.filter(file => file !== null);
+        
+        if (validFiles.length > 0) {
+          // 限制最多2张图片
+          const finalFiles = validFiles.slice(0, 2);
+          setSelectedImages(finalFiles);
+          
+          if (validFiles.length > 2) {
+            antMessage.warning('最多只能上传2张图片，已自动选择前2张');
+          } else {
+            antMessage.success(`已添加${finalFiles.length}张图片到上传区域`);
+          }
+        }
       }
       
       setInputValue(textContent.trim());
