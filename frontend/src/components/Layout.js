@@ -9,7 +9,7 @@ import {
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToken } from '../contexts/TokenContext';
-import SessionSidebar from './SessionSidebar';
+import SessionSidebar from './SessionSidebar/SessionSidebar';
 import PaymentModal from './PaymentModal/PaymentModal';
 import api from '../services/api';
 import { theme } from '../constants/theme';
@@ -21,7 +21,6 @@ const { Text } = Typography;
 
 const Layout = ({ children }) => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { user, logout } = useAuth();
   const { balance } = useToken();
   
