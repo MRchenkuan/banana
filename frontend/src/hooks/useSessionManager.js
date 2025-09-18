@@ -1,24 +1,52 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { message } from 'antd';
 import api from '../services/api';
+import useSessionsStore from './useSessionsStore';
 
-const useSessionManager = (addSession, setSessions, setCurrentSessionId, navigate, currentSessionId) => {
+const useSessionManager = (setCurrentSessionId, navigate, currentSessionId) => {
   const [isCreatingSession, setIsCreatingSession] = useState(false);
+  const [isDeletingSession, setIsDeletingSession] = useState(false);
+  const { 
+    sessions, 
+    addSession, 
+    removeSession, 
+    loadSessions 
+  } = useSessionsStore();
 
   // 创建新会话
-  const createNewSession = async () => {
+  const createNewSession = useCallback(async () => {
+    // 检查是否已登录
+    if (!localStorage.getItem('token')) {
+      console.log('未登录状态，无法创建新会话');
+      message.error('请先登录');
+      if (navigate) {
+        navigate('/login');
+      }
+      return null;
+    }
+    
+    // 防止重复创建
+    if (isCreatingSession) {
+      console.log('正在创建会话中，请勿重复操作');
+      return null;
+    }
+    
     try {
       setIsCreatingSession(true);
       const response = await api.session.createSession();
       const newSession = response.data;
       
-      // 更新会话列表 - 使用函数式更新确保状态正确更新
+      console.log('创建新会话成功:', newSession);
+      
+      // 更新会话列表
       addSession(newSession);
       
       // 设置当前会话
-      setCurrentSessionId(newSession.id);
+      if (setCurrentSessionId) {
+        setCurrentSessionId(newSession.id);
+      }
       
-      // 如果提供了导航函数，则导航到聊天页面
+      // 导航到聊天页面
       if (navigate) {
         navigate('/app/chat');
       }
@@ -32,31 +60,51 @@ const useSessionManager = (addSession, setSessions, setCurrentSessionId, navigat
     } finally {
       setIsCreatingSession(false);
     }
-  };
+  }, [addSession, isCreatingSession, navigate, setCurrentSessionId]);
 
   // 删除会话
-  const deleteSession = async (sessionId) => {
+  const deleteSession = useCallback(async (sessionId) => {
+    if (!sessionId) return false;
+    
+    // 检查是否已登录
+    if (!localStorage.getItem('token')) {
+      console.log('未登录状态，无法删除会话');
+      message.error('请先登录');
+      return false;
+    }
+    
+    // 防止重复删除
+    if (isDeletingSession) {
+      console.log('正在删除会话中，请勿重复操作');
+      return false;
+    }
+    
     try {
+      setIsDeletingSession(true);
       await api.session.deleteSession(sessionId);
       
+      console.log('删除会话成功:', sessionId);
+      
       // 更新会话列表
-      setSessions(prevSessions => {
-        const updatedSessions = prevSessions.filter(s => s.id !== sessionId);
+      removeSession(sessionId);
+      
+      // 如果删除的是当前会话，则切换到第一个可用会话或清除当前会话
+      if (sessionId === currentSessionId) {
+        const remainingSessions = sessions.filter(s => s.id !== sessionId);
         
-        // 如果删除的是当前会话，则切换到第一个可用会话或清除当前会话
-        if (sessionId === currentSessionId) {
-          if (updatedSessions.length > 0) {
-            setCurrentSessionId(updatedSessions[0].id);
-            if (navigate) {
-              navigate('/app/chat');
-            }
-          } else {
+        if (remainingSessions.length > 0) {
+          if (setCurrentSessionId) {
+            setCurrentSessionId(remainingSessions[0].id);
+          }
+          if (navigate) {
+            navigate('/app/chat');
+          }
+        } else {
+          if (setCurrentSessionId) {
             setCurrentSessionId(null);
           }
         }
-        
-        return updatedSessions;
-      });
+      }
       
       message.success('会话删除成功');
       return true;
@@ -64,13 +112,22 @@ const useSessionManager = (addSession, setSessions, setCurrentSessionId, navigat
       console.error('删除会话失败:', error);
       message.error('删除会话失败');
       return false;
+    } finally {
+      setIsDeletingSession(false);
     }
-  };
+  }, [currentSessionId, isDeletingSession, navigate, removeSession, sessions, setCurrentSessionId]);
+
+  // 刷新会话列表
+  const refreshSessions = useCallback(async () => {
+    return await loadSessions(true);
+  }, [loadSessions]);
 
   return {
     createNewSession,
     deleteSession,
-    isCreatingSession
+    refreshSessions,
+    isCreatingSession,
+    isDeletingSession
   };
 };
 

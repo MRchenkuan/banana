@@ -11,11 +11,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToken } from '../contexts/TokenContext';
 import SessionSidebar from './SessionSidebar/SessionSidebar';
 import PaymentModal from './PaymentModal/PaymentModal';
-import api from '../services/api';
 import { theme } from '../constants/theme';
-import useSessions from '../hooks/useSessions'; // 添加这一行
+import useSessionsStore from '../hooks/useSessionsStore';
 import { useChatContext } from '../contexts/ChatContext';
-import useSessionManager from '../hooks/useSessionManager'; // 添加这一行
+import useSessionManager from '../hooks/useSessionManager';
 
 const { Header, Content } = AntLayout;
 const { Text } = Typography;
@@ -28,22 +27,17 @@ const Layout = ({ children }) => {
   // 使用共享的chat状态
   const { currentSessionId, setCurrentSessionId } = useChatContext();
   
-  // 使用 useSessions hook 替代本地状态和加载逻辑
-  const { sessions, setSessions, sessionsLoading, addSession } = useSessions();
+  // 使用 useSessionsStore hook
+  const { sessions, sessionsLoading } = useSessionsStore();
   
-  // 移除本地的currentSessionId状态
-  // const [currentSessionId, setCurrentSessionId] = useState(null);
   const [paymentModalVisible, setPaymentModalVisible] = useState(false);
   const [defaultPackage, setDefaultPackage] = useState('standard');
-  const [creatingSession, setCreatingSession] = useState(false); // 添加创建会话状态
 
-
+  // 使用修改后的 useSessionManager
   const { createNewSession, deleteSession, isCreatingSession } = useSessionManager(
-    addSession,
-    setSessions, 
     setCurrentSessionId, 
     navigate,
-    currentSessionId  // 添加这个参数
+    currentSessionId
   );
   
   // 处理会话切换
@@ -76,7 +70,7 @@ const Layout = ({ children }) => {
   return (
     <AntLayout style={{ minHeight: '100vh', backgroundColor: '#141414' }}>
       {/* 全局加载蒙版 */}
-      {creatingSession && (
+      {isCreatingSession && (
         <div style={{
           position: 'fixed',
           top: 0,
@@ -167,7 +161,6 @@ const Layout = ({ children }) => {
         currentSessionId={currentSessionId}
         sessionsLoading={sessionsLoading}
         onSessionSwitch={handleSessionSwitch}
-        onSessionsUpdate={setSessions}
         createNewSession={createNewSession}
         deleteSession={deleteSession}
         isCreatingSession={isCreatingSession}

@@ -1,18 +1,16 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { message } from 'antd';
 import { useToken } from '../contexts/TokenContext';
-import useSessionCache from './useSessionCache';
 import api from '../services/api';
 
 const useChat = () => {
   const [loading, setLoading] = useState(false);
+  const [messages, setMessages] = useState([]);
   
   // 从localStorage恢复当前会话ID
   const [currentSessionId, setCurrentSessionIdState] = useState(() => {
     try {
-      const savedSessionId = localStorage.getItem('currentSessionId');
-      console.log('🔍 初始化时从localStorage读取会话ID:', savedSessionId);
-      return savedSessionId || null;
+      return localStorage.getItem('currentSessionId') || null;
     } catch (error) {
       console.error('读取localStorage失败:', error);
       return null;
@@ -22,28 +20,10 @@ const useChat = () => {
   const messagesEndRef = useRef(null);
   const { updateBalance } = useToken();
   
-  // 使用会话缓存
-  const {
-    getSessionData,
-    loadSessionIfNeeded,
-    updateSessionMessages,
-    saveScrollPosition,
-    getScrollPosition,
-    clearSessionCache,
-    clearAllCache,
-    validateSession
-  } = useSessionCache();
-  
-  // 获取当前会话的消息和状态
-  const currentSessionData = getSessionData(currentSessionId);
-  const messages = currentSessionData.messages;
-  const sessionLoading = currentSessionData.loading;
-  
   // 清理当前会话的所有相关缓存
   const clearCurrentSessionCache = useCallback(() => {
     if (currentSessionId) {
-      console.log('🗑️ 清理当前会话缓存:', currentSessionId);
-      clearSessionCache(currentSessionId);
+      console.log('🗑️ 清理当前会话:', currentSessionId);
     }
     
     // 清理localStorage
@@ -56,47 +36,41 @@ const useChat = () => {
     
     // 重置当前会话ID
     setCurrentSessionIdState(null);
-  }, [currentSessionId, clearSessionCache]);
+  }, [currentSessionId]);
   
   // 验证并清理无效会话
   const validateAndCleanSession = useCallback(async (sessionId) => {
     if (!sessionId) return false;
     
     try {
-      // 先检查缓存中是否已有数据，避免重复验证
-      const cachedData = getSessionData(sessionId);
-      if (cachedData && !cachedData.error) {
-        return true;
-      }
-      
-      const isValid = await validateSession(sessionId);
-      if (!isValid) {
-        console.warn('会话无效，清理相关缓存:', sessionId);
-        clearSessionCache(sessionId);
-        
-        // 如果是当前会话，则完全清理
-        if (sessionId === currentSessionId) {
-          clearCurrentSessionCache();
-        }
-      }
-      return isValid;
+      // 直接验证会话是否存在
+      await api.session.getSessionMessages(sessionId, 1, 1);
+      return true;
     } catch (error) {
       console.error('验证会话时出错:', error);
+      
+      // 如果是当前会话，则完全清理
+      if (sessionId === currentSessionId) {
+        clearCurrentSessionCache();
+      }
+      
       return false;
     }
-  }, [validateSession, clearSessionCache, currentSessionId, clearCurrentSessionCache, getSessionData]);
+  }, [currentSessionId, clearCurrentSessionCache]);
 
-  // 包装setCurrentSessionId，只在选中会话时保存到localStorage
-  const setCurrentSessionId = useCallback(async (sessionId) => {
-    // 保存当前会话的滚动位置
-    if (currentSessionId && messagesEndRef.current) {
-      const container = messagesEndRef.current.parentElement;
-      if (container) {
-        saveScrollPosition(currentSessionId, container.scrollTop);
-      }
+  // 设置当前会话ID
+  const setCurrentSessionId = useCallback((sessionId) => {
+    // 如果是相同的会话ID，不做任何操作
+    if (sessionId === currentSessionId) {
+      console.log(`已经是当前会话 ${sessionId}，跳过切换`);
+      return;
     }
     
+    console.log(`切换到会话: ${sessionId}`);
     setCurrentSessionIdState(sessionId);
+    
+    // 清空当前消息，等待重新加载
+    setMessages([]);
     
     // 修复类型检查：确保sessionId是字符串类型再调用startsWith
     try {
@@ -104,13 +78,6 @@ const useChat = () => {
         // 只有在选中有效会话时才保存（排除临时会话）
         localStorage.setItem('currentSessionId', String(sessionId));
         console.log('💾 已保存会话ID到localStorage:', sessionId);
-        
-        // 立即加载会话消息
-        if (sessionId) {
-          loadSessionIfNeeded(sessionId).catch(error => {
-            console.error('加载会话消息失败:', error);
-          });
-        }
       } else if (!sessionId) {
         // 清理时移除localStorage
         localStorage.removeItem('currentSessionId');
@@ -120,7 +87,7 @@ const useChat = () => {
     } catch (error) {
       console.error('localStorage操作失败:', error);
     }
-  }, [currentSessionId, messagesEndRef, saveScrollPosition, loadSessionIfNeeded]);
+  }, [currentSessionId]);
 
   // 清理localStorage的专用函数
   const clearCurrentSessionFromStorage = useCallback(() => {
@@ -132,101 +99,103 @@ const useChat = () => {
     }
   }, []);
 
-  // 页面加载时，验证保存的会话ID
-  useEffect(() => {
-    if (currentSessionId) {
-      // 合并验证和加载逻辑，避免重复调用
-      const loadAndValidateSession = async () => {
-        try {
-          // 先尝试加载，如果失败则说明会话无效
-          await loadSessionIfNeeded(currentSessionId);
-        } catch (error) {
-          // 如果加载失败，清理缓存和currentSessionId
-          console.warn('会话加载失败，清理缓存:', currentSessionId);
-          clearSessionCache(currentSessionId);
-          // 清理currentSessionId，避免循环触发
-          setCurrentSessionIdState(null);
-          // 同时清理localStorage
-          try {
-            localStorage.removeItem('currentSessionId');
-            console.log('🗑️ 已清理localStorage中的会话ID');
-          } catch (storageError) {
-            console.error('清理localStorage失败:', storageError);
+  // 加载会话消息
+  const loadSessionMessages = useCallback(async (sessionId) => {
+    if (!sessionId || String(sessionId).startsWith('temp-')) {
+      return [];
+    }
+    
+    setLoading(true);
+    
+    try {
+      console.log(`加载会话 ${sessionId} 的消息`);
+      const response = await api.session.getSessionMessages(sessionId);
+      const {messages, pagination} = response?.data||{}
+      
+      // 转换消息格式 - 拆分用户消息和AI消息
+      const formattedMessages = [];
+      messages.forEach(msg => {
+        // 如果消息已经是拆分格式（有role字段）
+        if (msg.role) {
+          formattedMessages.push({
+            id: msg.id || `msg-${Date.now()}-${Math.random()}`,
+            role: msg.role,
+            content: msg.content || '',
+            timestamp: msg.created_at || new Date(),
+            images: msg.images || []
+          });
+        } 
+        // 如果消息是合并格式（有userMessage和aiResponse字段）
+        else if (msg.userMessage || msg.aiResponse) {
+          // 添加用户消息
+          if (msg.userMessage) {
+            formattedMessages.push({
+              id: `${msg.id}-user` || `msg-user-${Date.now()}-${Math.random()}`,
+              role: 'user',
+              content: msg.userMessage,
+              timestamp: msg.createdAt ? new Date(msg.createdAt) : new Date(),
+              images: msg.images || [],
+              imageUrl: msg.imageUrl
+            });
+          }
+          
+          // 添加AI消息
+          if (msg.aiResponse) {
+            formattedMessages.push({
+              id: `${msg.id}-assistant` || `msg-assistant-${Date.now()}-${Math.random()}`,
+              role: 'assistant',
+              content: msg.aiResponse,
+              timestamp: msg.createdAt ? new Date(msg.createdAt) : new Date(),
+              tokensUsed: msg.tokensUsed,
+              isError: msg.isError || false
+            });
           }
         }
-      };
+      });
       
-      loadAndValidateSession();
+      console.log(`成功格式化 ${formattedMessages.length} 条消息`);
+      setMessages(formattedMessages);
+      return formattedMessages;
+    } catch (error) {
+      console.error(`加载会话 ${sessionId} 的消息失败:`, error);
+      setMessages([]);
+      throw error;
+    } finally {
+      setLoading(false);
     }
-  }, [currentSessionId, loadSessionIfNeeded, clearSessionCache]); // 移除clearCurrentSessionCache依赖
+  }, [setMessages, setLoading]);
   
-  // 设置消息（用于兼容现有代码）
-  const setMessages = (updater, explicitSessionId = null) => {
-    const targetSessionId = explicitSessionId || currentSessionId;
-    
-    if (targetSessionId) {
-      // 有sessionId时，正常更新对应会话的消息
-      updateSessionMessages(targetSessionId, updater);
-    } else {
-      // 没有sessionId时，直接更新当前显示的消息列表
-      // 这种情况通常发生在创建新会话的过程中
-      const currentMessages = messages || [];
-      const newMessages = typeof updater === 'function' 
-        ? updater(currentMessages) 
-        : updater;
-      
-      // 创建一个临时的会话数据来存储消息
-      // 使用特殊的临时ID来标识这是一个临时状态
-      const tempSessionId = 'temp-' + Date.now();
-      
-      // 先设置临时会话ID，确保消息能够显示
-      setCurrentSessionIdState(tempSessionId);
-      
-      // 然后更新消息
-      updateSessionMessages(tempSessionId, () => newMessages);
+  // 滚动到底部
+  const scrollToBottom = useCallback((smooth = true) => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ 
+        behavior: smooth ? 'smooth' : 'auto',
+        block: 'end' 
+      });
     }
-  };
-  
-  const scrollToBottom = (immediate = false) => {
-    if (immediate) {
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-      }, 50);
-    } else {
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
-    }
-  };
-  
+  }, [messagesEndRef]);
+
   // 恢复滚动位置
-  const restoreScrollPosition = () => {
-    if (currentSessionId && messagesEndRef.current) {
-      const container = messagesEndRef.current.parentElement;
-      const savedPosition = getScrollPosition(currentSessionId);
-      if (container && savedPosition > 0) {
-        setTimeout(() => {
-          container.scrollTop = savedPosition;
-        }, 50);
-      }
-    }
-  };
-  
+  const restoreScrollPosition = useCallback(() => {
+    // 简单实现：直接滚动到底部
+    scrollToBottom(false);
+  }, [scrollToBottom]);
+
   return {
     messages,
     setMessages,
-    loading: loading || sessionLoading,
+    loading,
     setLoading,
     currentSessionId,
     setCurrentSessionId,
     messagesEndRef,
-    loadSessionMessages: loadSessionIfNeeded,
     scrollToBottom,
     restoreScrollPosition,
     updateBalance,
     clearCurrentSessionCache,
     validateAndCleanSession,
-    clearCurrentSessionFromStorage // 新增
+    clearCurrentSessionFromStorage,
+    loadSessionMessages
   };
 };
 

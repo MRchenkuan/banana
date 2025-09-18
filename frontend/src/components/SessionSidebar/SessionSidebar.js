@@ -18,7 +18,6 @@ const SessionSidebar = ({
   currentSessionId,
   sessionsLoading,
   onSessionSwitch,
-  onSessionsUpdate,
   createNewSession, // 使用传入的统一函数
   deleteSession,     // 使用传入的统一函数
   isCreatingSession  // 使用统一的创建状态

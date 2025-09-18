@@ -1,16 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { message } from "antd";
-import { useLocation } from 'react-router-dom';
 import MessageList from "../components/MessageList";
 import MessageInput from "../components/MessageInput/MessageInput";
 import AnnouncementHUD from "../components/AnnouncementHUD";
-// 删除 useChat 导入
-// import useChat from "../hooks/useChat";
-import useSessions from "../hooks/useSessions";
+import useSessionsStore from "../hooks/useSessionsStore"; 
 import useMessageSender from "../hooks/useMessageSender";
 import useImageHandler from "../hooks/useImageHandler";
 import { compressImages } from "../utils/imageCompression";
-import { ChatContext, useChatContext } from '../contexts/ChatContext'; // 修改这里，使用 
+import { ChatContext, useChatContext } from '../contexts/ChatContext';
 
 const Chat = () => {
   const [inputValue, setInputValue] = useState("");
@@ -33,8 +30,8 @@ const Chat = () => {
     loadSessionMessages // 确保这个方法可用
   } = useChatContext();
   
-  // 先初始化 sessions
-  const { sessions, setSessions, sessionsLoading, hasLoaded, addSession } = useSessions();
+  // 使用 useSessionsStore 替代 useSessions
+  const { sessions, setSessions, sessionsLoading, hasLoaded, addSession } = useSessionsStore();
   
   const { handleSendMessage, isCreatingSession } = useMessageSender({
     addSession,
@@ -79,7 +76,6 @@ const Chat = () => {
       return;
     } 
   
-    debugger
     // 添加延迟检查，避免在创建会话过程中误清理
     const sessionExists = sessions.some(session => String(session.id) === String(currentSessionId));
     if (!sessionExists) {
@@ -96,14 +92,24 @@ const Chat = () => {
     }    
   }, [sessions, currentSessionId, sessionsLoading, hasLoaded, isCreatingSession, clearCurrentSessionFromStorage, setCurrentSessionId, setMessages]);
 
+  // 修改 Chat.js 中的 useEffect，移除嵌套的 useEffect
+  // 在第97行附近
+  
   // 添加会话切换后的消息加载逻辑
   useEffect(() => {
-    if (currentSessionId) {
-      // 当会话ID变化时，加载该会话的消息
-      loadSessionMessages(currentSessionId).catch(error => {
-        console.error('加载会话消息失败:', error);
-        message.error('加载会话消息失败');
-      });
+    // 只有当会话ID存在且不是临时会话时才加载消息
+    if (currentSessionId && !String(currentSessionId).startsWith('temp-')) {
+      console.log(`准备加载会话 ${currentSessionId} 的消息`);
+      
+      // 直接加载消息，不使用缓存
+      loadSessionMessages(currentSessionId)
+        .catch(error => {
+          console.error(`加载会话 ${currentSessionId} 的消息失败:`, error);
+          // 只有在非401错误时显示错误消息
+          if (error.response?.status !== 401) {
+            message.error('加载会话消息失败');
+          }
+        });
     }
   }, [currentSessionId, loadSessionMessages]);
   
