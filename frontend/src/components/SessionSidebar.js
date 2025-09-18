@@ -27,7 +27,7 @@ const SessionSidebar = ({
       const response = await api.session.createSession();
       const newSession = response.data;
       onSessionsUpdate(prev => [newSession, ...prev]);
-      onSessionSwitch(newSession.id, []);
+      onSessionSwitch(newSession.id);
       message.success('新会话创建成功');
     } catch (error) {
       console.error('创建会话失败:', error);
@@ -48,6 +48,15 @@ const SessionSidebar = ({
       onOk: async () => {
         try {
           await api.session.deleteSession(sessionId);
+          message.success('会话删除成功');
+        } catch (error) {
+          console.error('删除会话失败:', error);
+          message.error('删除会话失败');
+          return; // 如果API调用失败，直接返回，不执行后续状态更新
+        }
+        
+        // 将状态更新逻辑移到try-catch外，确保API成功后才执行
+        try {
           const updatedSessions = sessions.filter(s => s.id !== sessionId);
           onSessionsUpdate(updatedSessions);
           
@@ -60,14 +69,12 @@ const SessionSidebar = ({
               onSessionSwitch(updatedSessions[0].id);
             } else {
               // 没有其他会话，清理当前ID
-              onSessionSwitch(null, []);
+              onSessionSwitch(null);
             }
           }
-          
-          message.success('会话删除成功');
-        } catch (error) {
-          console.error('删除会话失败:', error);
-          message.error('删除会话失败');
+        } catch (stateError) {
+          console.error('更新状态时出错:', stateError);
+          // 状态更新失败不影响删除成功的提示
         }
       }
     });

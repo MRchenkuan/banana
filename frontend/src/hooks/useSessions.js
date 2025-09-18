@@ -1,105 +1,53 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { message } from 'antd';
 import api from '../services/api';
 
-// 创建模块级别的共享状态
-let globalSessions = [];
-let globalLoading = false;
-let isInitialized = false;
-let listeners = [];
-
-// 全局加载函数
-const globalLoadSessions = async (force = false) => {
-  // 如果已经在加载或已初始化且不是强制刷新，则跳过
-  if ((globalLoading || (isInitialized && !force)) && !force) {
-    return;
-  }
-
-  try {
-    globalLoading = true;
-    // 通知所有监听器更新加载状态
-    listeners.forEach(listener => listener.setLoading(true));
-    
-    // 调用API获取会话列表
-    const response = await api.session.getSessions();
-    const newSessions = response.data.sessions || [];
-    
-    // 更新全局状态
-    globalSessions = newSessions;
-    isInitialized = true;
-    
-    // 通知所有监听器更新数据
-    listeners.forEach(listener => {
-      listener.setSessions(newSessions);
-      listener.setLoading(false);
-    });
-  } catch (error) {
-    console.error('加载会话列表失败:', error);
-    message.error('加载会话列表失败');
-  } finally {
-    globalLoading = false;
-  }
-};
-
-// 只在应用启动时加载一次
-// 修改为检查是否有token再初始化
-if (typeof window !== 'undefined' && !isInitialized && localStorage.getItem('token')) {
-  globalLoadSessions();
-}
-
 const useSessions = () => {
-  const [sessions, setSessions] = useState(globalSessions);
-  const [sessionsLoading, setSessionsLoading] = useState(globalLoading);
+  const [sessions, setSessions] = useState([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
 
-  // 注册监听器
-  useEffect(() => {
-    const listener = {
-      setSessions,
-      setLoading: setSessionsLoading
-    };
-    
-    // 添加到监听器列表
-    listeners.push(listener);
-    
-    // 如果已有数据，立即同步
-    if (isInitialized && globalSessions.length > 0) {
-      setSessions(globalSessions);
-    }
-    
-    // 如果正在加载，同步加载状态
-    if (globalLoading) {
+  // 加载会话列表
+  const loadSessions = async (force = false) => {
+    try {
       setSessionsLoading(true);
+      const response = await api.session.getSessions();
+      const newSessions = response.data.sessions || [];
+      setSessions(newSessions);
+    } catch (error) {
+      console.error('加载会话列表失败:', error);
+      message.error('加载会话列表失败');
+    } finally {
+      setSessionsLoading(false);
     }
+  };
+
+  // 创建一个稳定的更新函数，支持函数式更新和直接值更新
+  const updateSessions = useCallback((updater) => {
     
-    // 清理函数
-    return () => {
-      listeners = listeners.filter(l => l !== listener);
-    };
+    try {
+      if (typeof updater === 'function') {
+        // 函数式更新（如：prev => [newSession, ...prev]）
+        setSessions(prevSessions => {
+          return updater(prevSessions);
+        });
+      } else {
+        setSessions(updater);
+      }
+    } catch (error) {
+      console.error('❌ updateSessions error:', error);
+    }
   }, []);
 
-  // 本地更新函数，同时更新全局状态和通知其他组件
-  const updateSessions = (updater) => {
-    const newSessions = typeof updater === 'function' 
-      ? updater(globalSessions) 
-      : updater;
-    
-    // 更新全局状态
-    globalSessions = newSessions;
-    
-    // 更新所有组件的状态
-    listeners.forEach(listener => {
-      listener.setSessions(newSessions);
-    });
-  };
-
-  // 本地加载函数，实际调用全局加载
-  const loadSessions = (force = false) => {
-    return globalLoadSessions(force);
-  };
+  // 初始化加载
+  useEffect(() => {
+    if (localStorage.getItem('token')) {
+      loadSessions();
+    }
+  }, []);
 
   return {
     sessions,
-    setSessions: updateSessions,
+    setSessions: updateSessions, // 返回稳定的包装函数
     sessionsLoading,
     loadSessions
   };

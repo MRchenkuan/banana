@@ -34,18 +34,15 @@ function App() {
     const originalRemoveItem = localStorage.removeItem;
 
     localStorage.setItem = function(key, value) {
-      console.log(`localStorage.setItem: ${key} = ${value}`);
       return originalSetItem.apply(this, arguments);
     };
 
     localStorage.getItem = function(key) {
       const value = originalGetItem.apply(this, arguments);
-      console.log(`localStorage.getItem: ${key} = ${value}`);
       return value;
     };
 
     localStorage.removeItem = function(key) {
-      console.log(`localStorage.removeItem: ${key}`);
       return originalRemoveItem.apply(this, arguments);
     };
   }, []);

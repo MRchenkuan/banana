@@ -28,7 +28,6 @@ class CompleteMessageHandler extends BaseMessageHandler {
     
     // 更新消息状态为完成
     this.context.setMessages((prev) => {
-      // 不再过滤掉思考消息，而是更新所有消息的状态
       return prev.map((msg) =>
         msg.id === thinkingMessageId
           ? {
@@ -40,20 +39,34 @@ class CompleteMessageHandler extends BaseMessageHandler {
             }
           : msg
       );
-    });
+    }, sessionId); // 确保传递sessionId
     
     // 更新余额
     this.context.updateBalance(remainingBalance);
     
-    // 处理会话标题更新
-    if (title) {
-      this.context.setSessions((prev) =>
-        prev.map((session) =>
-          session.id === sessionId
-            ? { ...session, title: title }
-            : session
-        )
-      );
+    // 处理会话标题更新 - 改进逻辑
+    if (title && sessionId) {
+      this.context.setSessions((prev) => {
+        const existingSession = prev.find(session => session.id === sessionId);
+        if (existingSession) {
+          // 更新现有会话
+          return prev.map((session) =>
+            session.id === sessionId
+              ? { ...session, title: title }
+              : session
+          );
+        } else {
+          // 如果会话不存在，可能是新创建的会话，添加到列表顶部
+          const newSession = {
+            id: sessionId,
+            title: title,
+            messageCount: 1,
+            lastMessageAt: new Date().toISOString(),
+            createdAt: new Date().toISOString()
+          };
+          return [newSession, ...prev];
+        }
+      });
     }
     
     // 更新会话统计

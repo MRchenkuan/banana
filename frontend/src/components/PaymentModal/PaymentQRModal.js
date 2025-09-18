@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Modal, Typography, Space, QRCode, Spin, Result } from 'antd';
 import { CheckCircleFilled } from '@ant-design/icons';
 import styles from './PaymentQRModal.module.css';
@@ -21,7 +21,9 @@ export const PaymentQRModal = ({
   qrCodeUrl, 
   countdown, 
   selectedPackage, 
-  packages 
+  packages,
+  setSelectedPackage,
+  setPackages
 }) => {
   return (
     <Modal
@@ -32,7 +34,11 @@ export const PaymentQRModal = ({
       width={400}
       centered
       className={styles.paymentQrcodeModal}
-      destroyOnClose
+      // 只清理选中的套餐，保留套餐列表
+      afterClose={() => {
+        setSelectedPackage(null);
+        // 移除 setPackages([]);
+      }}
     >
       <div style={{ textAlign: 'center', padding: '20px 0' }}>
         {paymentStatus === 'pending' && (
@@ -91,8 +97,23 @@ export const AlipayIframeModal = ({
   alipayFormUrl, 
   countdown, 
   selectedPackage, 
-  packages 
+  packages,
+  setSelectedPackage,
+  setPackages
 }) => {
+  const [iframeLoading, setIframeLoading] = useState(true);
+
+  const handleIframeLoad = () => {
+    setIframeLoading(false);
+  };
+
+  // 当弹窗打开时重置loading状态
+  React.useEffect(() => {
+    if (visible) {
+      setIframeLoading(true);
+    }
+  }, [visible]);
+
   return (
     <Modal
       title="支付宝支付"
@@ -102,7 +123,11 @@ export const AlipayIframeModal = ({
       width={300}
       centered
       className={styles.alipayModal}
-      destroyOnClose
+      // 只清理选中的套餐，保留套餐列表
+      afterClose={() => {
+        setSelectedPackage(null);
+        setIframeLoading(true); // 重置loading状态
+      }}
     >
       <div style={{ textAlign: 'center', padding: '10px 0' }}>
         <div>
@@ -114,7 +139,31 @@ export const AlipayIframeModal = ({
         </div>
         
         {alipayFormUrl && (
-          <div style={{ margin: '10px 0' }}>
+          <div style={{ margin: '10px auto', position: 'relative',width:'200px',height:'200px', borderRadius:'5px' }}>
+           {iframeLoading && (
+              <div 
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '200px',
+                  height: '200px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: '#f5f5f5',
+                  border: '1px solid #d9d9d9',
+                  borderRadius: '4px',
+                  zIndex: -1
+                }}
+              >
+                <Spin size="large" />
+                <Text type="secondary" style={{ marginTop: '12px' }}>
+                  正在加载支付页面...
+                </Text>
+              </div>
+            )}
             <iframe 
               src={alipayFormUrl}
               width="200"
@@ -122,6 +171,7 @@ export const AlipayIframeModal = ({
               frameBorder="0"
               scrolling="no"
               title="支付宝支付"
+              onLoad={handleIframeLoad}
             />
           </div>
         )}
@@ -143,7 +193,7 @@ export const PaymentSuccessModal = ({ visible, onClose, successTokens }) => {
       footer={null}
       centered
       width={400}
-      bodyStyle={{ 
+      style={{
         padding: '30px 40px',
         textAlign: 'center',
         background: 'linear-gradient(to bottom, #f8f8f8, #ffffff)'

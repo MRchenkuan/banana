@@ -26,6 +26,8 @@ const Layout = ({ children }) => {
   
   // 使用 useSessions hook 替代本地状态和加载逻辑
   const { sessions, setSessions, sessionsLoading } = useSessions();
+  
+  
   const [currentSessionId, setCurrentSessionId] = useState(null);
   const [paymentModalVisible, setPaymentModalVisible] = useState(false);
   const [defaultPackage, setDefaultPackage] = useState('standard');
@@ -33,20 +35,11 @@ const Layout = ({ children }) => {
   // 移除 loadSessions 函数和相关的 useEffect
 
   // 处理会话切换
-  const handleSessionSwitch = (sessionId, messages = null) => {
+  const handleSessionSwitch = (sessionId) => {
     setCurrentSessionId(sessionId);
-    // 跳转到聊天页面，并传递会话ID
-    navigate(`/app/chat${sessionId ? `?sessionId=${sessionId}` : ''}`);
+    // 直接跳转到聊天页面，不传递sessionId参数
+    navigate('/app/chat');
   };
-
-  // 从URL参数中获取当前会话ID
-  useEffect(() => {
-    const urlParams = new URLSearchParams(location.search);
-    const sessionId = urlParams.get('sessionId');
-    if (sessionId) {
-      setCurrentSessionId(sessionId);
-    }
-  }, [location.search]);
   
   // 修改userMenuItems数组，移除个人中心选项
   const userMenuItems = [

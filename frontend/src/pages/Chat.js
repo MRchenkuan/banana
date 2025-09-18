@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { message } from "antd";
-import SessionSidebar from "../components/SessionSidebar";
+import { useLocation } from 'react-router-dom'; // 添加这个导入
 import MessageList from "../components/MessageList";
 import MessageInput from "../components/MessageInput/MessageInput";
 import AnnouncementHUD from "../components/AnnouncementHUD";
@@ -13,6 +13,7 @@ import { ChatProvider } from '../contexts/ChatContext';
 
 const Chat = () => {
   const [inputValue, setInputValue] = useState("");
+  const location = useLocation(); // 添加这一行
 
   // 使用自定义hooks
   const {
@@ -28,7 +29,7 @@ const Chat = () => {
     updateBalance,
     clearCurrentSessionCache,
     validateAndCleanSession,
-    clearCurrentSessionFromStorage // 新增
+    clearCurrentSessionFromStorage
   } = useChat();
   
   // 先初始化 sessions
@@ -57,6 +58,20 @@ const Chat = () => {
     handleDrop,
     handleToolbarImageUpload,
   } = useImageHandler();
+
+  // 移除URL参数监听逻辑
+  // useEffect(() => {
+  //   const urlParams = new URLSearchParams(location.search);
+  //   const sessionIdFromUrl = urlParams.get('sessionId');
+  //   
+  //   if (sessionIdFromUrl && sessionIdFromUrl !== currentSessionId) {
+  //     console.log('🔄 URL参数变化，切换到会话:', sessionIdFromUrl);
+  //     setCurrentSessionId(sessionIdFromUrl);
+  //   } else if (!sessionIdFromUrl && currentSessionId) {
+  //     console.log('🔄 URL中无sessionId，清理当前会话');
+  //     setCurrentSessionId(null);
+  //   }
+  // }, [location.search, currentSessionId, setCurrentSessionId]);
 
   // 滚动效果
   useEffect(() => {
@@ -93,12 +108,6 @@ const Chat = () => {
     }
   }, [sessions, currentSessionId, sessionsLoading, clearCurrentSessionFromStorage, setCurrentSessionId, setMessages]);
 
-  // 会话切换处理
-  const handleSessionSwitch = (sessionId, newMessages = null) => {
-    if (sessionId !== currentSessionId) {
-      setCurrentSessionId(sessionId);
-    }
-  };
 
   // 专门的粘贴处理函数
   const handlePasteImages = async (imageFiles) => {
@@ -250,13 +259,6 @@ const Chat = () => {
         {/* 公告HUD组件 */}
         <AnnouncementHUD />
         
-        {/* 会话侧边栏 */}
-        <SessionSidebar
-          sessions={sessions}
-          currentSessionId={currentSessionId}
-          onSessionSwitch={handleSessionSwitch}
-          loading={sessionsLoading}
-        />
         
         {/* 主聊天区域 */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>

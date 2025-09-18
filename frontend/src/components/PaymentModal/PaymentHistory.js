@@ -115,9 +115,10 @@ const PaymentHistory = ({ visible, onClose, onRefreshOrderStatus }) => {
       width={645}
       centered
       style={{ zIndex: 1100 }}
-      destroyOnClose
+      // 使用 unmountOnExit 替代已弃用的 destroyOnClose
+      unmountOnExit
       className="modal-scrollable"
-      bodyStyle={{
+      styles={{
         maxHeight: '80vh',
         overflowY: 'auto',
         padding: '16px 24px'

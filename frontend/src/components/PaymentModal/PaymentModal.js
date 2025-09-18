@@ -67,7 +67,11 @@ const PaymentModal = ({ visible, onClose }) => {
         footer={null}
         width={800}
         centered
-        destroyOnClose
+        // 使用 afterClose 属性来处理关闭后的清理工作
+        afterClose={() => {
+          setSelectedPackage(null);
+          setPackages([]);
+        }}
         className={styles.modalContent}
         styles={{
           body: { padding: 0 },
@@ -159,6 +163,8 @@ const PaymentModal = ({ visible, onClose }) => {
         countdown={paymentState.countdown}
         selectedPackage={selectedPackage}
         packages={packages}
+        setSelectedPackage={setSelectedPackage}  // 添加这个prop
+        setPackages={setPackages}               // 添加这个prop
       />
 
       {/* 支付宝iframe弹窗 */}
@@ -169,6 +175,8 @@ const PaymentModal = ({ visible, onClose }) => {
         countdown={paymentState.countdown}
         selectedPackage={selectedPackage}
         packages={packages}
+        setSelectedPackage={setSelectedPackage}  // 添加这个prop
+        setPackages={setPackages}               // 添加这个prop
       />
 
       {/* 支付成功弹窗 */}

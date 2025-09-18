@@ -140,7 +140,7 @@ const useMessageSender = ({
               setSessions,
               thinkingMessageId: thinkingMessage.id,
               messageId: generateUniqueId(),
-              userMessageId: newMessage.id, // 添加这一行
+              userMessageId: newMessage.id,
               sessionId,
               setLoading
             }
@@ -155,7 +155,7 @@ const useMessageSender = ({
               setSessions,
               thinkingMessageId: thinkingMessage.id,
               messageId: generateUniqueId(),
-              userMessageId: newMessage.id, // 添加这一行
+              userMessageId: newMessage.id,
               sessionId,
               setLoading
             }
@@ -229,9 +229,6 @@ const useMessageSender = ({
       message.error('发送消息失败，请重试');
     } finally {
       setLoading(false);
-      // 移除这里的清空输入代码
-      // setInputValue('');
-      // setSelectedImages([]);
     }
 };
   

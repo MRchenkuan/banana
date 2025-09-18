@@ -40,7 +40,8 @@ const PackageCards = ({ packages, selectedPackage, onPackageSelect }) => {
                   hoverable
                   className={cardClassName}
                   onClick={() => onPackageSelect(pkg.id)}
-                  bordered={false}
+                  // 使用 style 属性替代已弃用的 bordered 属性
+                  style={{ border: 'none' }}
                 >
                   <div className={styles.packageIcon}>{getIconForPackage(pkg.id)}</div>
                   <Title level={4} className={styles.packageTitle}>{pkg.name}</Title>
