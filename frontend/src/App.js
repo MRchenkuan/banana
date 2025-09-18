@@ -54,7 +54,7 @@ function App() {
   }
   
   return (
-    <ConfigProvider 
+    <ConfigProvider
       locale={zhCN}
       theme={{
         algorithm: theme.darkAlgorithm,
@@ -71,9 +71,12 @@ function App() {
     >
       <AuthProvider>
         <TokenProvider>
-          <ChatProvider>
+          <ChatProvider> {/* 确保 ChatProvider 包裹了整个应用 */}
             <Router>
-              <div className="App">
+              <div className='App'>
+              {isMobile ? (
+                <MobileWarning />
+              ) : (
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/login" element={<Login />} />
@@ -92,6 +95,7 @@ function App() {
                   
                   <Route path="/chat" element={<Navigate to="/app/chat" replace />} />
                 </Routes>
+              )}
               </div>
             </Router>
           </ChatProvider>
