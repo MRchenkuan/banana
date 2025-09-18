@@ -5,6 +5,7 @@ import api from '../services/api';
 const useSessions = () => {
   const [sessions, setSessions] = useState([]);
   const [sessionsLoading, setSessionsLoading] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false); // 新增标志
 
   // 加载会话列表
   const loadSessions = async (force = false) => {
@@ -13,9 +14,11 @@ const useSessions = () => {
       const response = await api.session.getSessions();
       const newSessions = response.data.sessions || [];
       setSessions(newSessions);
+      setHasLoaded(true); // 标记已完成加载
     } catch (error) {
       console.error('加载会话列表失败:', error);
       message.error('加载会话列表失败');
+      setHasLoaded(true); // 即使失败也标记为已加载
     } finally {
       setSessionsLoading(false);
     }
@@ -47,8 +50,9 @@ const useSessions = () => {
 
   return {
     sessions,
-    setSessions: updateSessions, // 返回稳定的包装函数
+    setSessions: updateSessions,
     sessionsLoading,
+    hasLoaded, // 返回加载状态标志
     loadSessions
   };
 };

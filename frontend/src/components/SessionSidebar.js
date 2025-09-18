@@ -26,8 +26,17 @@ const SessionSidebar = ({
       // 将 api.createSession() 改为 api.session.createSession()
       const response = await api.session.createSession();
       const newSession = response.data;
+      
+      // 先更新会话列表
       onSessionsUpdate(prev => [newSession, ...prev]);
-      onSessionSwitch(newSession.id);
+      
+      // 立即选中新会话，使用 Promise 确保状态同步
+      await new Promise(resolve => {
+        onSessionSwitch(newSession.id);
+        // 给状态更新一点时间
+        setTimeout(resolve, 50);
+      });
+      
       message.success('新会话创建成功');
     } catch (error) {
       console.error('创建会话失败:', error);

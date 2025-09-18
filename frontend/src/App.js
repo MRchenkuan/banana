@@ -18,6 +18,7 @@ import './App.css'; // 如果还有其他全局样式
 
 // 导入主题配置
 import { switchTheme, theme as customTheme } from './constants/theme';
+import { ChatProvider } from './contexts/ChatContext';
 
 // 暴露全局函数
 window.switchTheme = switchTheme;
@@ -70,28 +71,30 @@ function App() {
     >
       <AuthProvider>
         <TokenProvider>
-          <Router>
-            <div className="App">
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/wechat-login-callback" element={<WechatCallback />} />
-                <Route path="/app/*" element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Routes>
-                        <Route index element={<Navigate to="/app/chat" replace />} />
-                        <Route path="chat" element={<Chat />} />
-                      </Routes>
-                    </Layout>
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/chat" element={<Navigate to="/app/chat" replace />} />
-              </Routes>
-            </div>
-          </Router>
+          <ChatProvider>
+            <Router>
+              <div className="App">
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/wechat-login-callback" element={<WechatCallback />} />
+                  <Route path="/app/*" element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <Routes>
+                          <Route index element={<Navigate to="/app/chat" replace />} />
+                          <Route path="chat" element={<Chat />} />
+                        </Routes>
+                      </Layout>
+                    </ProtectedRoute>
+                  } />
+                  
+                  <Route path="/chat" element={<Navigate to="/app/chat" replace />} />
+                </Routes>
+              </div>
+            </Router>
+          </ChatProvider>
         </TokenProvider>
       </AuthProvider>
     </ConfigProvider>

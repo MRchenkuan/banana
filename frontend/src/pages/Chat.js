@@ -9,13 +9,15 @@ import useSessions from "../hooks/useSessions";
 import useMessageSender from "../hooks/useMessageSender";
 import useImageHandler from "../hooks/useImageHandler";
 import { compressImages } from "../utils/imageCompression";
+import { useChatContext } from '../contexts/ChatContext';
 import { ChatProvider } from '../contexts/ChatContext';
+
 
 const Chat = () => {
   const [inputValue, setInputValue] = useState("");
-  const location = useLocation(); // 添加这一行
+  const location = useLocation();
 
-  // 使用自定义hooks
+  // 使用共享的chat状态，而不是直接调用useChat
   const {
     messages,
     setMessages,
@@ -30,13 +32,13 @@ const Chat = () => {
     clearCurrentSessionCache,
     validateAndCleanSession,
     clearCurrentSessionFromStorage
-  } = useChat();
+  } = useChatContext();
   
   // 先初始化 sessions
-  const { sessions, setSessions, sessionsLoading } = useSessions();
+  const { sessions, setSessions, sessionsLoading, hasLoaded } = useSessions();
   
   // 然后使用 sessions 初始化 useMessageSender
-  const { handleSendMessage } = useMessageSender({
+  const { handleSendMessage, isCreatingSession } = useMessageSender({
     loading,
     setLoading,
     currentSessionId,
@@ -80,7 +82,7 @@ const Chat = () => {
 
   // 新的会话验证逻辑：刷新时根据session列表状态决定保留或清理ID
   useEffect(() => {
-    if (!sessionsLoading) {
+    if (!sessionsLoading && hasLoaded) { // 添加hasLoaded检查
       if (sessions.length === 0) {
         // 规则3：当列表被刷新时，如果没有任何聊天，则清理当前ID
         if (currentSessionId) {
@@ -106,7 +108,7 @@ const Chat = () => {
         }
       }
     }
-  }, [sessions, currentSessionId, sessionsLoading, clearCurrentSessionFromStorage, setCurrentSessionId, setMessages]);
+  }, [sessions, currentSessionId, sessionsLoading, hasLoaded, clearCurrentSessionFromStorage, setCurrentSessionId, setMessages]);
 
 
   // 专门的粘贴处理函数

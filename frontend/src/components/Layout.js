@@ -14,6 +14,7 @@ import PaymentModal from './PaymentModal/PaymentModal';
 import api from '../services/api';
 import { theme } from '../constants/theme';
 import useSessions from '../hooks/useSessions'; // 添加这一行
+import { useChatContext } from '../contexts/ChatContext';
 
 const { Header, Content } = AntLayout;
 const { Text } = Typography;
@@ -24,19 +25,20 @@ const Layout = ({ children }) => {
   const { user, logout } = useAuth();
   const { balance } = useToken();
   
+  // 使用共享的chat状态
+  const { currentSessionId, setCurrentSessionId } = useChatContext();
+  
   // 使用 useSessions hook 替代本地状态和加载逻辑
   const { sessions, setSessions, sessionsLoading } = useSessions();
   
-  
-  const [currentSessionId, setCurrentSessionId] = useState(null);
+  // 移除本地的currentSessionId状态
+  // const [currentSessionId, setCurrentSessionId] = useState(null);
   const [paymentModalVisible, setPaymentModalVisible] = useState(false);
   const [defaultPackage, setDefaultPackage] = useState('standard');
   
-  // 移除 loadSessions 函数和相关的 useEffect
-
   // 处理会话切换
   const handleSessionSwitch = (sessionId) => {
-    setCurrentSessionId(sessionId);
+    setCurrentSessionId(sessionId); // 现在这个会更新共享状态
     // 直接跳转到聊天页面，不传递sessionId参数
     navigate('/app/chat');
   };

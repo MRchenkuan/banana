@@ -1,29 +1,23 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext } from 'react';
+import useChat from '../hooks/useChat';
 
 const ChatContext = createContext();
 
-export const useChat = () => {
-  const context = useContext(ChatContext);
-  if (!context) {
-    throw new Error('useChat must be used within a ChatProvider');
-  }
-  return context;
-};
-
-export const ChatProvider = ({ children, value }) => {
-  // 如果外部没有提供value，则在内部创建状态
-  const [selectedImages, setSelectedImagesState] = useState([]);
+export const ChatProvider = ({ children }) => {
+  const chatState = useChat();
   
-  // 使用外部提供的value或内部状态
-  const contextValue = value || {
-    setSelectedImages: setSelectedImagesState,
-    setInputValue: () => {}, // 添加默认的空函数
-  };
-
   return (
-    <ChatContext.Provider value={contextValue}>
+    <ChatContext.Provider value={chatState}>
       {children}
     </ChatContext.Provider>
   );
+};
+
+export const useChatContext = () => {
+  const context = useContext(ChatContext);
+  if (!context) {
+    throw new Error('useChatContext must be used within a ChatProvider');
+  }
+  return context;
 };
 export { ChatContext };
