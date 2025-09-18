@@ -367,7 +367,10 @@ class AbstractStreamHandler extends BaseStreamHandler {
     
     // 4. Token余额预检查（不扣费）
     const estimatedTokens = await this.estimateTokenUsage();
-    await TokenManager.checkBalance(this.req.user.userId, estimatedTokens);
+    const {pass, balance} = await TokenManager.checkBalance(this.req.user.userId, estimatedTokens);
+    if (!pass) {
+      throw new Error(`Token余额不足，当前余额: ${balance}`);
+    }
   }
   
   // 子类可重写的验证方法
