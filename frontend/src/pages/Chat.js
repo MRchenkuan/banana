@@ -13,7 +13,6 @@ import { ChatContext, ChatProvider } from '../contexts/ChatContext';
 
 const Chat = () => {
   const [inputValue, setInputValue] = useState("");
-  const location = useLocation();
 
   // 直接使用 useChat 而不是 useChatContext
   const {
@@ -64,34 +63,28 @@ const Chat = () => {
     scrollToBottom(false);
   }, [messages]);
 
-  // 新的会话验证逻辑：刷新时根据session列表状态决定保留或清理ID
+  // session 列表和 chat 状态刷新逻辑
   useEffect(() => {
-    if (!sessionsLoading && hasLoaded) { // 添加hasLoaded检查
-      if (sessions.length === 0) {
-        // 规则3：当列表被刷新时，如果没有任何聊天，则清理当前ID
-        if (currentSessionId) {
-          console.log('📝 会话列表为空，清理当前会话ID:', currentSessionId);
-          clearCurrentSessionFromStorage();
-          setCurrentSessionId(null);
-          setMessages([]);
-        }
-      } else if (currentSessionId) {
-        // 刷新时，检查当前ID是否包含在session列表中
-        const sessionExists = sessions.some(session => String(session.id) === String(currentSessionId));
-        
-        if (sessionExists) {
-          // 如果包含，则选中这个session（由于逻辑1，会自动储存ID）
-          console.log('✅ 当前会话ID存在于列表中，保持选中:', currentSessionId);
-          // 这里不需要额外操作，因为setCurrentSessionId会自动保存到localStorage
-        } else {
-          // 如果不包含就直接清理掉当前ID
-          console.warn('⚠️ 当前会话不存在于列表中，清理会话ID:', currentSessionId);
-          clearCurrentSessionFromStorage();
-          setCurrentSessionId(null);
-          setMessages([]);
-        }
-      }
-    }
+    if(sessionsLoading || !hasLoaded) return;
+
+    if(!currentSessionId) return;
+
+    if (sessions.length === 0) {
+      console.log('📝 会话列表为空，清理当前会话ID:', currentSessionId);
+      clearCurrentSessionFromStorage();
+      setCurrentSessionId(null);
+      setMessages([]);
+      return;
+    } 
+
+    const sessionExists = sessions.some(session => String(session.id) === String(currentSessionId));
+    if (!sessionExists) {
+      // 如果不包含就直接清理掉当前ID
+      console.warn('⚠️ 当前会话不存在于列表中，清理会话ID:', currentSessionId);
+      clearCurrentSessionFromStorage();
+      setCurrentSessionId(null);
+      setMessages([]);
+    }    
   }, [sessions, currentSessionId, sessionsLoading, hasLoaded, clearCurrentSessionFromStorage, setCurrentSessionId, setMessages]);
 
 
