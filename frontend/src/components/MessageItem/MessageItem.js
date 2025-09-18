@@ -22,7 +22,7 @@ const MessageItem = memo(({ message, index }) => {
     messageState.isStreaming, 
     message.role
   );
-  
+
   const { isUser, isAssistant, isThinking } = messageState;
   
   const handleReuploadImage = async (imageSrc, fromRegenerate = false) => {

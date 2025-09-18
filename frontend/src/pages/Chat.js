@@ -9,15 +9,13 @@ import useSessions from "../hooks/useSessions";
 import useMessageSender from "../hooks/useMessageSender";
 import useImageHandler from "../hooks/useImageHandler";
 import { compressImages } from "../utils/imageCompression";
-import { useChatContext } from '../contexts/ChatContext';
-import { ChatProvider } from '../contexts/ChatContext';
-
+import { ChatContext, ChatProvider } from '../contexts/ChatContext';
 
 const Chat = () => {
   const [inputValue, setInputValue] = useState("");
   const location = useLocation();
 
-  // 使用共享的chat状态，而不是直接调用useChat
+  // 直接使用 useChat 而不是 useChatContext
   const {
     messages,
     setMessages,
@@ -32,7 +30,7 @@ const Chat = () => {
     clearCurrentSessionCache,
     validateAndCleanSession,
     clearCurrentSessionFromStorage
-  } = useChatContext();
+  } = useChat();
   
   // 先初始化 sessions
   const { sessions, setSessions, sessionsLoading, hasLoaded } = useSessions();
@@ -60,20 +58,6 @@ const Chat = () => {
     handleDrop,
     handleToolbarImageUpload,
   } = useImageHandler();
-
-  // 移除URL参数监听逻辑
-  // useEffect(() => {
-  //   const urlParams = new URLSearchParams(location.search);
-  //   const sessionIdFromUrl = urlParams.get('sessionId');
-  //   
-  //   if (sessionIdFromUrl && sessionIdFromUrl !== currentSessionId) {
-  //     console.log('🔄 URL参数变化，切换到会话:', sessionIdFromUrl);
-  //     setCurrentSessionId(sessionIdFromUrl);
-  //   } else if (!sessionIdFromUrl && currentSessionId) {
-  //     console.log('🔄 URL中无sessionId，清理当前会话');
-  //     setCurrentSessionId(null);
-  //   }
-  // }, [location.search, currentSessionId, setCurrentSessionId]);
 
   // 滚动效果
   useEffect(() => {
@@ -238,26 +222,33 @@ const Chat = () => {
     }
   };
 
-  // 创建ChatContext的值
-  const chatContextValue = {
-    setSelectedImages,
-    setInputValue
-  };
+  // 修改 Chat.js 中的 ChatProvider 使用方式
+  // 将第 241-247 行修改为：
   
-  return (
-    <ChatProvider value={chatContextValue}>
-      <div
-        className="chat-container"
-        style={{
-          height: 'calc(100vh - 75px)',
-          display: 'flex',
-          flexDirection: 'column',
-          backgroundColor: '#1a1a1a'
-        }}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
+    // 创建ChatContext的值
+    const chatContextValue = {
+      setSelectedImages,
+      setInputValue,
+      // 添加其他可能需要的值
+      messages,
+      loading,
+      currentSessionId
+    };
+    
+    return (
+      <ChatContext.Provider value={chatContextValue}>
+        <div
+          className="chat-container"
+          style={{
+            height: 'calc(100vh - 75px)',
+            display: 'flex',
+            flexDirection: 'column',
+            backgroundColor: '#1a1a1a'
+          }}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
         {/* 公告HUD组件 */}
         <AnnouncementHUD />
         
@@ -288,7 +279,7 @@ const Chat = () => {
           />
         </div>
       </div>
-    </ChatProvider>
+    </ChatContext.Provider>
   );
 };
 
