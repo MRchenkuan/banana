@@ -142,14 +142,9 @@ class OrderService {
     try {
       // 查询订单
       const order = await this._findOrder(orderNo, userId);
-      
-      // 处理待支付订单
-      if (order.status === 'pending') {
-        if (order.isExpired()) {
-          await this._markOrderAsExpired(order);
-        } else {
-          await this._checkPaymentStatus(order);
-        }
+
+      if(order.status === 'pending'){
+         await this._checkPaymentStatus(order);
       }
   
       // 返回订单信息
@@ -168,10 +163,7 @@ class OrderService {
     try {
       // 统一调用支付查询接口
       const paymentResult = await this._queryPaymentStatus(order);
-      
-      if (paymentResult.success) {
-        await this._processPaymentResult(order, paymentResult);
-      }
+      await this._processPaymentResult(order, paymentResult);
     } catch (error) {
       console.error(`查询${order.paymentMethod}支付状态失败:`, error);
     }
@@ -220,6 +212,8 @@ class OrderService {
       await this.handlePaymentSuccess(order, paymentResult.tradeNo);
     } else if (failedStates.includes(paymentResult.tradeStatus)) {
       await order.update({ status: 'failed' });
+    } else {
+      await order.update({ status: order.isExpired() ? 'expired' : order.status})
     }
   }
   

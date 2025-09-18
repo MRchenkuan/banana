@@ -56,10 +56,19 @@ const PaymentHistory = ({ visible, onClose, onRefreshOrderStatus }) => {
       
       // 调用父组件的刷新函数
       if (onRefreshOrderStatus) {
-        await onRefreshOrderStatus(orderId, paymentMethod);
+        const result = await onRefreshOrderStatus(orderId, paymentMethod);
+        
+        // 如果刷新成功，立即更新当前列表中的对应订单状态
+        if (result && result.success) {
+          setPaymentHistory(prevHistory => 
+            prevHistory.map(item => 
+              item.orderId === orderId ? { ...item, status: result.status || 'paid' } : item
+            )
+          );
+        }
       }
       
-      // 刷新完成后重新获取历史记录列表
+      // 无论成功与否，都重新获取完整的历史记录列表
       await fetchPaymentHistory();
     } catch (error) {
       console.error('刷新订单状态失败:', error);
@@ -72,7 +81,7 @@ const PaymentHistory = ({ visible, onClose, onRefreshOrderStatus }) => {
         return newSet;
       });
     }
-  }, [onRefreshOrderStatus]);
+  }, [onRefreshOrderStatus, fetchPaymentHistory]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -114,15 +123,16 @@ const PaymentHistory = ({ visible, onClose, onRefreshOrderStatus }) => {
       footer={null}
       width={645}
       centered
-      style={{ zIndex: 1100 }}
+      style={{ 
+        zIndex: 1100,
+        maxHeight: '80vh',
+        overflowY: 'auto',
+        borderRadius: '10px'
+       }}
       // 使用 unmountOnExit 替代已弃用的 destroyOnClose
       unmountOnExit
       className="modal-scrollable"
-      styles={{
-        maxHeight: '80vh',
-        overflowY: 'auto',
-        padding: '16px 24px'
-      }}
+
     >
       <List
         loading={loading}
