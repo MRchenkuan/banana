@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { message } from 'antd';
 import api from '../services/api';
+import { useToken } from '../contexts/TokenContext'; // 添加这一行
 
 // 节流Hook
 export const useThrottle = (fn, delay) => {
@@ -29,6 +30,8 @@ export const usePayment = () => {
     successModalVisible: false,
     successTokens: 0
   });
+
+  const {fetchBalance} = useToken();
 
   const pollIntervalRef = useRef(null);
   const countdownIntervalRef = useRef(null);
@@ -117,6 +120,7 @@ export const usePayment = () => {
               alipayIframeVisible: false,
               paymentModal: false
             }));
+            fetchBalance()
             message.success('支付成功！');
           }
         }

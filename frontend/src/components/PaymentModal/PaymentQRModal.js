@@ -36,7 +36,7 @@ export const PaymentQRModal = ({
       className={styles.paymentQrcodeModal}
       // 只清理选中的套餐，保留套餐列表
       afterClose={() => {
-        setSelectedPackage(null);
+        // setSelectedPackage(null);
         // 移除 setPackages([]);
       }}
     >
@@ -125,7 +125,7 @@ export const AlipayIframeModal = ({
       className={styles.alipayModal}
       // 只清理选中的套餐，保留套餐列表
       afterClose={() => {
-        setSelectedPackage(null);
+        // setSelectedPackage(null);
         setIframeLoading(true); // 重置loading状态
       }}
     >
