@@ -1,6 +1,6 @@
 import { message } from 'antd';
 import api from '../services/api';
-import { useState } from 'react';
+import useSessionManager from './useSessionManager';
 
 const useMessageSender = ({
   loading,
@@ -10,40 +10,19 @@ const useMessageSender = ({
   setSessions,
   setMessages,
   updateBalance,
+  navigate,
+  addSession
 }) => {
-  // 添加创建会话状态跟踪
-  const [isCreatingSession, setIsCreatingSession] = useState(false);
+  const { createNewSession, isCreatingSession } = useSessionManager(
+    addSession,
+    setSessions,
+    setCurrentSessionId,
+    navigate
+  );
 
   // 生成唯一ID的辅助函数
   const generateUniqueId = () => {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
-  };
-
-  // 创建新会话的函数
-  const createNewSession = async () => {
-    try {
-      setIsCreatingSession(true);
-      const response = await api.session.createSession();
-      const sessionId = response.data.id;
-      
-      const newSession = {
-        id: sessionId,
-        title: response.data.title,
-        lastMessageAt: response.data.lastMessageAt,
-        messageCount: 0,
-        createdAt: response.data.createdAt
-      };
-      
-      setSessions(prev => [newSession, ...prev]);
-      setCurrentSessionId(sessionId);
-      
-      // 等待状态更新完成
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      return sessionId;
-    } finally {
-      setIsCreatingSession(false);
-    }
   };
 
   // 发送消息的通用函数
@@ -165,10 +144,10 @@ const useMessageSender = ({
       setLoading(false);
     }
   };
-  
+
   return {
     handleSendMessage,
-    isCreatingSession
+    isCreatingSession,
   };
 };
 

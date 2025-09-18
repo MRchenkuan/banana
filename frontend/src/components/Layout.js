@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layout as AntLayout, Avatar, Dropdown, Space, Typography, Button } from 'antd';
+import { Layout as AntLayout, Avatar, Dropdown, Space, Typography, Button, Spin } from 'antd';
 import { 
   UserOutlined, 
   LogoutOutlined,
@@ -15,6 +15,7 @@ import api from '../services/api';
 import { theme } from '../constants/theme';
 import useSessions from '../hooks/useSessions'; // 添加这一行
 import { useChatContext } from '../contexts/ChatContext';
+import useSessionManager from '../hooks/useSessionManager'; // 添加这一行
 
 const { Header, Content } = AntLayout;
 const { Text } = Typography;
@@ -28,12 +29,22 @@ const Layout = ({ children }) => {
   const { currentSessionId, setCurrentSessionId } = useChatContext();
   
   // 使用 useSessions hook 替代本地状态和加载逻辑
-  const { sessions, setSessions, sessionsLoading } = useSessions();
+  const { sessions, setSessions, sessionsLoading, addSession } = useSessions();
   
   // 移除本地的currentSessionId状态
   // const [currentSessionId, setCurrentSessionId] = useState(null);
   const [paymentModalVisible, setPaymentModalVisible] = useState(false);
   const [defaultPackage, setDefaultPackage] = useState('standard');
+  const [creatingSession, setCreatingSession] = useState(false); // 添加创建会话状态
+
+
+  const { createNewSession, deleteSession, isCreatingSession } = useSessionManager(
+    addSession,
+    setSessions, 
+    setCurrentSessionId, 
+    navigate,
+    currentSessionId  // 添加这个参数
+  );
   
   // 处理会话切换
   const handleSessionSwitch = (sessionId) => {
@@ -64,6 +75,24 @@ const Layout = ({ children }) => {
 
   return (
     <AntLayout style={{ minHeight: '100vh', backgroundColor: '#141414' }}>
+      {/* 全局加载蒙版 */}
+      {creatingSession && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1500, // 确保在所有元素之上
+        }}>
+          <Spin size="large" tip="创建会话中..." />
+        </div>
+      )}
+      
       {/* 顶部导航栏 */}
       <Header style={{ 
         position: 'fixed',
@@ -139,6 +168,9 @@ const Layout = ({ children }) => {
         sessionsLoading={sessionsLoading}
         onSessionSwitch={handleSessionSwitch}
         onSessionsUpdate={setSessions}
+        createNewSession={createNewSession}
+        deleteSession={deleteSession}
+        isCreatingSession={isCreatingSession}
       />
       
       {/* 主内容区域 - 直接渲染增强的 children */}

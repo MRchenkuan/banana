@@ -1,20 +1,21 @@
 import React, { useState, useEffect } from "react";
 import { message } from "antd";
-import { useLocation } from 'react-router-dom'; // 添加这个导入
+import { useLocation } from 'react-router-dom';
 import MessageList from "../components/MessageList";
 import MessageInput from "../components/MessageInput/MessageInput";
 import AnnouncementHUD from "../components/AnnouncementHUD";
-import useChat from "../hooks/useChat";
+// 删除 useChat 导入
+// import useChat from "../hooks/useChat";
 import useSessions from "../hooks/useSessions";
 import useMessageSender from "../hooks/useMessageSender";
 import useImageHandler from "../hooks/useImageHandler";
 import { compressImages } from "../utils/imageCompression";
-import { ChatContext, ChatProvider } from '../contexts/ChatContext';
+import { ChatContext, useChatContext } from '../contexts/ChatContext'; // 修改这里，使用 
 
 const Chat = () => {
   const [inputValue, setInputValue] = useState("");
 
-  // 直接使用 useChat 而不是 useChatContext
+  // 使用 useChatContext 替代 useChat
   const {
     messages,
     setMessages,
@@ -28,14 +29,15 @@ const Chat = () => {
     updateBalance,
     clearCurrentSessionCache,
     validateAndCleanSession,
-    clearCurrentSessionFromStorage
-  } = useChat();
+    clearCurrentSessionFromStorage,
+    loadSessionMessages // 确保这个方法可用
+  } = useChatContext();
   
   // 先初始化 sessions
-  const { sessions, setSessions, sessionsLoading, hasLoaded } = useSessions();
+  const { sessions, setSessions, sessionsLoading, hasLoaded, addSession } = useSessions();
   
-  // 然后使用 sessions 初始化 useMessageSender
   const { handleSendMessage, isCreatingSession } = useMessageSender({
+    addSession,
     loading,
     setLoading,
     currentSessionId,
@@ -65,10 +67,10 @@ const Chat = () => {
 
   // session 列表和 chat 状态刷新逻辑
   useEffect(() => {
-    if(sessionsLoading || !hasLoaded) return;
-
+    if(sessionsLoading || !hasLoaded || isCreatingSession) return; // 添加 isCreatingSession 判断
+  
     if(!currentSessionId) return;
-
+  
     if (sessions.length === 0) {
       console.log('📝 会话列表为空，清理当前会话ID:', currentSessionId);
       clearCurrentSessionFromStorage();
@@ -76,18 +78,35 @@ const Chat = () => {
       setMessages([]);
       return;
     } 
-
+  
+    debugger
+    // 添加延迟检查，避免在创建会话过程中误清理
     const sessionExists = sessions.some(session => String(session.id) === String(currentSessionId));
     if (!sessionExists) {
       // 如果不包含就直接清理掉当前ID
       console.warn('⚠️ 当前会话不存在于列表中，清理会话ID:', currentSessionId);
-      clearCurrentSessionFromStorage();
-      setCurrentSessionId(null);
-      setMessages([]);
+      
+      // 再次检查会话是否存在
+      const sessionExistsAfterDelay = sessions.some(session => String(session.id) === String(currentSessionId));
+      if (!sessionExistsAfterDelay) {
+        clearCurrentSessionFromStorage();
+        setCurrentSessionId(null);
+        setMessages([]);
+      }
     }    
-  }, [sessions, currentSessionId, sessionsLoading, hasLoaded, clearCurrentSessionFromStorage, setCurrentSessionId, setMessages]);
+  }, [sessions, currentSessionId, sessionsLoading, hasLoaded, isCreatingSession, clearCurrentSessionFromStorage, setCurrentSessionId, setMessages]);
 
-
+  // 添加会话切换后的消息加载逻辑
+  useEffect(() => {
+    if (currentSessionId) {
+      // 当会话ID变化时，加载该会话的消息
+      loadSessionMessages(currentSessionId).catch(error => {
+        console.error('加载会话消息失败:', error);
+        message.error('加载会话消息失败');
+      });
+    }
+  }, [currentSessionId, loadSessionMessages]);
+  
   // 专门的粘贴处理函数
   const handlePasteImages = async (imageFiles) => {
     try {

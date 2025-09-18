@@ -104,6 +104,13 @@ const useChat = () => {
         // 只有在选中有效会话时才保存（排除临时会话）
         localStorage.setItem('currentSessionId', String(sessionId));
         console.log('💾 已保存会话ID到localStorage:', sessionId);
+        
+        // 立即加载会话消息
+        if (sessionId) {
+          loadSessionIfNeeded(sessionId).catch(error => {
+            console.error('加载会话消息失败:', error);
+          });
+        }
       } else if (!sessionId) {
         // 清理时移除localStorage
         localStorage.removeItem('currentSessionId');
@@ -113,7 +120,7 @@ const useChat = () => {
     } catch (error) {
       console.error('localStorage操作失败:', error);
     }
-  }, [currentSessionId, messagesEndRef, saveScrollPosition]);
+  }, [currentSessionId, messagesEndRef, saveScrollPosition, loadSessionIfNeeded]);
 
   // 清理localStorage的专用函数
   const clearCurrentSessionFromStorage = useCallback(() => {

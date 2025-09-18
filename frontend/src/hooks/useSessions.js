@@ -24,22 +24,10 @@ const useSessions = () => {
     }
   };
 
-  // 创建一个稳定的更新函数，支持函数式更新和直接值更新
-  const updateSessions = useCallback((updater) => {
-    
-    try {
-      if (typeof updater === 'function') {
-        // 函数式更新（如：prev => [newSession, ...prev]）
-        setSessions(prevSessions => {
-          return updater(prevSessions);
-        });
-      } else {
-        setSessions(updater);
-      }
-    } catch (error) {
-      console.error('❌ updateSessions error:', error);
-    }
-  }, []);
+  // 添加会话
+  const addSession = (session) => {
+    setSessions([...sessions, session]);
+  }
 
   // 初始化加载
   useEffect(() => {
@@ -50,10 +38,11 @@ const useSessions = () => {
 
   return {
     sessions,
-    setSessions: updateSessions,
+    setSessions,
     sessionsLoading,
     hasLoaded, // 返回加载状态标志
-    loadSessions
+    loadSessions,
+    addSession
   };
 };
 
