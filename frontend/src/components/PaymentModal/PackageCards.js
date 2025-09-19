@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, Row, Col, Typography, Radio } from 'antd';
-import { CrownOutlined, RocketOutlined, StarOutlined, ThunderboltOutlined } from '@ant-design/icons';
+import { CrownOutlined, RocketOutlined, StarOutlined, ThunderboltFilled, ThunderboltOutlined } from '@ant-design/icons';
 import styles from './PackageCards.module.css';
 
 const { Title } = Typography;
@@ -8,12 +8,12 @@ const { Title } = Typography;
 // 获取套餐图标的函数
 const getIconForPackage = (packageId) => {
   const iconMap = {
-    1: <CrownOutlined style={{ fontSize: '24px', color: '#faad14' }} />,
-    2: <RocketOutlined style={{ fontSize: '24px', color: '#1890ff' }} />,
-    3: <StarOutlined style={{ fontSize: '24px', color: '#722ed1' }} />,
+    1: <ThunderboltOutlined style={{ fontSize: '24px', color: '#faad14' }} />,
+    2: <ThunderboltOutlined style={{ fontSize: '24px', color: '#1890ff' }} />,
+    3: <ThunderboltOutlined style={{ fontSize: '24px', color: '#722ed1' }} />,
     4: <ThunderboltOutlined style={{ fontSize: '24px', color: '#f5222d' }} />
   };
-  return iconMap[packageId] || <CrownOutlined style={{ fontSize: '24px', color: '#faad14' }} />;
+  return iconMap[packageId] || <ThunderboltFilled style={{ fontSize: '24px', color: '#faad14' }} />;
 };
 
 const PackageCards = ({ packages, selectedPackage, onPackageSelect }) => {

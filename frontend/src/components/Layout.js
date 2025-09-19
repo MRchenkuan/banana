@@ -3,14 +3,9 @@ import { Layout as AntLayout, Avatar, Dropdown, Space, Typography, Button, Spin 
 import { 
   UserOutlined, 
   LogoutOutlined,
-  WalletOutlined,
-  MessageOutlined,
-  HistoryOutlined,
-  MoneyCollectOutlined,
   DollarCircleFilled,
   ThunderboltFilled,
-  ThunderboltOutlined,
-  ThunderboltTwoTone
+  QuestionCircleFilled
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -28,6 +23,9 @@ import { usePayment } from '../hooks/usePayment';
 const { Header, Content } = AntLayout;
 const { Text } = Typography;
 
+import GlassPanel from './GlassPanel/GlassPanel';
+
+
 const Layout = ({ children }) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -43,6 +41,7 @@ const Layout = ({ children }) => {
   const [historyVisible, setHistoryVisible] = useState(false);
   const [defaultPackage, setDefaultPackage] = useState('standard');
   const [refreshing, setRefreshing] = useState(false);
+  const [helpVisible, setHelpVisible] = useState(false);
   const {throttledRefreshOrderStatus} = usePayment()
 
   // 使用修改后的 useSessionManager
@@ -144,12 +143,12 @@ const Layout = ({ children }) => {
         
         {/* 右侧：Token 余额和用户信息 */}
         <Space size="large">
-          {/* 刷新Token按钮 */}
+          {/* 帮助按钮 */}
           <Button
             type="text"
             size="small"
-            icon={<DollarCircleFilled spin={refreshing} style={{ fontSize: '16px', color: theme.primary }} />}
-            onClick={()=>{setHistoryVisible(true);}}
+            icon={<QuestionCircleFilled style={{ fontSize: '16px', color: theme.primary }} />}
+            onClick={() => setHelpVisible(true)}
             style={{
               color: '#fff',
               border: '1px solid rgba(255, 255, 255, 0.2)',
@@ -158,7 +157,8 @@ const Layout = ({ children }) => {
               padding: '0 12px',
               fontSize: '12px',
               background: 'rgba(255, 255, 255, 0.05)',
-              transition: 'all 0.3s ease'
+              transition: 'all 0.3s ease',
+              marginRight: '8px'
             }}
             onMouseEnter={(e) => {
               e.target.style.background = 'rgba(255, 255, 255, 0.1)';
@@ -168,35 +168,66 @@ const Layout = ({ children }) => {
               e.target.style.background = 'rgba(255, 255, 255, 0.05)';
               e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)';
             }}
-          >
-            刷新
-          </Button>
+          />
           
-          <Button 
-            align="center" 
-            onClick={()=>{setPaymentModalVisible(true);setDefaultPackage('standard');}}
+          {/* 能量值和刷新按钮组 */}
+          <div
             style={{ 
+              display: 'flex',
+              alignItems: 'center',
               background: 'rgba(255, 255, 255, 0.05)',
-              padding: '4px 12px',
               borderRadius: '16px',
               border: '1px solid rgba(255, 255, 255, 0.2)',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+              overflow: 'hidden',
+              marginRight: '8px'
             }}
           >
-            <ThunderboltFilled style={{ color: theme.primary, fontSize: '14px' }} />
-            <Text style={{ color: '#fff', fontSize: '14px', fontWeight: '500', marginLeft: '8px' }}>
-              {typeof balance === 'number' ? balance.toLocaleString() : '0'} 能量值
-            </Text>
-          </Button>
+            {/* 能量值部分 */}
+            <div 
+              onClick={()=>{setPaymentModalVisible(true);setDefaultPackage('standard');}}
+              style={{ 
+                display: 'flex',
+                alignItems: 'center',
+                padding: '4px 12px',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+              }}
+            >
+              <ThunderboltFilled style={{ color: theme.primary, fontSize: '14px' }} />
+              <Text style={{ color: '#fff', fontSize: '14px', fontWeight: '500', marginLeft: '8px' }}>
+                {typeof balance === 'number' ? balance.toLocaleString() : '0'} 能量值
+              </Text>
+            </div>
+            
+            {/* 刷新按钮部分 */}
+            <div
+              onClick={()=>{setHistoryVisible(true);}}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '100%',
+                padding: '0 10px',
+                borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+              }}
+            >
+              <DollarCircleFilled spin={refreshing} style={{ color: theme.primary, fontSize: '16px' }} />
+            </div>
+          </div>
           
           <Dropdown
             menu={{ items: userMenuItems }}
@@ -240,6 +271,70 @@ const Layout = ({ children }) => {
           {children}
         </div>
       </Content>
+      
+      {/* 帮助面板 */}
+      {helpVisible && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1500,
+        }}>
+          <GlassPanel 
+            style={{ 
+              width: '400px', 
+              maxWidth: '90%', 
+              padding: '24px',
+              position: 'relative'
+            }}
+            shadow
+            colored={false}
+            gradientIntensity="medium"
+          >
+            <div style={{ position: 'absolute', top: '12px', right: '12px' }}>
+              <Button 
+                type="text" 
+                icon={<span style={{ fontSize: '18px' }}>×</span>} 
+                onClick={() => setHelpVisible(false)}
+                style={{ color: '#fff' }}
+              />
+            </div>
+            <h2 style={{ color: '#fff', marginBottom: '20px', textAlign: 'center' }}>联系我们</h2>
+            <div style={{ marginBottom: '20px' }}>
+              <h3 style={{ color: '#fff', marginBottom: '10px' }}>客服邮箱</h3>
+              <p style={{ color: '#fff' }}>banana_ai@foxmail.com</p>
+            </div>
+            <div style={{ marginBottom: '20px' }}>
+              <h3 style={{ color: '#fff', marginBottom: '10px' }}>微信客服</h3>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ 
+                  width: '150px', 
+                  height: '150px', 
+                  background: '#fff', 
+                  margin: '0 auto',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '4px'
+                }}>
+                  <img style={{ width: '100%', height: '100%' }} alt="微信二维码" />
+                </div>
+                <p style={{ color: '#fff', marginTop: '10px' }}>扫码添加客服微信</p>
+              </div>
+            </div>
+            <div>
+              <h3 style={{ color: '#fff', marginBottom: '10px' }}>工作时间</h3>
+              <p style={{ color: '#fff' }}>周一至周五 9:00-18:00</p>
+            </div>
+          </GlassPanel>
+        </div>
+      )}
       
       {/* 支付弹窗 */}
       <PaymentModal

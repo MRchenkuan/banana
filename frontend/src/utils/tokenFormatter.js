@@ -3,7 +3,7 @@
  * @param {number} tokenCount - token数量
  * @returns {string} 格式化后的字符串，如 "1.23k"
  */
-export const formatTokensToK = (tokenCount) => {
+export const formatTokensToK = (tokenCount, fixed = 2) => {
   if (!tokenCount || tokenCount === 0) {
     return '0.01k'; // 最小显示0.01k
   }
@@ -16,7 +16,7 @@ export const formatTokensToK = (tokenCount) => {
   }
   
   // 保留两位小数
-  return `${kValue.toFixed(2)}k`;
+  return `${kValue.toFixed(fixed)}k`;
 };
 
 /**

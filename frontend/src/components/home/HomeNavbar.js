@@ -64,58 +64,65 @@ const HomeNavbar = ({ sdkLoading }) => {
         {/* 用户已登录时显示token余额和退出按钮 */}
         {isAuthenticated && user && (
           <>
-            {/* 刷新Token按钮 */}
-            <Button
-              type="text"
-              size="small"
-              icon={<DollarCircleOutlined spin={refreshing} />}
-              onClick={handleRefreshToken}
-              style={{
-                color: '#fff',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
-                borderRadius: '6px',
-                height: '32px',
-                padding: '0 12px',
-                fontSize: '12px',
-                marginRight: '8px'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.background = 'rgba(255, 255, 255, 0.1)';
-                e.target.style.borderColor = 'rgba(255, 255, 255, 0.5)';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.background = 'transparent';
-                e.target.style.borderColor = 'rgba(255, 255, 255, 0.3)';
-              }}
-            >
-              刷新
-            </Button>
-            
-            <Space 
-              align="center" 
-              onClick={handleTokenClick}
+            {/* 能量值和刷新按钮组 */}
+            <div
               style={{ 
+                display: 'flex',
+                alignItems: 'center',
                 background: 'rgba(255, 255, 255, 0.1)',
-                padding: '4px 12px',
                 borderRadius: '16px',
                 border: '1px solid rgba(255, 255, 255, 0.2)',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
-                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                overflow: 'hidden',
+                marginRight: '8px'
               }}
             >
-              <ThunderboltFilled style={{ color: '#fff', fontSize: '14px' }} />
-              <Text style={{ color: '#fff', fontSize: '14px', fontWeight: '500' }}>
-                {typeof balance === 'number' ? balance.toLocaleString() : '0'} 能量值
-              </Text>
-            </Space>
+              {/* 能量值部分 */}
+              <div 
+                onClick={handleTokenClick}
+                style={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '4px 12px',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                }}
+              >
+                <ThunderboltFilled style={{ color: '#fff', fontSize: '14px' }} />
+                <Text style={{ color: '#fff', fontSize: '14px', fontWeight: '500', marginLeft: '4px' }}>
+                  {typeof balance === 'number' ? balance.toLocaleString() : '0'} 能量值
+                </Text>
+              </div>
+              
+              {/* 刷新按钮部分 */}
+              <div
+                onClick={handleRefreshToken}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: '100%',
+                  padding: '0 10px',
+                  borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                }}
+              >
+                <DollarCircleOutlined spin={refreshing} style={{ color: '#fff', fontSize: '14px' }} />
+                <span style={{fontSize: '12px', color: '#fff',marginLeft: '4px'}}>刷新</span>
+              </div>
+            </div>
             
             {/* 退出登录按钮 */}
             <Button

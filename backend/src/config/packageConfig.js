@@ -1,5 +1,5 @@
 const getPayMount = (amount)=>{
-  const dev = true;
+  const dev = false;
   if(dev){
     return (amount / 1000).toFixed(2);
   }
@@ -13,23 +13,30 @@ const PACKAGE_CONFIG = {
     {
       id: 'basic',
       name: '中杯',
-      tokens: 10000,
-      amount: getPayMount(9.9),
-      description: '适合轻度使用场景，包含10000 tokens'
+      tokens: 15000,
+      amount: 5,
+      // description: '可绘制约 5-10 张图'
     },
     {
       id: 'standard',
       name: '大杯',
-      tokens: 50000,
-      amount: getPayMount(39.9),
-      description: '适合日常使用场景，包含50000 tokens'
+      tokens: 70000,
+      amount: 20,
+      // description: '可绘制约 20-50 张图'
     },
     {
       id: 'premium',
       name: '超大杯',
-      tokens: 130000,
-      amount: getPayMount(99.9),
-      description: '适合重度使用场景，包含140000 tokens'
+      tokens: 320000,
+      amount: 88,
+      // description: '可绘制约 88-200 张图'
+    },
+    {
+      id: 'enterprise',
+      name: '巨大杯',
+      tokens: 730000,
+      amount: 198,
+      // description: '可绘制约 240-500 张图'
     }
   ],
 

@@ -208,6 +208,12 @@ const Chat = () => {
     
     // Enter 键发送消息逻辑
     if (e.key === "Enter" && !e.shiftKey) {
+      // 检查是否正在进行中文输入
+      if (e.isComposing || e.keyCode === 229) {
+        // 正在输入中文，不做任何处理，让浏览器完成输入
+        return;
+      }
+      
       e.preventDefault();
       // 检查是否有内容可发送
       if (inputValue.trim() || selectedImages.length > 0) {
