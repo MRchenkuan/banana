@@ -46,7 +46,7 @@ const PackageCards = ({ packages, selectedPackage, onPackageSelect }) => {
                   <div className={styles.packageIcon}>{getIconForPackage(pkg.id)}</div>
                   <Title level={4} className={styles.packageTitle}>{pkg.name}</Title>
                   <div className={styles.packagePrice}>¥{pkg.amount}</div>
-                  <div className={styles.packageTokens}>{pkg.tokens.toLocaleString()} Tokens</div>
+                  <div className={styles.packageTokens}>{pkg.tokens.toLocaleString()} 能量</div>
                   <div className={styles.packageDescription}>{pkg.description}</div>
                 </Card>
               </Col>

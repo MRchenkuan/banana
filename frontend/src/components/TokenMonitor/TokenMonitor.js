@@ -79,7 +79,7 @@ const TokenMonitor = ({ messages }) => {
       <GlassPanel colored={false}>
         {/* 标题栏 */}
         <div className={styles.titleBar}>
-          <span>Token 消耗监控</span>
+          <span>能量 消耗监控</span>
           <div className={styles.titleBarButtons}>
             <Button
               type="text"

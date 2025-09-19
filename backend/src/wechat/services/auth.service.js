@@ -190,7 +190,7 @@ class WechatAuthService {
           wechatAvatar: wechatUserInfo.headimgurl,  // 修正字段名
           wechatNickname: wechatUserInfo.nickname,  // 修正字段名
           loginType: 'wechat',  // 添加登录类型
-          tokenBalance: 100 // 新用户赠送100个token
+          tokenBalance: 8000 // 新用户赠送100个token
         });
       } else {
         // 更新用户信息

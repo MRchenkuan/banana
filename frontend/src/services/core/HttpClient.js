@@ -64,12 +64,12 @@ class HttpClient {
     } else if (error.response?.status === 402) {
       // 触发余额不足事件，通知应用打开支付弹窗
       EventBus.dispatch('INSUFFICIENT_BALANCE', {
-        message: 'Token 余额不足，请充值后继续使用',
+        message: '能量不足，请充能后继续使用',
         balance: error.response?.data?.balance || 0
       });
       
       // 仍然显示错误消息
-      message.error('Token 余额不足，请充值后继续使用');
+      message.error('能量不足，请充能后继续使用');
     } else if (error.response?.status >= 500) {
       message.error('服务器错误，请稍后重试');
     }

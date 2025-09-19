@@ -7,7 +7,10 @@ import {
   MessageOutlined,
   HistoryOutlined,
   MoneyCollectOutlined,
-  DollarCircleFilled
+  DollarCircleFilled,
+  ThunderboltFilled,
+  ThunderboltOutlined,
+  ThunderboltTwoTone
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -169,7 +172,6 @@ const Layout = ({ children }) => {
             刷新
           </Button>
           
-          {/* 可点击的 Token 余额 */}
           <Button 
             align="center" 
             onClick={()=>{setPaymentModalVisible(true);setDefaultPackage('standard');}}
@@ -190,9 +192,9 @@ const Layout = ({ children }) => {
               e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
             }}
           >
-            <WalletOutlined style={{ color: theme.primary, fontSize: '14px' }} />
+            <ThunderboltFilled style={{ color: theme.primary, fontSize: '14px' }} />
             <Text style={{ color: '#fff', fontSize: '14px', fontWeight: '500', marginLeft: '8px' }}>
-              {typeof balance === 'number' ? balance.toLocaleString() : '0'} Tokens
+              {typeof balance === 'number' ? balance.toLocaleString() : '0'} 能量值
             </Text>
           </Button>
           

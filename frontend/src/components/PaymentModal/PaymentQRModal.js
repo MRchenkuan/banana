@@ -74,7 +74,7 @@ export const PaymentQRModal = ({
           <Space direction="vertical" size="large">
             <div style={{ color: '#52c41a', fontSize: '48px' }}>✓</div>
             <Text style={{ fontSize: '18px', color: '#52c41a' }}>支付成功！</Text>
-            <Text type="secondary">Token 已充值到您的账户</Text>
+            <Text type="secondary">能量已充值到您的账户</Text>
           </Space>
         )}
         

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Space, Spin, Button, Typography } from 'antd';
-import { LogoutOutlined, WalletOutlined, SyncOutlined, HistoryOutlined, DollarCircleOutlined, DollarCircleTwoTone, DollarOutlined } from '@ant-design/icons';
+import { LogoutOutlined, WalletOutlined, SyncOutlined, HistoryOutlined, DollarCircleOutlined, DollarCircleTwoTone, DollarOutlined, ThunderboltFilled } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToken } from '../../contexts/TokenContext';
 import PaymentModal from '../PaymentModal/PaymentModal';
@@ -91,7 +91,6 @@ const HomeNavbar = ({ sdkLoading }) => {
               刷新
             </Button>
             
-            {/* Token 余额显示 - 添加点击事件和鼠标悬停效果 */}
             <Space 
               align="center" 
               onClick={handleTokenClick}
@@ -112,9 +111,9 @@ const HomeNavbar = ({ sdkLoading }) => {
                 e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
               }}
             >
-              <WalletOutlined style={{ color: '#fff', fontSize: '14px' }} />
+              <ThunderboltFilled style={{ color: '#fff', fontSize: '14px' }} />
               <Text style={{ color: '#fff', fontSize: '14px', fontWeight: '500' }}>
-                {typeof balance === 'number' ? balance.toLocaleString() : '0'} Tokens
+                {typeof balance === 'number' ? balance.toLocaleString() : '0'} 能量值
               </Text>
             </Space>
             

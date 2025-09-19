@@ -42,7 +42,7 @@ class StreamRequestHandler {
           // 触发余额不足事件，通知应用打开支付弹窗
           const { EventBus } = await import('./HttpClient');
           EventBus.dispatch('INSUFFICIENT_BALANCE', {
-            message: 'Token 余额不足，请充值后继续使用',
+            message: '能量不足，请充能后继续使用',
             balance: 0 // 可能需要从响应中获取实际余额
           });
           return;

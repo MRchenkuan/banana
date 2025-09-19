@@ -34,7 +34,7 @@ router.post('/register', async (req, res) => {
       username,
       email,
       password,
-      tokenBalance: 100
+      tokenBalance: 8000
     });
 
     // 生成 JWT token

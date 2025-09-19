@@ -148,7 +148,7 @@ const PaymentHistory = ({ visible, onClose, onRefreshOrderStatus }) => {
                 title={
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                     <span style={{ fontWeight: 500 }}>{`${item.package || '充值套餐'} - ¥${item.amount}`}</span>
-                    <span style={{ color: '#8BC34A', marginLeft: '16px' }}>{`+ ${item.tokens?.toLocaleString()} Tokens`}</span>
+                    <span style={{ color: '#8BC34A', marginLeft: '16px' }}>{`+ ${item.tokens?.toLocaleString()} 能量`}</span>
                   </div>
                 }
                 description={

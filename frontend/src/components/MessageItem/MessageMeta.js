@@ -1,5 +1,6 @@
 import React from 'react';
 import { formatTokensToK } from '../../utils/tokenFormatter';
+import { ThunderboltFilled } from '@ant-design/icons';
 
 const MessageMeta = ({ message, messageState, elapsedTime }) => {
   const { isThinking, isError, isInterrupted, isPending, isStreaming, isUser } = messageState;
@@ -71,7 +72,7 @@ const MessageMeta = ({ message, messageState, elapsedTime }) => {
           {/* Token显示 - 修改为k单位 */}
           {!isThinking && (message.tokensUsed !== undefined) && (
             <span>
-              {formatTokensToK(getTokenCount())}
+              <ThunderboltFilled/>{formatTokensToK(getTokenCount())}
             </span>
           )}
         </div>
