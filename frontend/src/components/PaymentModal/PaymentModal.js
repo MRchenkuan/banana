@@ -11,12 +11,11 @@ import styles from './PaymentModal.module.css';
 
 const { Title } = Typography;
 
-const PaymentModal = ({ visible, onClose }) => {
+const PaymentModal = ({ visible, onClose, defaultPackage }) => {
   const [packages, setPackages] = useState([]);
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [paymentMethod] = useState('alipay'); // 固定为支付宝
   const [historyVisible, setHistoryVisible] = useState(false);
-
   const {
     paymentState,
     handlePayment,
@@ -58,6 +57,12 @@ const PaymentModal = ({ visible, onClose }) => {
     setHistoryVisible(true);
   };
 
+  useEffect(() => {
+    if (defaultPackage) {
+      setSelectedPackage(defaultPackage);
+    }
+  }, [defaultPackage]);
+
   return (
     <>
       <Modal
@@ -67,11 +72,6 @@ const PaymentModal = ({ visible, onClose }) => {
         footer={null}
         width={800}
         centered
-        // 使用 afterClose 属性来处理关闭后的清理工作
-        afterClose={() => {
-          setSelectedPackage(null);
-          setPackages([]);
-        }}
         className={styles.modalContent}
         styles={{
           body: { padding: 0 },

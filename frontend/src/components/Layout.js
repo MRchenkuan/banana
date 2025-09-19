@@ -4,18 +4,23 @@ import {
   UserOutlined, 
   LogoutOutlined,
   WalletOutlined,
-  MessageOutlined
+  MessageOutlined,
+  HistoryOutlined,
+  MoneyCollectOutlined,
+  DollarCircleFilled
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToken } from '../contexts/TokenContext';
 import SessionSidebar from './SessionSidebar/SessionSidebar';
 import PaymentModal from './PaymentModal/PaymentModal';
+import PaymentHistory from './PaymentModal/PaymentHistory';
 import { theme } from '../constants/theme';
 import useSessionsStore from '../hooks/useSessionsStore';
 import { useChatContext } from '../contexts/ChatContext';
 import useSessionManager from '../hooks/useSessionManager';
 import { EventBus } from '../services/core/HttpClient';
+import { usePayment } from '../hooks/usePayment';
 
 const { Header, Content } = AntLayout;
 const { Text } = Typography;
@@ -23,7 +28,7 @@ const { Text } = Typography;
 const Layout = ({ children }) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const { balance } = useToken();
+  const { balance, fetchBalance } = useToken();
   
   // 使用共享的chat状态
   const { currentSessionId, setCurrentSessionId } = useChatContext();
@@ -32,7 +37,10 @@ const Layout = ({ children }) => {
   const { sessions, sessionsLoading } = useSessionsStore();
   
   const [paymentModalVisible, setPaymentModalVisible] = useState(false);
+  const [historyVisible, setHistoryVisible] = useState(false);
   const [defaultPackage, setDefaultPackage] = useState('standard');
+  const [refreshing, setRefreshing] = useState(false);
+  const {throttledRefreshOrderStatus} = usePayment()
 
   // 使用修改后的 useSessionManager
   const { createNewSession, deleteSession, isCreatingSession } = useSessionManager(
@@ -58,12 +66,6 @@ const Layout = ({ children }) => {
     }
   ];
 
-  const handleTokenClick = () => {
-    // 打开充值面板
-    setDefaultPackage('standard'); // 设置默认套餐
-    setPaymentModalVisible(true);
-  };
-
   const handleLogoClick = () => {
     navigate('/');
   };
@@ -75,8 +77,8 @@ const Layout = ({ children }) => {
     // 监听余额不足事件
     const unsubscribe = EventBus.subscribe('INSUFFICIENT_BALANCE', (data) => {
       // 打开充值面板
-      setDefaultPackage('standard'); // 设置默认套餐
       setPaymentModalVisible(true);
+      setDefaultPackage('standard'); // 设置默认套餐
     });
     
     // 组件卸载时取消订阅
@@ -136,19 +138,57 @@ const Layout = ({ children }) => {
         
         {/* 右侧：Token 余额和用户信息 */}
         <Space size="large">
-          {/* 可点击的 Token 余额 */}
-          <Button 
+          {/* 刷新Token按钮 */}
+          <Button
             type="text"
-            icon={<WalletOutlined style={{ fontSize: '18px', color: theme.primary }} />}
-            onClick={handleTokenClick}
+            size="small"
+            icon={<DollarCircleFilled spin={refreshing} style={{ fontSize: '16px', color: theme.primary }} />}
+            onClick={()=>{setHistoryVisible(true);}}
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              height: 'auto',
-              color: '#ffffff'
+              color: '#fff',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              borderRadius: '6px',
+              height: '32px',
+              padding: '0 12px',
+              fontSize: '12px',
+              background: 'rgba(255, 255, 255, 0.05)',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = 'rgba(255, 255, 255, 0.1)';
+              e.target.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = 'rgba(255, 255, 255, 0.05)';
+              e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)';
             }}
           >
-            <Text strong style={{ color: theme.primary, marginLeft: '8px' }}>
+            刷新
+          </Button>
+          
+          {/* 可点击的 Token 余额 */}
+          <Button 
+            align="center" 
+            onClick={()=>{setPaymentModalVisible(true);setDefaultPackage('standard');}}
+            style={{ 
+              background: 'rgba(255, 255, 255, 0.05)',
+              padding: '4px 12px',
+              borderRadius: '16px',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+            }}
+          >
+            <WalletOutlined style={{ color: theme.primary, fontSize: '14px' }} />
+            <Text style={{ color: '#fff', fontSize: '14px', fontWeight: '500', marginLeft: '8px' }}>
               {typeof balance === 'number' ? balance.toLocaleString() : '0'} Tokens
             </Text>
           </Button>
@@ -201,6 +241,13 @@ const Layout = ({ children }) => {
         visible={paymentModalVisible}
         onClose={() => setPaymentModalVisible(false)}
         defaultPackage={defaultPackage}
+      />
+      
+      {/* 支付历史弹窗 */}
+      <PaymentHistory
+        visible={historyVisible}
+        onClose={() => setHistoryVisible(false)}
+        onRefreshOrderStatus={throttledRefreshOrderStatus}
       />
     </AntLayout>
   );

@@ -149,6 +149,10 @@ const MobileWarning = () => {
           </p>
         </div>
       </GlassPanel>
+      {/* 添加底部备案信息 */}
+      <div className={styles.footerInfo}>
+        <p>© 2025 Banana AI. 释放你的创作潜能！</p>
+      </div>
     </div>
   );
 };

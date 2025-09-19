@@ -1,3 +1,30 @@
+/* 添加底部备案信息样式 */
+.footerInfo {
+  position: fixed;
+  bottom: 5px;
+  width: 100%;
+  text-align: center;
+  padding: 0;
+  margin-top: auto;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.footerInfo p {
+  margin: 0;
+}
+
+.footerInfo a {
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+}
+
+.footerInfo a:hover {
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: underline;
+}
+
+/* 修改主容器样式，确保底部备案信息在底部 */
 .mobileWarningOverlay {
   position: fixed;
   top: 0;

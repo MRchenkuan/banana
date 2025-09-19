@@ -14,7 +14,7 @@ const Footer = () => {
   return (
     <div style={footerStyle}>
       <Paragraph style={{ color: '#fff', margin: '8px 0 0 0', fontSize: '12px' }}>
-        © 2024 Banana AI. 超越你的创作。 <a 
+        © 2025 Banana AI. 超越你的创作。 <a 
           href="https://beian.miit.gov.cn/" 
           target="_blank" 
           rel="noopener noreferrer"

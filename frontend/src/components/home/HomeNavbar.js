@@ -1,17 +1,22 @@
 import React, { useState } from 'react';
 import { Space, Spin, Button, Typography } from 'antd';
-import { LogoutOutlined, WalletOutlined } from '@ant-design/icons';
+import { LogoutOutlined, WalletOutlined, SyncOutlined, HistoryOutlined, DollarCircleOutlined, DollarCircleTwoTone, DollarOutlined } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToken } from '../../contexts/TokenContext';
 import PaymentModal from '../PaymentModal/PaymentModal';
+import PaymentHistory from '../PaymentModal/PaymentHistory';
+import { usePayment } from '../../hooks/usePayment';
 
 const { Text } = Typography;
 
 const HomeNavbar = ({ sdkLoading }) => {
   const { isAuthenticated, user, logout } = useAuth();
-  const { balance } = useToken();
+  const { balance, fetchBalance } = useToken();
   const [paymentModalVisible, setPaymentModalVisible] = useState(false);
+  const [historyVisible, setHistoryVisible] = useState(false);
   const [defaultPackage, setDefaultPackage] = useState('standard');
+  const [refreshing, setRefreshing] = useState(false);
+  const {throttledRefreshOrderStatus} = usePayment();
 
   const navbarStyle = {
     padding: '0 24px',
@@ -35,8 +40,16 @@ const HomeNavbar = ({ sdkLoading }) => {
 
   const handleTokenClick = () => {
     // 打开充值面板
-    setDefaultPackage('standard'); // 设置默认套餐
     setPaymentModalVisible(true);
+    setDefaultPackage('standard'); // 设置默认套餐
+  };
+
+  const handleRefreshToken = async () => {
+    setRefreshing(true);
+    await fetchBalance();
+    setRefreshing(false);
+    // 打开订单历史记录面板
+    setHistoryVisible(true);
   };
 
   return (
@@ -51,6 +64,33 @@ const HomeNavbar = ({ sdkLoading }) => {
         {/* 用户已登录时显示token余额和退出按钮 */}
         {isAuthenticated && user && (
           <>
+            {/* 刷新Token按钮 */}
+            <Button
+              type="text"
+              size="small"
+              icon={<DollarCircleOutlined spin={refreshing} />}
+              onClick={handleRefreshToken}
+              style={{
+                color: '#fff',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                borderRadius: '6px',
+                height: '32px',
+                padding: '0 12px',
+                fontSize: '12px',
+                marginRight: '8px'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = 'rgba(255, 255, 255, 0.1)';
+                e.target.style.borderColor = 'rgba(255, 255, 255, 0.5)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = 'transparent';
+                e.target.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+              }}
+            >
+              刷新
+            </Button>
+            
             {/* Token 余额显示 - 添加点击事件和鼠标悬停效果 */}
             <Space 
               align="center" 
@@ -110,7 +150,15 @@ const HomeNavbar = ({ sdkLoading }) => {
       {/* 添加支付弹窗组件 */}
       <PaymentModal 
         visible={paymentModalVisible} 
-        onClose={() => setPaymentModalVisible(false)} 
+        onClose={() => setPaymentModalVisible(false)}
+        defaultPackage={defaultPackage}
+      />
+      
+      {/* 添加支付历史弹窗 */}
+      <PaymentHistory
+        visible={historyVisible}
+        onClose={() => setHistoryVisible(false)}
+        onRefreshOrderStatus={throttledRefreshOrderStatus}
       />
     </div>
   );
