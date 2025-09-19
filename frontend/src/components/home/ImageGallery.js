@@ -3,12 +3,12 @@ import { optimizeImage } from '../../utils/imageOptimizer';
 
 const ImageGallery = () => {
   const originalImages = [
-    'https://pub-image-bed.cn-nb1.rains3.com/public/images/sample-05.png',
-    'https://pub-image-bed.cn-nb1.rains3.com/public/images/sample-01.png',
-    'https://pub-image-bed.cn-nb1.rains3.com/public/images/sample-02.png', 
-    'https://pub-image-bed.cn-nb1.rains3.com/public/images/sample-03.png',
-    'https://pub-image-bed.cn-nb1.rains3.com/public/images/sample-04.png',
-    'https://pub-image-bed.cn-nb1.rains3.com/public/images/sample-06.png'
+    'https://cn-nb1.rains3.com/pub-image-bed/public/images/sample-05.webp',
+    'https://cn-nb1.rains3.com/pub-image-bed/public/images/sample-01.webp',
+    'https://cn-nb1.rains3.com/pub-image-bed/public/images/sample-02.webp', 
+    'https://cn-nb1.rains3.com/pub-image-bed/public/images/sample-03.webp',
+    'https://cn-nb1.rains3.com/pub-image-bed/public/images/sample-04.webp',
+    'https://cn-nb1.rains3.com/pub-image-bed/public/images/sample-06.webp'
   ];
 
   // 优化图片

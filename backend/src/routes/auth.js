@@ -108,7 +108,9 @@ router.post('/login', async (req, res) => {
 });
 
 // 获取用户信息
-router.get('/profile', authenticateToken, async (req, res) => {
+router.get('/profile', 
+  authenticateToken, 
+  async (req, res) => {
   try {
     const user = await User.findByPk(req.user.userId, {
       attributes: ['id', 'username', 'email', 'tokenBalance', 'createdAt', 'wechatNickname', 'wechatAvatar']

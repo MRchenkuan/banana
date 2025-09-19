@@ -17,7 +17,7 @@ const HeroSection = ({ onLoginClick }) => {
     position: 'relative',
     backgroundImage: `
       linear-gradient(80deg, rgba(102, 126, 234, 1) 45%, transparent 100%),
-      url(https://pub-image-bed.cn-nb1.rains3.com/public/images/banner-hero.png?x-oss-process=image/resize,w_1200,h_600,m_fill/quality,q_80/format,webp)
+      url(https://cn-nb1.rains3.com/pub-image-bed/public/images/banner-hero.webp)
     `,
     backgroundSize: 'contain',
     backgroundPosition: 'left center, right center',

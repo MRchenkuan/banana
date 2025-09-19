@@ -20,7 +20,7 @@ const Footer = () => {
           rel="noopener noreferrer"
           style={{ color: '#fff', textDecoration: 'none' }}
         >
-          湘ICP备2024062407号
+          湘ICP备2024062407号-3
         </a>
       </Paragraph>
     </div>

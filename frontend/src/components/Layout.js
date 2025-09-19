@@ -15,6 +15,7 @@ import { theme } from '../constants/theme';
 import useSessionsStore from '../hooks/useSessionsStore';
 import { useChatContext } from '../contexts/ChatContext';
 import useSessionManager from '../hooks/useSessionManager';
+import { EventBus } from '../services/core/HttpClient';
 
 const { Header, Content } = AntLayout;
 const { Text } = Typography;
@@ -66,6 +67,23 @@ const Layout = ({ children }) => {
   const handleLogoClick = () => {
     navigate('/');
   };
+
+  // 在导入部分添加
+  
+  // 在 Layout 组件内部，useEffect 钩子中添加事件监听
+  useEffect(() => {
+    // 监听余额不足事件
+    const unsubscribe = EventBus.subscribe('INSUFFICIENT_BALANCE', (data) => {
+      // 打开充值面板
+      setDefaultPackage('standard'); // 设置默认套餐
+      setPaymentModalVisible(true);
+    });
+    
+    // 组件卸载时取消订阅
+    return () => {
+      unsubscribe();
+    };
+  }, []);
 
   return (
     <AntLayout style={{ minHeight: '100vh', backgroundColor: '#141414' }}>

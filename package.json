@@ -55,6 +55,8 @@
   },
   "dependencies": {
     "@google/genai": "^1.17.0",
+    "aws-sdk": "^2.1692.0",
+    "axios": "^1.12.2",
     "dotenv": "^17.2.2",
     "heic2any": "^0.0.4",
     "sharp": "^0.34.3"

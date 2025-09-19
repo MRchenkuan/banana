@@ -48,7 +48,7 @@ const checkTokenBalance = async (req, res, next) => {
     const {pass, balance} = await TokenManager.checkBalance(req.user, estimatedTokens);
     
     if (!pass) {
-      return res.status(400).json({ error: 'Token余额不足',message: `当前余额: ${balance}` });
+      return res.status(402).json({ error: 'Token余额不足',message: `当前余额: ${balance}` });
     }
 
     req.user.tokenBalance = user.tokenBalance;

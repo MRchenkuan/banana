@@ -61,8 +61,8 @@ router.post('/text-stream',
 router.post('/image-stream', 
   authenticateToken, 
   checkTokenBalance, // 添加全局余额检查
-  upload.tempFile.array('images', 2), // 先上传文件
   chenkAttachements, // 再验证token
+  upload.tempFile.array('images', 2), // 先上传文件
   async (req, res) => {
     const handler = new ImageStreamHandler(req, res);
     await handler.handle();
