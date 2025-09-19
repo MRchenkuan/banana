@@ -105,7 +105,7 @@ const PaymentHistory = ({ visible, onClose, onRefreshOrderStatus }) => {
       case 'completed':
         return '已完成';
       case 'pending':
-        return '未支付';
+        return '支付中';
       case 'failed':
         return '已失败';
       case 'expired':

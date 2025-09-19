@@ -12,6 +12,7 @@ const HelpPanel = ({ visible, onClose }) => {
       onCancel={onClose}
       width={400}
       className='frame'
+      footer={null}
       centered
       styles={{
         content: { padding: 0, background: 'transparent', boxShadow: 'none' }
@@ -32,7 +33,7 @@ const HelpPanel = ({ visible, onClose }) => {
             <h4 className={styles.faqQuestion}>为什么我充值了但是能量值没增加？</h4>
             <p className={styles.faqAnswer}>
               充值后如果能量值没有自动增加，请点击右上角的"刷新支付结果"按钮手动刷新充值记录。
-              如果刷新后仍未增加，请联系客服处理。
+              如果刷新后仍未增加，请联系客服处理。（因为还没来得及接支付回调，下次一定）
             </p>
           </div>
         </div>

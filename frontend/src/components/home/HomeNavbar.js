@@ -1,11 +1,18 @@
 import React, { useState } from 'react';
 import { Space, Spin, Button, Typography } from 'antd';
-import { LogoutOutlined, WalletOutlined, SyncOutlined, HistoryOutlined, DollarCircleOutlined, DollarCircleTwoTone, DollarOutlined, ThunderboltFilled } from '@ant-design/icons';
+import { 
+  LogoutOutlined, 
+  ThunderboltFilled, 
+  DollarCircleOutlined,
+  QuestionCircleFilled 
+} from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToken } from '../../contexts/TokenContext';
 import PaymentModal from '../PaymentModal/PaymentModal';
 import PaymentHistory from '../PaymentModal/PaymentHistory';
+import HelpPanel from '../HelpPanel/HelpPanel';
 import { usePayment } from '../../hooks/usePayment';
+import styles from './HomeNavbar.module.css';
 
 const { Text } = Typography;
 
@@ -17,6 +24,7 @@ const HomeNavbar = ({ sdkLoading }) => {
   const [defaultPackage, setDefaultPackage] = useState('standard');
   const [refreshing, setRefreshing] = useState(false);
   const {throttledRefreshOrderStatus} = usePayment();
+  const [helpVisible, setHelpVisible] = useState(false);
 
   const navbarStyle = {
     padding: '0 24px',
@@ -60,6 +68,33 @@ const HomeNavbar = ({ sdkLoading }) => {
         {sdkLoading && (
           <Spin size="small" style={{ color: '#fff' }} />
         )}
+        
+        {/* 帮助按钮，始终显示 */}
+        <Button
+          type="text"
+          size="small"
+          icon={<QuestionCircleFilled style={{ fontSize: '16px' }} />}
+          onClick={() => setHelpVisible(true)}
+          style={{
+            color: '#fff',
+            border: '1px solid rgba(255, 255, 255, 0.3)',
+            borderRadius: '50px',
+            height: '32px',
+            padding: '0 12px',
+            fontSize: '12px',
+            marginRight: '8px'
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.background = 'rgba(255, 255, 255, 0.1)';
+            e.target.style.borderColor = 'rgba(255, 255, 255, 0.5)';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.background = 'transparent';
+            e.target.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+          }}
+        >
+          帮助
+        </Button>
         
         {/* 用户已登录时显示token余额和退出按钮 */}
         {isAuthenticated && user && (
@@ -153,14 +188,19 @@ const HomeNavbar = ({ sdkLoading }) => {
         )}
       </Space>
 
-      {/* 添加支付弹窗组件 */}
+      {/* 添加帮助面板 */}
+      <HelpPanel 
+        visible={helpVisible}
+        onClose={() => setHelpVisible(false)}
+      />
+
+      {/* 保持其他弹窗不变 */}
       <PaymentModal 
         visible={paymentModalVisible} 
         onClose={() => setPaymentModalVisible(false)}
         defaultPackage={defaultPackage}
       />
       
-      {/* 添加支付历史弹窗 */}
       <PaymentHistory
         visible={historyVisible}
         onClose={() => setHistoryVisible(false)}
