@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  backend:
+    image: banana-backend:latest  # 使用导出的镜像
+    container_name: banana-backend
+    environment:
+      # 服务器配置
+      - PORT=3001
+      - NODE_ENV=production
+      
+      # JWT 配置
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=7d
+      
+      # MySQL 数据库配置（Docker 环境）
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      
+      # Google Gemini API
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      
+      # 微信支付配置
+      - WECHAT_APP_ID=${WECHAT_APP_ID}
+      - WECHAT_MCH_ID=${WECHAT_MCH_ID}
+      - WECHAT_API_KEY=${WECHAT_API_KEY}
+      - WECHAT_NOTIFY_URL=${WECHAT_NOTIFY_URL}
+      
+      # 微信登录配置
+      - WECHAT_APP_SECRET=${WECHAT_APP_SECRET}
+      - ALIPAY_APP_ID=${ALIPAY_APP_ID}
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
+
+  frontend:
+    image: banana-frontend:latest  # 使用导出的镜像
+    container_name: banana-frontend
+    environment:
+      - REACT_APP_API_URL=${REACT_APP_API_URL}
+      - DISABLE_ESLINT_PLUGIN=true
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - banana-network
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+
+networks:
+  banana-network:
+    driver: bridge
