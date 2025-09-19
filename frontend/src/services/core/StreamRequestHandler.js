@@ -20,7 +20,7 @@ class StreamRequestHandler {
       thinkingMessageId,
       messageId,
       sessionId,
-      setLoading  // 添加这一行
+      setLoading
     } = context;
 
     // 创建消息处理器工厂
@@ -28,7 +28,7 @@ class StreamRequestHandler {
       setMessages,
       updateBalance,
       setSessions,
-      setLoading  // 添加这一行
+      setLoading
     });
 
     try {
@@ -36,6 +36,18 @@ class StreamRequestHandler {
       
       if (!response.ok) {
         const errorMessage = await this.handleResponseError(response);
+        
+        // 添加对402错误的特殊处理
+        if (response.status === 402) {
+          // 触发余额不足事件，通知应用打开支付弹窗
+          const { EventBus } = await import('./HttpClient');
+          EventBus.dispatch('INSUFFICIENT_BALANCE', {
+            message: 'Token 余额不足，请充值后继续使用',
+            balance: 0 // 可能需要从响应中获取实际余额
+          });
+          return;
+        }
+        
         throw new Error(errorMessage);
       }
 
@@ -44,7 +56,7 @@ class StreamRequestHandler {
         sessionId,
         messageId,
         thinkingMessageId,
-        setLoading  // 添加这一行
+        setLoading
       });
       
     } catch (error) {

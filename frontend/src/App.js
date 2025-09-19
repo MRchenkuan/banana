@@ -72,7 +72,7 @@ function App() {
       <AuthProvider>
         <TokenProvider>
           <ChatProvider> {/* 确保 ChatProvider 包裹了整个应用 */}
-            <Router>
+            <Router future={{ v7_startTransition: true }}>
               <div className='App'>
               {isMobile ? (
                 <MobileWarning />

@@ -85,7 +85,7 @@ const Layout = ({ children }) => {
     return () => {
       unsubscribe();
     };
-  }, []);
+  }, [setPaymentModalVisible, setDefaultPackage]); // 添加依赖项，确保监听器能够正确更新
 
   return (
     <AntLayout style={{ minHeight: '100vh', backgroundColor: '#141414' }}>
