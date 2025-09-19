@@ -103,7 +103,10 @@ const Layout = ({ children }) => {
           alignItems: 'center',
           zIndex: 1500, // 确保在所有元素之上
         }}>
-          <Spin size="large" tip="创建会话中..." />
+          <div style={{ textAlign: 'center' }}>
+            <Spin size="large" />
+            <div style={{ marginTop: 16, color: 'white' }}>创建会话中...</div>
+          </div>
         </div>
       )}
       

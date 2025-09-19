@@ -57,7 +57,8 @@ const SessionSidebar = ({
       {/* 会话列表 - 可滚动区域 */}
       <div className={styles.sessionsContainer}>
         <div className={styles.sessionsScrollArea}>
-          <Spin spinning={sessionsLoading} tip="加载中...">
+          <Spin spinning={sessionsLoading}>
+            {sessionsLoading && <div style={{ textAlign: 'center', marginBottom: 8 }}>加载中...</div>}
             <List
               loading={false}
               dataSource={sessions}
