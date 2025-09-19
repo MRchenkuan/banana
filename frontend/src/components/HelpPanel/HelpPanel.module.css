@@ -4,17 +4,63 @@
 
 .title {
   color: #fff;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   text-align: center;
+  font-size: 20px;
 }
 
 .section {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+}
+
+.section:last-child {
+  margin-bottom: 0;
 }
 
 .sectionTitle {
   color: #fff;
-  margin-bottom: 10px;
+  margin-bottom: 16px;
+  font-size: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 8px;
+}
+
+.faqItem {
+  margin-bottom: 16px;
+}
+
+.faqQuestion {
+  color: #fff;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.faqAnswer {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.contactItem {
+  margin-bottom: 16px;
+}
+
+.contactItem:last-child {
+  margin-bottom: 0;
+}
+
+.contactItem h4 {
+  color: #fff;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.contactItem p {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 .qrcodeWrapper {
@@ -38,6 +84,7 @@
 }
 
 .qrcodeText {
-  color: #fff;
-  margin-top: 10px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 8px;
+  font-size: 14px;
 }
