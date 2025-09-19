@@ -124,7 +124,7 @@ const MobileWarning = () => {
             <DesktopOutlined className={styles.desktopIcon} />
           </div>
                     <p className={styles.description}>
-            为了更好的体验，暂支持电脑端访问。
+            为了更好的体验，暂不支持移动端，请见谅
           </p>
           
           <h2 className={styles.title}>{
