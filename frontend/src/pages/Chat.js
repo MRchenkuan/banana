@@ -278,7 +278,7 @@ const Chat = () => {
         
         
         {/* 主聊天区域 */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden',backgroundColor: 'rgb(20, 20, 20)' }}>
           {/* 消息列表 */}
           <MessageList
             messages={messages}
