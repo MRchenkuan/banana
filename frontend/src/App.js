@@ -5,7 +5,7 @@ import zhCN from 'antd/locale/zh_CN';
 import { AuthProvider } from './contexts/AuthContext';
 import { TokenProvider } from './contexts/TokenContext';
 import ProtectedRoute from './components/ProtectedRoute';
-import Layout from './components/Layout';
+import Layout from './components/Layout/Layout';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';

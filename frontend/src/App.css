@@ -1,23 +1,23 @@
 .App {
   text-align: center;
-  background-color: #141414;
-  color: #ffffff;
+  background-color: var(--theme-dark);
+  color: var(--theme-text-primary);
 }
 
 .App-header {
-  background-color: #1f1f1f;
+  background-color: var(--theme-dark-secondary);
   padding: 20px;
-  color: white;
+  color: var(--theme-text-primary);
 }
 
 .App-link {
-  color: #61dafb;
+  color: var(--theme-primary);
 }
 
 /* Custom styles for the chat application - 暗色主题 */
 .chat-container {
   margin: 0 auto;
-  background-color: #141414;
+  background-color: var(--theme-dark);
 }
 
 .message-bubble {
@@ -28,29 +28,83 @@
 }
 
 :root {
-  --theme-primary: #1890ff;
-  --theme-user-message: #3b82f6;
-  --theme-thinking-bg: #1e3a5f;
+  /* 主色调 */
+  --theme-primary: #10b981;
+  --theme-primary-hover: #34d399;
+  --theme-primary-active: #059669;
+  
+  /* 用户消息色调 */
+  --theme-user-message: #059669;
+  --theme-user-message-border: #047857;
+  
+  /* 思考状态色调 */
+  --theme-thinking: #10b981;
+  --theme-thinking-bg: #065f46;
+  
+  /* 阴影色 */
+  --theme-primary-shadow: rgba(16, 185, 129, 0.3);
+  --theme-primary-shadow-hover: rgba(16, 185, 129, 0.4);
+  
+  /* 背景色 */
+  --theme-dark: #141414;
+  --theme-dark-secondary: #1f1f1f;
+  --theme-dark-tertiary: #262626;
+  
+  /* 边框色 */
+  --theme-border: #434343;
+  --theme-border-light: #2a2a2a;
+  
+  /* 文本色 */
+  --theme-text-primary: #ffffff;
+  --theme-text-secondary: rgba(255, 255, 255, 0.7);
+  --theme-text-tertiary: rgba(255, 255, 255, 0.6);
 }
 
-/* 添加绿色主题变量 */
+/* 绿色主题 */
 :root.theme-green {
   --theme-primary: #10b981;
+  --theme-primary-hover: #34d399;
   --theme-user-message: #059669;
-  --theme-thinking-bg: #064e3b;
+  --theme-user-message-border: #047857;
+  --theme-thinking: #10b981;
+  --theme-primary-shadow: rgba(16, 185, 129, 0.3);
+  --theme-primary-shadow-hover: rgba(16, 185, 129, 0.4);
+}
+
+/* 蓝色主题 */
+:root.theme-blue {
+  --theme-primary: #1890ff;
+  --theme-primary-hover: #40a9ff;
+  --theme-user-message: #3b82f6;
+  --theme-user-message-border: #2563eb;
+  --theme-thinking: #1890ff;
+  --theme-primary-shadow: rgba(24, 144, 255, 0.3);
+  --theme-primary-shadow-hover: rgba(24, 144, 255, 0.4);
+}
+
+/* 橙色主题 */
+:root.theme-orange {
+  --theme-primary: #d97706;
+  --theme-primary-hover: #f59e0b;
+  --theme-user-message: #d97706;
+  --theme-user-message-border: #b45309;
+  --theme-thinking: #d97706;
+  --theme-primary-shadow: rgba(217, 119, 6, 0.3);
+  --theme-primary-shadow-hover: rgba(217, 119, 6, 0.4);
 }
 
 .user-message {
   background-color: var(--theme-user-message);
-  color: white;
+  color: var(--theme-text-primary);
   margin-left: auto;
+  border: 1px solid var(--theme-user-message-border);
 }
 
 .ai-message {
-  background-color: #262626;
-  color: #ffffff;
+  background-color: var(--theme-dark-tertiary);
+  color: var(--theme-text-primary);
   margin-right: auto;
-  border: 1px solid #434343;
+  border: 1px solid var(--theme-border);
 }
 
 @keyframes blink {

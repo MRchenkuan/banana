@@ -120,7 +120,7 @@ const HomeNavbar = ({ sdkLoading }) => {
                 }}
               >
                 <DollarCircleOutlined spin={refreshing} style={{ color: '#fff', fontSize: '14px' }} />
-                <span style={{fontSize: '12px', color: '#fff',marginLeft: '4px'}}>刷新</span>
+                <span style={{fontSize: '12px', color: '#fff',marginLeft: '4px'}}>刷新支付结果</span>
               </div>
             </div>
             
