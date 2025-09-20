@@ -88,6 +88,14 @@ const useMessageSender = ({
     
     try {
       let sessionId = currentSessionId;
+      let shouldAddToLocalMessages = true;
+      
+      // 如果没有会话ID，先创建新会话
+      if (!sessionId) {
+        sessionId = await createNewSession();
+        // 创建新会话时不要立即添加消息到本地
+        shouldAddToLocalMessages = false;
+      }
       
       // 生成图片的markdown
       let imageMarkdown = '';
@@ -124,14 +132,12 @@ const useMessageSender = ({
         isThinking: true
       };
       
-      // 添加消息到当前显示列表
-      setMessages(prev => [...prev, newMessage, thinkingMessage]);
-      
-      // 如果没有会话ID，创建新会话
-      if (!sessionId) {
-        sessionId = await createNewSession();
-        // 将消息迁移到新会话缓存
-        setMessages(prev => [...prev, newMessage, thinkingMessage], sessionId);
+      // 只有在需要时才添加消息到当前显示列表
+      if (shouldAddToLocalMessages) {
+        setMessages(prev => [...prev, newMessage, thinkingMessage]);
+      } else {
+        // 直接设置消息到新会话
+        setMessages([newMessage, thinkingMessage], sessionId);
       }
       
       // 发送消息到后端
