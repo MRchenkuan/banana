@@ -10,16 +10,12 @@ class ErrorMessageHandler extends BaseMessageHandler {
     const { message: errorMessage, code } = data;
     const { thinkingMessageId, onError } = metadata;
     
-    // 移除错误提示
-    // message.error(errorMessage);
-    
-    // 创建错误消息卡片，不再过滤思考状态卡片
     this.context.setMessages((prev) => {
-      // 不再过滤思考状态卡片
-      // const filteredMessages = prev.filter(
-      //   (msg) => msg.id !== thinkingMessageId
-      // );
+      if(msg.id === thinkingMessageId){
 
+      }
+
+      
       const errorMsg = {
         id: generateUniqueId(), // 生成新的唯一ID
         type: "error",

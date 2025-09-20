@@ -8,17 +8,22 @@ class ProcessingMessageHandler extends BaseMessageHandler {
     this.validate(data);
     
     const { message } = data;
-    const { thinkingMessageId, onProcessing } = metadata;
-    
-    console.log('处理状态:', message);
-    
+    const { thinkingMessageId, onProcessing } = metadata;    
     // 更新思考消息的内容
     this.context.setMessages((prev) => 
-      prev.map((msg) => 
-        msg.id === thinkingMessageId 
-          ? { ...msg, content: message }
-          : msg
-      )
+      prev.map((msg) => {
+         if(msg.id === thinkingMessageId){
+          debugger
+          return { 
+            ...msg, 
+            content: message, 
+            isProcessing: true, 
+            isReceived: false
+          }
+         } else {
+          return msg;
+         }
+      })
     );
     
     // 调用处理状态回调

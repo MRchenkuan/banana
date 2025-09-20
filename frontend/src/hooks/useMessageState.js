@@ -5,6 +5,7 @@ export const useMessageState = (message) => {
     const isUser = message.role === 'user';
     const isAssistant = message.role === 'assistant';
     const isThinking = message.isThinking;
+    const isReceived = message.isReceived;
     const isError = message.isError;
     const isInterrupted = message.isInterrupted || message.streamStatus === 'interrupted';
     const isPending = message.isPending || message.streamStatus === 'pending';
@@ -32,7 +33,8 @@ export const useMessageState = (message) => {
       isStreaming,
       messageType,
       isHistoryMessage,
-      shouldStartTypewriter
+      shouldStartTypewriter,
+      isReceived
     };
   }, [message]);
 };

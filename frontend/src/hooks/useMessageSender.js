@@ -95,6 +95,15 @@ const useMessageSender = ({
         sessionId = await createNewSession();
         // 创建新会话时不要立即添加消息到本地
         shouldAddToLocalMessages = false;
+        
+        if (sessionId) {
+          // 保存新会话ID到本地存储
+          localStorage.setItem('currentSessionId', String(sessionId));
+          // 设置当前会话ID，这会触发左侧会话列表的选中状态更新
+          setCurrentSessionId(sessionId);
+        } else {
+          throw new Error('创建会话失败');
+        }
       }
       
       // 生成图片的markdown
@@ -146,6 +155,17 @@ const useMessageSender = ({
     } catch (error) {
       console.error('发送消息失败:', error);
       message.error('发送消息失败，请重试');
+    
+      // 如果是新创建的会话且发送失败，清理会话相关状态
+      if (!currentSessionId) {
+        try {
+          localStorage.removeItem('currentSessionId');
+          setCurrentSessionId(null);
+          setMessages([]);
+        } catch (cleanupError) {
+          console.error('清理失败的会话状态出错:', cleanupError);
+        }
+      }
     } finally {
       setLoading(false);
     }

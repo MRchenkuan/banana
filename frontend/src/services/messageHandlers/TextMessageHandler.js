@@ -28,17 +28,15 @@ class TextMessageHandler extends BaseMessageHandler {
         );
       } else if (thinkingMessage) {
         // 如果thinking消息存在但AI消息不存在，更新thinking消息内容
-        // 关键修改：保持原始ID不变，只更新内容和状态
         return prev.map((msg) =>
           msg.id === thinkingMessageId
             ? {
                 ...msg,
-                // id: messageId, // 移除这行，保持原始ID
                 type: "text",
                 // 检查消息内容是否包含处理状态的提示文案，如果是则替换，否则追加
                 content: msg.isThinking ? content : msg.content + content,
                 isThinking: false, // 移除thinking状态
-                isStreaming: true,
+                isStreaming: true, // 确保消息仍在流式状态
                 isNewMessage: true,
                 estimatedTokens: tokens,
               }
@@ -55,6 +53,7 @@ class TextMessageHandler extends BaseMessageHandler {
           isStreaming: true,
           isNewMessage: true,
           estimatedTokens: tokens,
+          isReceived: false,
         };
         return [...prev, aiMessage];
       }

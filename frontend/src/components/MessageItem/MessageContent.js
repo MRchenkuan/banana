@@ -9,10 +9,10 @@ import styles from './MessageContent.module.css';
 
 const MessageContent = ({ message, messageState, typewriterState, onReuploadImage }) => {
   const { contentToShow, isTyping } = typewriterState;
-  const { isThinking, isAssistant, isUser, isStreaming } = messageState;
+  const { isThinking, isAssistant, isUser, isStreaming, isReceived } = messageState;
   
   // 判断是否应该显示呼吸灯
-  const shouldShowBreathingDot = isAssistant && (isStreaming || isTyping) && !isThinking;
+  const shouldShowBreathingDot = isAssistant && (isStreaming || isTyping) && !isThinking && !isReceived;
   
   // 思考状态直接显示内容，使用与助手消息相同的样式
   if (isThinking) {

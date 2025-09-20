@@ -3,7 +3,7 @@ import { formatTokensToK } from '../../utils/tokenFormatter';
 import { ThunderboltFilled } from '@ant-design/icons';
 
 const MessageMeta = ({ message, messageState, elapsedTime }) => {
-  const { isThinking, isError, isInterrupted, isPending, isStreaming, isUser } = messageState;
+  const { isThinking, isError, isInterrupted, isPending, isStreaming, isUser, isReceived } = messageState;
   
   const getStatusText = () => {
     if (isError) return '错误';
