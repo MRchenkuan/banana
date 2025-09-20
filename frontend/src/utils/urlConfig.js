@@ -17,7 +17,7 @@ class UrlConfig {
    */
   static getBackendApiUrl() {
     // 开发环境：优先使用环境变量，否则使用当前域名的3001端口
-      return process.env.REACT_APP_API_URL || `${window.location.protocol}//${window.location.hostname}:3001/api`;
+      return process.env.REACT_APP_API_URL;
   }
   
   /**

@@ -73,10 +73,8 @@ const TokenUsage = sequelize.define('TokenUsage', {
   tableName: 'token_usage',
   indexes: [
     {
-      fields: ['user_id', 'created_at']  // 使用下划线命名
-    },
-    {
-      fields: ['operation']
+      fields: ['user_id', 'created_at'],  // 用户消费记录查询
+      name: 'idx_user_time'
     }
   ]
 });

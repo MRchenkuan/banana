@@ -1,4 +1,4 @@
-const { DataTypes } = require('sequelize');
+const { DataTypes, Op } = require('sequelize');  // 添加 Op 导入
 const { sequelize } = require('../config/database');
 
 const MediaResource = sequelize.define('MediaResource', {
@@ -52,9 +52,20 @@ const MediaResource = sequelize.define('MediaResource', {
 }, {
   tableName: 'media_resources',
   indexes: [
-    { fields: ['user_id'] },
-    { fields: ['source'] },
-    { fields: ['created_at'] }
+    {
+      fields: ['user_id', 'created_at'],
+      name: 'idx_user_time'
+    },
+    {
+      fields: ['storage_key'],
+      unique: true,
+      name: 'idx_storage_key',
+      where: {
+        storage_key: {
+          [Op.ne]: null
+        }
+      }
+    }
   ]
 });
 

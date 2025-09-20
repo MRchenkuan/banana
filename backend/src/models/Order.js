@@ -1,4 +1,4 @@
-const { DataTypes } = require('sequelize');
+const { DataTypes, Op } = require('sequelize');  // 添加 Op 导入
 const { sequelize } = require('../config/database');
 
 const Order = sequelize.define('Order', {
@@ -18,8 +18,10 @@ const Order = sequelize.define('Order', {
   orderNo: {
     type: DataTypes.STRING(32),
     allowNull: false,
-    unique: true,
-    comment: '订单号'
+    comment: '订单号',
+    unique: {
+      name: 'idx_order_no_unique'  // 显式指定索引名称
+    }
   },
   packageId: {
     type: DataTypes.STRING(50),
@@ -128,22 +130,17 @@ const Order = sequelize.define('Order', {
   tableName: 'orders',
   indexes: [
     {
-      fields: ['user_id', 'created_at']
+      fields: ['user_id', 'status', 'created_at'],
+      name: 'idx_user_status_time'
     },
     {
-      fields: ['order_no']
-    },
-    {
-      fields: ['status']
-    },
-    {
-      fields: ['payment_method']
-    },
-    {
-      fields: ['transaction_id']
-    },
-    {
-      fields: ['expired_at']
+      fields: ['transaction_id'],
+      name: 'idx_transaction',
+      where: {
+        transaction_id: {
+          [Op.ne]: null
+        }
+      }
     }
   ]
 });

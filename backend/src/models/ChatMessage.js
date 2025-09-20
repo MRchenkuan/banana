@@ -74,13 +74,12 @@ const ChatMessage = sequelize.define('ChatMessage', {
   tableName: 'chat_messages',
   indexes: [
     {
-      fields: ['user_id', 'created_at']  // 使用下划线命名，匹配数据库实际字段
+      fields: ['session_id', 'created_at'],  // 会话消息列表查询
+      name: 'idx_session_time'
     },
     {
-      fields: ['session_id', 'created_at']  // 使用下划线命名
-    },
-    {
-      fields: ['stream_status']  // 使用下划线命名
+      fields: ['user_id', 'created_at'],  // 用户消息历史查询
+      name: 'idx_user_time'
     }
   ],
   hooks: {

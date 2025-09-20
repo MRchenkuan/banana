@@ -57,7 +57,6 @@ const LoginComponent = ({ onLoginSuccess, showWechatSDK = false, compact = false
       setWechatLoading(true);
       
       // 现在可以正确调用checkWechatEnv函数
-      const isWechatBrowser = checkWechatEnv();
       
       // 构建回调地址
       const redirectUri = `${window.location.origin}/wechat-login-callback`;
@@ -70,7 +69,7 @@ const LoginComponent = ({ onLoginSuccess, showWechatSDK = false, compact = false
         scope: scope,
         state: Date.now().toString(),
         redirectUri: redirectUri,
-        isWechatBrowser: false // 强制使用开放平台扫码登录
+        isWechatBrowser: checkWechatEnv() // 强制使用开放平台扫码登录
       });
       
       if (response.data.authUrl) {

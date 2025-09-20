@@ -18,6 +18,7 @@ const GlassPanel = forwardRef(({
   const panelRef = ref || internalRef;
   const [pseudoSize, setPseudoSize] = useState({ width: 0, height: 0 });
   const [isInitialized, setIsInitialized] = useState(false);
+  const resizeTimeoutRef = useRef(null);
   
   // 计算伪类尺寸的函数
   const calculatePseudoSize = () => {
@@ -26,84 +27,93 @@ const GlassPanel = forwardRef(({
     const rect = panelRef.current.getBoundingClientRect();
     const { width, height } = rect;
     
+    // 忽略无效的尺寸
+    if (width === 0 || height === 0) return;
+    
     // 计算对角线长度，确保旋转时完全覆盖
     const diagonal = Math.sqrt(width * width + height * height);
     
-    // 添加一些余量确保完全覆盖
-    const safeSize = Math.ceil(diagonal * 1.2);
+    // 增加余量确保完全覆盖
+    const safeSize = Math.ceil(diagonal * 1.5);
     
     const newSize = {
       width: `${safeSize}px`,
       height: `${safeSize}px`
     };
     
-    setPseudoSize(newSize);
-    
-    // 移动端强制重绘修复
-    if (panelRef.current) {
-      // 触发重绘
-      const element = panelRef.current;
-      element.style.transform = 'translateZ(0)';
+    // 只有当尺寸真正变化时才更新
+    if (newSize.width !== pseudoSize.width || newSize.height !== pseudoSize.height) {
+      setPseudoSize(newSize);
       
-      // 使用requestAnimationFrame确保样式应用
-      requestAnimationFrame(() => {
-        element.style.transform = '';
-        
-        // 强制更新CSS变量
+      // 强制更新CSS变量
+      if (panelRef.current) {
+        const element = panelRef.current;
         element.style.setProperty('--pseudo-width', newSize.width);
         element.style.setProperty('--pseudo-height', newSize.height);
-        
-        // 标记为已初始化
-        setIsInitialized(true);
-      });
+      }
     }
   };
   
-  // 使用ResizeObserver监听尺寸变化
+  // 使用防抖处理尺寸计算
+  const debouncedCalculate = () => {
+    if (resizeTimeoutRef.current) {
+      clearTimeout(resizeTimeoutRef.current);
+    }
+    
+    resizeTimeoutRef.current = setTimeout(() => {
+      calculatePseudoSize();
+    }, 100);
+  };
+  
+  // 监听尺寸变化
   useEffect(() => {
     if (!panelRef.current) return;
     
-    // 初始计算
-    calculatePseudoSize();
-    
-    //创建ResizeObserver
-    const resizeObserver = new ResizeObserver((entries) => {
-      for (let entry of entries) {
-        // 使用requestAnimationFrame确保DOM更新完成后再计算
-        requestAnimationFrame(() => {
-          calculatePseudoSize();
-        });
-      }
+    const observer = new ResizeObserver((entries) => {
+      // 使用防抖函数处理尺寸变化
+      debouncedCalculate();
     });
     
-    // 开始观察
-    resizeObserver.observe(panelRef.current);
+    observer.observe(panelRef.current);
     
-    // 清理函数
+    // 初始计算
+    const initTimer = setTimeout(() => {
+      calculatePseudoSize();
+      setIsInitialized(true);
+    }, 300); // 等待 Modal 动画完成
+    
     return () => {
-      resizeObserver.disconnect();
+      observer.disconnect();
+      clearTimeout(initTimer);
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
+      }
     };
   }, []);
   
-  // 组件重新挂载时重新计算
+  // 当内容变化时重新计算
   useEffect(() => {
-    // 使用setTimeout确保组件完全渲染后再计算
-    const timer = setTimeout(() => {
-      calculatePseudoSize();
-    }, 0);
+    if (isInitialized) {
+      debouncedCalculate();
+    }
+  }, [children]);
+  
+  // 监听可见性变化
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          debouncedCalculate();
+        }
+      });
+    });
     
-    // 移动端额外的延迟重绘
-    const mobileTimer = setTimeout(() => {
-      if (panelRef.current && !isInitialized) {
-        calculatePseudoSize();
-      }
-    }, 100);
+    if (panelRef.current) {
+      observer.observe(panelRef.current);
+    }
     
-    return () => {
-      clearTimeout(timer);
-      clearTimeout(mobileTimer);
-    };
-  }, [children, isInitialized]); // 当children变化时重新计算
+    return () => observer.disconnect();
+  }, []);
   
   const gradientClass = styles[`gradient-${gradientIntensity}`] || styles['gradient-medium'];
   const shadowClass = shadow ? styles.withShadow : '';

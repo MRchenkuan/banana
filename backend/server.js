@@ -4,7 +4,7 @@ const path = require('path');
 const os = require('os'); // 添加os模块
 require('dotenv').config();
 
-const { initDatabase, closeDatabase } = require('./src/utils/database');
+const {  closeDatabase } = require('./src/utils/database');
 
 // 创建Express应用
 const app = express();
@@ -79,16 +79,9 @@ const getLocalIP = () => {
 // 启动服务器
 const startServer = async () => {
   try {
-    // 根据环境变量决定是否执行完整初始化
-    if (process.env.FORCE_DB_INIT === 'true' || process.env.NODE_ENV === 'production') {
-      // 完整的数据库初始化（包含同步）
-      await initDatabase();
-    } else {
-      // 开发环境：仅测试连接，不同步表结构
-      const { testConnection } = require('./src/config/database');
-      await testConnection();
-      console.log('🔄 开发环境：跳过数据库同步，仅验证连接');
-    }
+
+    const { testConnection } = require('./src/config/database');
+    await testConnection();
     
     // 获取本机IP地址
     const localIP = getLocalIP();

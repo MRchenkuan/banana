@@ -1,4 +1,4 @@
-const { DataTypes } = require('sequelize');
+const { DataTypes, Op } = require('sequelize');  // 添加 Op 导入
 const { sequelize } = require('../config/database');
 
 const TokenRecharge = sequelize.define('TokenRecharge', {
@@ -63,10 +63,18 @@ const TokenRecharge = sequelize.define('TokenRecharge', {
   tableName: 'token_recharges',
   indexes: [
     {
-      fields: ['user_id', 'created_at']
+      fields: ['user_id', 'created_at'],
+      name: 'idx_user_time'
     },
     {
-      fields: ['source', 'source_id']
+      fields: ['source', 'source_id'],
+      unique: true,
+      name: 'idx_source_unique',
+      where: {
+        source_id: {
+          [Op.ne]: null
+        }
+      }
     }
   ]
 });

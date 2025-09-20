@@ -1,5 +1,5 @@
 # 构建阶段
-FROM node:18-alpine as builder
+FROM --platform=${PLATFORM:-linux/amd64} node:18-alpine as builder
 WORKDIR /app
 
 # 安装 pnpm
@@ -18,10 +18,15 @@ COPY . .
 RUN DISABLE_ESLINT_PLUGIN=true pnpm run build
 
 # 生产阶段
-FROM nginx:alpine
+FROM --platform=${PLATFORM:-linux/amd64} nginx:alpine as production
+WORKDIR /usr/share/nginx/html
 
 # 复制构建结果
-COPY --from=builder /app/build /usr/share/nginx/html
+COPY --from=builder /app/build .
+
+# 配置 nginx
+RUN rm /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # 暴露端口
 EXPOSE 80

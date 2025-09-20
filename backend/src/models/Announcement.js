@@ -72,13 +72,8 @@ const Announcement = sequelize.define('Announcement', {
   tableName: 'announcements',
   indexes: [
     {
-      fields: ['is_active', 'priority', 'start_time']
-    },
-    {
-      fields: ['target_users']
-    },
-    {
-      fields: ['created_at']
+      fields: ['is_active', 'priority', 'start_time'],  // 活跃公告查询
+      name: 'idx_active_priority'
     }
   ]
 });

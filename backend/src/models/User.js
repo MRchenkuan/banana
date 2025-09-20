@@ -32,15 +32,19 @@ const User = sequelize.define('User', {
   // 微信相关字段 - 作为主要身份标识
   wechatOpenId: {
     type: DataTypes.STRING(100),
-    allowNull: false, // 改为必填
-    unique: true,
-    comment: '微信OpenID - 主要身份标识'
+    allowNull: false,
+    comment: '微信OpenID - 主要身份标识',
+    unique: {
+      name: 'idx_wechat_open_id_unique'
+    }
   },
   wechatUnionId: {
     type: DataTypes.STRING(100),
     allowNull: true,
-    unique: true,
-    comment: '微信UnionID'
+    comment: '微信UnionID',
+    unique: {
+      name: 'idx_wechat_union_id_unique'
+    }
   },
   wechatNickname: {
     type: DataTypes.STRING(100),
@@ -59,7 +63,7 @@ const User = sequelize.define('User', {
     comment: '登录方式'
   },
   tokenBalance: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.BIGINT,
     allowNull: false,
     defaultValue: 1000,
   }
