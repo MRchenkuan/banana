@@ -11,13 +11,11 @@ const useMessageSender = ({
   setMessages,
   updateBalance,
   navigate,
-  addSession
 }) => {
   const { createNewSession, isCreatingSession } = useSessionManager(
-    addSession,
-    setSessions,
     setCurrentSessionId,
-    navigate
+    navigate,
+    currentSessionId
   );
 
   // 生成唯一ID的辅助函数

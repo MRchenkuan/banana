@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   Button,
   List,
@@ -22,7 +22,6 @@ const SessionSidebar = ({
   deleteSession,     // 使用传入的统一函数
   isCreatingSession  // 使用统一的创建状态
 }) => {
-  // 删除本地的 createNewSession 和 deleteSession 函数实现
   
   // 处理删除会话的点击事件
   const handleDeleteClick = (sessionId, e) => {

@@ -13,7 +13,6 @@ class ProcessingMessageHandler extends BaseMessageHandler {
     this.context.setMessages((prev) => 
       prev.map((msg) => {
          if(msg.id === thinkingMessageId){
-          debugger
           return { 
             ...msg, 
             content: message, 

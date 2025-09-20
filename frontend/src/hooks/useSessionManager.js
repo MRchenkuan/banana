@@ -36,8 +36,6 @@ const useSessionManager = (setCurrentSessionId, navigate, currentSessionId) => {
       const response = await api.session.createSession();
       const newSession = response.data;
       
-      console.log('创建新会话成功:', newSession);
-      
       // 更新会话列表
       addSession(newSession);
       
@@ -101,6 +99,7 @@ const useSessionManager = (setCurrentSessionId, navigate, currentSessionId) => {
           }
         } else {
           if (setCurrentSessionId) {
+            debugger
             setCurrentSessionId(null);
           }
         }

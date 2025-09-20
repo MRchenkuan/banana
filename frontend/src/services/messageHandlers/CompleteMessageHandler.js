@@ -29,7 +29,6 @@ class CompleteMessageHandler extends BaseMessageHandler {
     // 更新消息状态为完成
     this.context.setMessages((prev) => prev.map((msg) =>{
         if(msg.id === thinkingMessageId){
-          debugger
           return {
             ...msg,
             isStreaming: false,
